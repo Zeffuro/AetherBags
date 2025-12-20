@@ -51,6 +51,8 @@ public class Plugin : IDalamudPlugin
         Services.CommandManager.RemoveHandler("/aetherbags");
         Services.CommandManager.RemoveHandler("/ab");
 
+        System.AddonInventoryWindow.Dispose();
+
         KamiToolKitLibrary.Dispose();
     }
 
