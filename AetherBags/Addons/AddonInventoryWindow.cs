@@ -19,6 +19,7 @@ public class AddonInventoryWindow : NativeAddon
 {
     private WrappingGridNode<InventoryCategoryNode> _categoriesNode = null!;
     private TextInputWithHintNode _searchInputNode = null!;
+    private InventoryFooterNode _footerNode = null!;
 
     // Window constraints
     private const float MinWindowWidth = 300;
@@ -50,18 +51,26 @@ public class AddonInventoryWindow : NativeAddon
             Size = size,
             OnInputReceived = _ => RefreshCategories(false),
         };
-
         _searchInputNode.AttachNode(this);
+
+        _footerNode = new InventoryFooterNode
+        {
+            Size = ContentSize with { Y = 28 },
+            SlotAmountText = InventoryState.GetEmptyItemSlotsString()
+        };
+        _footerNode.AttachNode(this);
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         RefreshCategories();
+        base.OnSetup(addon);
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
-
+        // Haven't needed it yet but just in case.
+        base.OnUpdate(addon);
     }
 
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
@@ -70,6 +79,7 @@ public class AddonInventoryWindow : NativeAddon
     }
 
     protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
+        base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
         RefreshCategories();
     }
 
@@ -133,11 +143,13 @@ public class AddonInventoryWindow : NativeAddon
     {
         SetWindowSize(width, height);
         _categoriesNode.Size = ContentSize;
+        _footerNode.Size = ContentSize with { Y = 28 };
         _categoriesNode.RecalculateLayout();
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        base.OnFinalize(addon);
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
     }

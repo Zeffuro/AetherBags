@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using AetherBags.Currency;
 using Dalamud.Game.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -108,6 +109,19 @@ public static unsafe class InventoryState
         };
     }
 
+    private static uint GetEmptyItemSlots() => InventoryManager.Instance()->GetEmptySlotsInBag();
 
+    private static uint GetUsedItemSlots() => 140 - GetEmptyItemSlots();
 
+    public static string GetEmptyItemSlotsString() => $"{GetUsedItemSlots()}/140";
+
+    public static CurrencyInfo GetCurrencyInfo(uint itemId)
+    {
+        return new CurrencyInfo
+        {
+            Amount = InventoryManager.Instance()->GetInventoryItemCount(1),
+            ItemId = itemId,
+            IconId = Services.DataManager.GetExcelSheet<Item>().GetRow(itemId).Icon
+        };
+    }
 }
