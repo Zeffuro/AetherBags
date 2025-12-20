@@ -9,6 +9,7 @@ namespace AetherBags.Nodes;
 
 public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
 {
+    public float HorizontalSpacing { get; set; } = 10f;
     public float VerticalSpacing { get; set; } = 10f;
 
     public float TopPadding { get; set; } = 0f;
@@ -50,7 +51,7 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         _rowIndex.EnsureCapacity(count);
 
         float availableWidth = Width;
-        float hSpace = ItemSpacing;
+        float hSpace = HorizontalSpacing;
         float vSpace = VerticalSpacing;
         float startX = FirstItemSpacing;
 

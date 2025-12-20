@@ -44,7 +44,7 @@ public class AddonInventoryWindow : NativeAddon
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            ItemSpacing = CategorySpacing,
+            HorizontalSpacing = CategorySpacing,
             VerticalSpacing = CategorySpacing,
             TopPadding = 4.0f,
             BottomPadding = 4.0f,
