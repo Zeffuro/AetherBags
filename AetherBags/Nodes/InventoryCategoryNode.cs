@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
 using AetherBags.Extensions;
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using System;
+using System.Numerics;
 
 namespace AetherBags.Nodes;
 
@@ -16,32 +15,50 @@ public class InventoryCategoryNode : SimpleComponentNode
     private readonly TextNode _categoryNameTextNode;
     private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
-    private const float ItemSize = 40;
-    private const float ItemHorizontalPadding = 6;
-    private const float ItemVerticalPadding = 6;
+    private const float FallbackItemSize = 46;
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
 
-    private float?  _fixedWidth;
+    private float? _fixedWidth;
+
+    private int _hoverRefs;
+    private bool _headerSuppressed;
+    private bool _headerExpanded;
+
+    private float _baseHeaderWidth = 96f;
+
+    private string _fullHeaderText = string.Empty;
+
+    public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
 
     public InventoryCategoryNode()
     {
         _categoryNameTextNode = new TextNode
         {
-            Size = new Vector2(100, 14),
-            AlignmentType = AlignmentType.Left
+            Size = new Vector2(96, 16),
+            AlignmentType = AlignmentType.Left,
         };
+
+        _categoryNameTextNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
+        _categoryNameTextNode.AddEvent(AtkEventType.MouseOut, EndHeaderHover);
+
+        _categoryNameTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
+        _categoryNameTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
+
+        _categoryNameTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
         _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
         {
             Position = new Vector2(0, HeaderHeight),
-            Size = new Vector2(240, 100),
+            Size = new Vector2(240, 92),
             FillRowsFirst = true,
             ItemsPerLine = 10,
-            HorizontalPadding = ItemHorizontalPadding,
-            VerticalPadding = ItemVerticalPadding,
+            HorizontalPadding = 5,
+            VerticalPadding = 2,
         };
+
+        _itemGridNode.NodeFlags |= NodeFlags.EmitsEvents;
         _itemGridNode.AttachNode(this);
     }
 
@@ -52,8 +69,11 @@ public class InventoryCategoryNode : SimpleComponentNode
         {
             field = value;
 
-            _categoryNameTextNode.String = value.Category.Name;
+            _fullHeaderText = value.Category.Name;
+
+            _categoryNameTextNode.String = _fullHeaderText;
             _categoryNameTextNode.TextColor = value.Category.Color;
+
             _categoryNameTextNode.TooltipString = value.Category.Description;
 
             UpdateItemGrid();
@@ -66,6 +86,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         get => _itemGridNode.ItemsPerLine;
         set
         {
+            if (_itemGridNode.ItemsPerLine == value) return;
             _itemGridNode.ItemsPerLine = value;
             RecalculateSize();
         }
@@ -76,55 +97,156 @@ public class InventoryCategoryNode : SimpleComponentNode
         get => _fixedWidth;
         set
         {
+            if (_fixedWidth.Equals(value)) return;
             _fixedWidth = value;
             RecalculateSize();
+        }
+    }
+
+    public void BeginHeaderHover()
+    {
+        _hoverRefs++;
+        if (_hoverRefs != 1) return;
+
+        _headerExpanded = true;
+        ApplyHeaderVisualStateAndSize();
+
+        HeaderHoverChanged?.Invoke(this, true);
+    }
+
+    public void EndHeaderHover()
+    {
+        if (_hoverRefs <= 0) return;
+
+        _hoverRefs--;
+        if (_hoverRefs != 0) return;
+
+        _headerExpanded = false;
+        ApplyHeaderVisualStateAndSize();
+
+        HeaderHoverChanged?.Invoke(this, false);
+    }
+
+    public void SetHeaderSuppressed(bool suppressed)
+    {
+        if (_headerSuppressed == suppressed) return;
+        _headerSuppressed = suppressed;
+        ApplyHeaderVisualStateAndSize();
+    }
+
+    private void ApplyHeaderVisualStateAndSize()
+    {
+        _categoryNameTextNode.IsVisible = !_headerSuppressed;
+        if (_headerSuppressed)
+            return;
+
+        var flags = _categoryNameTextNode.TextFlags;
+
+        flags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
+
+        if (_headerExpanded)
+        {
+            flags &= ~(TextFlags.OverflowHidden | TextFlags.Ellipsis);
+            _categoryNameTextNode.TextFlags = flags;
+
+            if (!string.IsNullOrEmpty(_fullHeaderText))
+                _categoryNameTextNode.String = _fullHeaderText;
+
+            Vector2 drawSize = _categoryNameTextNode.GetTextDrawSize();
+            float expandedWidth = MathF.Max(_baseHeaderWidth, drawSize.X + 4f);
+            _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = expandedWidth };
+        }
+        else
+        {
+            _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = _baseHeaderWidth };
+
+            if (!string.IsNullOrEmpty(_fullHeaderText))
+                _categoryNameTextNode.String = _fullHeaderText;
+
+            flags |= (TextFlags.OverflowHidden | TextFlags.Ellipsis);
+            _categoryNameTextNode.TextFlags = flags;
         }
     }
 
     private void RecalculateSize()
     {
         int itemCount = CategorizedInventory.Items.Count;
+
         if (itemCount == 0)
         {
             float width = _fixedWidth ?? MinWidth;
+
             Size = new Vector2(width, HeaderHeight);
-            _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = width };
+
+            _baseHeaderWidth = width;
+
+            _itemGridNode.Position = new Vector2(0, HeaderHeight);
+            _itemGridNode.Size = new Vector2(width, 0);
+
+            ApplyHeaderVisualStateAndSize();
             return;
         }
 
-        int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
-        int rows = (int)Math.Ceiling((float)itemCount / itemsPerLine);
+        int itemsPerLine = _itemGridNode.ItemsPerLine;
+        if (itemsPerLine < 1) itemsPerLine = 1;
+
+        int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
+        int actualColumns = Math.Min(itemCount, itemsPerLine);
+
+        float cellW, cellH;
+        if (_itemGridNode.Nodes.Count > 0)
+        {
+            var firstChild = _itemGridNode.Nodes[0];
+            cellW = firstChild.Width;
+            cellH = firstChild.Height;
+        }
+        else
+        {
+            cellW = FallbackItemSize;
+            cellH = FallbackItemSize;
+        }
+
+        float hPad = _itemGridNode.HorizontalPadding;
+        float vPad = _itemGridNode.VerticalPadding;
 
         float calculatedWidth;
-        if (_fixedWidth. HasValue)
+        if (_fixedWidth.HasValue)
         {
             calculatedWidth = _fixedWidth.Value;
         }
         else
         {
-            int actualColumns = Math.Min(itemCount, itemsPerLine);
-            calculatedWidth = actualColumns * ItemSize + (actualColumns - 1) * ItemHorizontalPadding;
-            calculatedWidth = Math.Max(calculatedWidth, MinWidth);
+            calculatedWidth = actualColumns * cellW + (actualColumns - 1) * hPad;
+            if (calculatedWidth < MinWidth) calculatedWidth = MinWidth;
         }
 
-        float height = HeaderHeight + rows * ItemSize + (rows - 1) * ItemVerticalPadding;
+        float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
 
         Size = new Vector2(calculatedWidth, height);
+
+        _itemGridNode.Position = new Vector2(0, HeaderHeight);
         _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
-        _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = calculatedWidth };
+
+        _baseHeaderWidth = calculatedWidth;
+
+        ApplyHeaderVisualStateAndSize();
     }
 
     private void UpdateItemGrid()
     {
-        _itemGridNode.SyncWithListData(CategorizedInventory.Items, node => node.ItemInfo, CreateInventoryDragDropNode);
+        _itemGridNode.SyncWithListData(
+            CategorizedInventory.Items,
+            node => node.ItemInfo,
+            CreateInventoryDragDropNode);
     }
 
     private InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
-        InventoryDragDropNode node = new InventoryDragDropNode
+
+        var node = new InventoryDragDropNode
         {
-            Size = new Vector2(40),
+            Size = new Vector2(42, 46),
             IsVisible = true,
             IconId = item.IconId,
             AcceptedType = DragDropType.Nothing,
@@ -136,10 +258,21 @@ public class InventoryCategoryNode : SimpleComponentNode
                 Int2 = (int)item.ItemId,
             },
             IsClickable = true,
-            OnRollOver = node => node.ShowInventoryItemTooltip(item.Container, item.Slot),
-            OnRollOut = node => node.HideTooltip(),
+
+            OnRollOver = n =>
+            {
+                BeginHeaderHover();
+                n.ShowInventoryItemTooltip(item.Container, item.Slot);
+            },
+            OnRollOut = n =>
+            {
+                EndHeaderHover();
+                n.HideTooltip();
+            },
+
             ItemInfo = data
         };
+
         return node;
     }
 }

@@ -2,92 +2,114 @@ using System;
 using KamiToolKit;
 using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes
+namespace AetherBags.Nodes;
+
+public class HybridDirectionalStackNode<T> : LayoutListNode where T : NodeBase
 {
-    public class HybridDirectionalStackNode<T> : LayoutListNode where T : NodeBase
+    public FlexGrowDirection GrowDirection
     {
-        public FlexGrowDirection GrowDirection
+        get => field;
+        set
         {
-            get;
-            set
-            {
-                field = value;
-                RecalculateLayout();
-            }
-        } = FlexGrowDirection.DownRight;
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = FlexGrowDirection.DownRight;
 
-        public bool Vertical
+    public bool Vertical
+    {
+        get => field;
+        set
         {
-            get;
-            set
-            {
-                field = value;
-                RecalculateLayout();
-            }
-        } = true;
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = true;
 
-        public float Spacing
+    public float Spacing
+    {
+        get => field;
+        set
         {
-            get;
-            set
-            {
-                field = value;
-                RecalculateLayout();
-            }
-        } = 1f;
+            if (field.Equals(value)) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = 1f;
 
-        public bool StretchCrossAxis
+    public bool StretchCrossAxis
+    {
+        get => field;
+        set
         {
-            get;
-            set
-            {
-                field = value;
-                RecalculateLayout();
-            }
-        } = true;
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = true;
 
-        protected override void InternalRecalculateLayout()
+    protected override void InternalRecalculateLayout()
+    {
+        int count = NodeList.Count;
+        if (count == 0) return;
+
+        FlexGrowDirection dir = GrowDirection;
+        bool alignRight = dir == FlexGrowDirection.DownLeft || dir == FlexGrowDirection.UpLeft;
+        bool alignBottom = dir == FlexGrowDirection.UpRight || dir == FlexGrowDirection.UpLeft;
+
+        bool vertical = Vertical;
+        bool stretchCross = StretchCrossAxis;
+
+        float containerW = Width;
+        float containerH = Height;
+
+        float startX = alignRight ? containerW : 0f;
+        float startY = alignBottom ? containerH : 0f;
+
+        float spacing = Spacing;
+
+        float cursor = 0f;
+
+        if (vertical)
         {
-            if (NodeList.Count == 0)
-                return;
-
-            bool alignRight = GrowDirection is FlexGrowDirection.DownLeft or FlexGrowDirection.UpLeft;
-            bool alignBottom = GrowDirection is FlexGrowDirection.UpRight or FlexGrowDirection.UpLeft;
-
-            float startX = alignRight ? Width : 0f;
-            float startY = alignBottom ? Height : 0f;
-
-            float cursor = 0f;
-
-            for (int i = 0; i < NodeList.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                var node = NodeList[i];
+                NodeBase node = NodeList[i];
 
-                if (StretchCrossAxis)
-                {
-                    if (Vertical)
-                        node.Width = Width;
-                    else
-                        node.Height = Height;
-                }
+                if (stretchCross)
+                    node.Width = containerW;
 
-                float x, y;
-                if (Vertical)
-                {
-                    x = alignRight ? startX - node.Width : startX;
-                    y = alignBottom ? startY - node.Height - cursor : startY + cursor;
-                    cursor += node.Height + Spacing;
-                }
-                else
-                {
-                    x = alignRight ? startX - node.Width - cursor : startX + cursor;
-                    y = alignBottom ? startY - node.Height : startY;
-                    cursor += node.Width + Spacing;
-                }
+                float w = node.Width;
+                float h = node.Height;
 
-                node.X = x;
-                node.Y = y;
+                node.X = alignRight ? startX - w : startX;
+                node.Y = alignBottom ? startY - h - cursor : startY + cursor;
+
                 AdjustNode(node);
+
+                cursor += node.Height + spacing;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < count; i++)
+            {
+                NodeBase node = NodeList[i];
+
+                if (stretchCross)
+                    node.Height = containerH;
+
+                float w = node.Width;
+                float h = node.Height;
+
+                node.X = alignRight ? startX - w - cursor : startX + cursor;
+                node.Y = alignBottom ? startY - h : startY;
+
+                AdjustNode(node);
+
+                cursor += node.Width + spacing;
             }
         }
     }

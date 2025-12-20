@@ -17,6 +17,9 @@ namespace AetherBags.Addons;
 
 public class AddonInventoryWindow : NativeAddon
 {
+    private readonly InventoryCategoryHoverCoordinator _hoverCoordinator = new();
+    private readonly HashSet<InventoryCategoryNode> _hoverSubscribed = new();
+
     private WrappingGridNode<InventoryCategoryNode> _categoriesNode = null!;
     private TextInputWithHintNode _searchInputNode = null!;
     private InventoryFooterNode _footerNode = null!;
@@ -30,7 +33,10 @@ public class AddonInventoryWindow : NativeAddon
     // Layout settings
     private const float CategorySpacing = 12;
     private const float ItemSize = 40;
-    private const float ItemPadding = 6;
+    private const float ItemPadding = 4;
+
+    private const float FooterHeight = 28f;
+    private const float FooterTopSpacing = 4f;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
@@ -38,15 +44,18 @@ public class AddonInventoryWindow : NativeAddon
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            HorizontalSpacing = CategorySpacing,
-            VerticalSpacing = CategorySpacing
+            ItemSpacing = CategorySpacing,
+            VerticalSpacing = CategorySpacing,
+            TopPadding = 4.0f,
+            BottomPadding = 4.0f,
         };
         _categoriesNode.AttachNode(this);
 
         var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
 
         Vector2 headerSize = new Vector2(addon->WindowHeaderCollisionNode->Width, addon->WindowHeaderCollisionNode->Height);
-        _searchInputNode = new TextInputWithHintNode {
+        _searchInputNode = new TextInputWithHintNode
+        {
             Position = headerSize / 2.0f - size / 2.0f + new Vector2(25.0f, 10.0f),
             Size = size,
             OnInputReceived = _ => RefreshCategories(false),
@@ -55,10 +64,12 @@ public class AddonInventoryWindow : NativeAddon
 
         _footerNode = new InventoryFooterNode
         {
-            Size = ContentSize with { Y = 28 },
+            Size = ContentSize with { Y = FooterHeight },
             SlotAmountText = InventoryState.GetEmptyItemSlotsString()
         };
         _footerNode.AttachNode(this);
+
+        LayoutContent();
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
@@ -69,7 +80,6 @@ public class AddonInventoryWindow : NativeAddon
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
-        // Haven't needed it yet but just in case.
         base.OnUpdate(addon);
     }
 
@@ -78,13 +88,16 @@ public class AddonInventoryWindow : NativeAddon
         RefreshCategories();
     }
 
-    protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
+    protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
+    {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
         RefreshCategories();
     }
 
     private void RefreshCategories(bool autosize = true)
     {
+        _footerNode.SlotAmountText = InventoryState.GetEmptyItemSlotsString();
+
         var categories = InventoryState.GetInventoryItemCategories(_searchInputNode.SearchString.ExtractText());
 
         float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
@@ -105,12 +118,54 @@ public class AddonInventoryWindow : NativeAddon
             node.ItemsPerLine = Math.Min(node.CategorizedInventory.Items.Count, maxItemsPerLine);
         }
 
-        if(autosize) AutoSizeWindow();
+        WireHoverHandlers();
+
+        if (autosize) AutoSizeWindow();
+        else
+        {
+            LayoutContent();
+            _categoriesNode.RecalculateLayout();
+        }
+    }
+
+    private void WireHoverHandlers()
+    {
+        List<InventoryCategoryNode> categoryNodes = _categoriesNode.GetNodes<InventoryCategoryNode>().ToList();
+
+        for (int i = 0; i < categoryNodes.Count; i++)
+        {
+            InventoryCategoryNode node = categoryNodes[i];
+
+            if (!_hoverSubscribed.Add(node))
+                continue;
+
+            node.HeaderHoverChanged += (src, hovering) =>
+            {
+                _hoverCoordinator.OnCategoryHoverChanged(_categoriesNode, src, hovering);
+            };
+        }
     }
 
     private int CalculateOptimalItemsPerLine(float availableWidth)
     {
         return Math.Clamp((int)Math.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
+    }
+
+    private void LayoutContent()
+    {
+        Vector2 contentPos = ContentStartPosition;
+        Vector2 contentSize = ContentSize;
+
+        float footerH = FooterHeight;
+
+        _footerNode.Position = new Vector2(contentPos.X, contentPos.Y + contentSize.Y - footerH);
+        _footerNode.Size = new Vector2(contentSize.X, footerH);
+
+        float gridH = contentSize.Y - footerH - FooterTopSpacing;
+        if (gridH < 0) gridH = 0;
+
+        _categoriesNode.Position = contentPos;
+        _categoriesNode.Size = new Vector2(contentSize.X, gridH);
     }
 
     private void AutoSizeWindow()
@@ -122,19 +177,25 @@ public class AddonInventoryWindow : NativeAddon
             return;
         }
 
-        float requiredWidth = childNodes.Max(node => node. Width);
+        float requiredWidth = childNodes.Max(node => node.Width);
         requiredWidth += ContentStartPosition.X * 2;
         float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
 
         float contentWidth = finalWidth - (ContentStartPosition.X * 2);
-        _categoriesNode.Size = new Vector2(contentWidth, MaxWindowHeight);
+
+        float gridBudget = Math.Max(0f, MaxWindowHeight - FooterHeight - FooterTopSpacing);
+
+        _categoriesNode.Position = ContentStartPosition;
+        _categoriesNode.Size = new Vector2(contentWidth, gridBudget);
 
         _categoriesNode.RecalculateLayout();
 
-        float requiredHeight = _categoriesNode.GetRequiredHeight();
-        requiredHeight += ContentStartPosition.Y + ContentStartPosition.X;
+        float requiredGridHeight = _categoriesNode.GetRequiredHeight();
+        float requiredContentHeight = requiredGridHeight + FooterTopSpacing + FooterHeight;
 
-        float finalHeight = Math.Clamp(requiredHeight, MinWindowHeight, MaxWindowHeight);
+        float requiredWindowHeight = requiredContentHeight + ContentStartPosition.Y + ContentStartPosition.X;
+
+        float finalHeight = Math.Clamp(requiredWindowHeight, MinWindowHeight, MaxWindowHeight);
 
         ResizeWindow(finalWidth, finalHeight);
     }
@@ -142,8 +203,9 @@ public class AddonInventoryWindow : NativeAddon
     private void ResizeWindow(float width, float height)
     {
         SetWindowSize(width, height);
-        _categoriesNode.Size = ContentSize;
-        _footerNode.Size = ContentSize with { Y = 28 };
+
+        LayoutContent();
+
         _categoriesNode.RecalculateLayout();
     }
 
@@ -152,5 +214,7 @@ public class AddonInventoryWindow : NativeAddon
         base.OnFinalize(addon);
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
+
+        _hoverSubscribed.Clear();
     }
 }

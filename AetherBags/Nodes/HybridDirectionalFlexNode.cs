@@ -1,106 +1,132 @@
-using System;
-using System.Linq;
 using KamiToolKit;
 using KamiToolKit.Nodes;
+using System;
+using System.Runtime.CompilerServices;
 
-namespace AetherBags.Nodes
+namespace AetherBags.Nodes;
+
+public class HybridDirectionalFlexNode : HybridDirectionalFlexNode<NodeBase> { }
+
+public class HybridDirectionalFlexNode<T> : LayoutListNode where T : NodeBase
 {
-    public enum FlexGrowDirection
+    public FlexGrowDirection GrowDirection
     {
-        DownRight,
-        DownLeft,
-        UpRight,
-        UpLeft
-    }
-
-    public class HybridDirectionalFlexNode : HybridDirectionalFlexNode<NodeBase> { }
-
-    public class HybridDirectionalFlexNode<T> : LayoutListNode where T : NodeBase
-    {
-
-        public FlexGrowDirection GrowDirection { get;
-            set {
-                field = value;
-                RecalculateLayout();
-            }
-        } = FlexGrowDirection.DownRight;
-
-        public int ItemsPerLine {
-            get;
-            set {
-                field = value;
-                RecalculateLayout();
-            }
-        } = 1;
-
-        public bool FillRowsFirst {
-            get;
-            set {
-                field = value;
-                RecalculateLayout();
-            }
-        } = true;
-
-        public float HorizontalPadding {
-            get;
-            set {
-                field = value;
-                RecalculateLayout();
-            }
-        } = 1;
-
-        public float VerticalPadding {
-            get;
-            set {
-                field = value;
-                RecalculateLayout();
-            }
-        } = 1;
-
-        protected override void InternalRecalculateLayout()
+        get => field;
+        set
         {
-            if (NodeList.Count == 0) {
-                return;
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = FlexGrowDirection.DownRight;
+
+    public int ItemsPerLine
+    {
+        get => field;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = 1;
+
+    public bool FillRowsFirst
+    {
+        get => field;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = true;
+
+    public float HorizontalPadding
+    {
+        get => field;
+        set
+        {
+            if (field.Equals(value)) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = 1;
+
+    public float VerticalPadding
+    {
+        get => field;
+        set
+        {
+            if (field.Equals(value)) return;
+            field = value;
+            RecalculateLayout();
+        }
+    } = 1;
+
+    protected override void InternalRecalculateLayout()
+    {
+        int count = NodeList.Count;
+        if (count == 0) return;
+
+        int itemsPerLine = ItemsPerLine;
+        if (itemsPerLine < 1) itemsPerLine = 1;
+
+        NodeBase first = NodeList[0];
+        float nodeWidth = first.Width;
+        float nodeHeight = first.Height;
+
+        float hPad = HorizontalPadding;
+        float vPad = VerticalPadding;
+
+        FlexGrowDirection dir = GrowDirection;
+        bool alignRight = dir == FlexGrowDirection.DownLeft || dir == FlexGrowDirection.UpLeft;
+        bool alignBottom = dir == FlexGrowDirection.UpRight || dir == FlexGrowDirection.UpLeft;
+
+        float startX = alignRight ? Width : 0f;
+        float startY = alignBottom ? Height : 0f;
+
+        float stepX = nodeWidth + hPad;
+        float stepY = nodeHeight + vPad;
+
+        bool fillRowsFirst = FillRowsFirst;
+
+        int major = 0;
+        int minor = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            int row, col;
+            if (fillRowsFirst)
+            {
+                row = major;
+                col = minor;
+            }
+            else
+            {
+                col = major;
+                row = minor;
             }
 
-            int itemsPerLine = Math.Max(1, ItemsPerLine);
+            float x = alignRight
+                ? startX - nodeWidth - col * stepX
+                : startX + col * stepX;
 
-            float nodeWidth = NodeList.First().Width;
-            float nodeHeight = NodeList.First().Height;
+            float y = alignBottom
+                ? startY - nodeHeight - row * stepY
+                : startY + row * stepY;
 
-            bool alignRight = GrowDirection is FlexGrowDirection.DownLeft or FlexGrowDirection.UpLeft;
-            bool alignBottom = GrowDirection is FlexGrowDirection.UpRight or FlexGrowDirection.UpLeft;
+            NodeBase node = NodeList[i];
+            node.X = x;
+            node.Y = y;
 
-            float startX = alignRight ? Width : 0f;
-            float startY = alignBottom ? Height : 0f;
+            AdjustNode(node);
 
-            int idx = 0;
-            foreach (var node in NodeList)
+            minor++;
+            if (minor == itemsPerLine)
             {
-                int row, col;
-                if (FillRowsFirst)
-                {
-                    row = idx / itemsPerLine;
-                    col = idx % itemsPerLine;
-                }
-                else
-                {
-                    col = idx / itemsPerLine;
-                    row = idx % itemsPerLine;
-                }
-
-                float x = alignRight
-                    ? startX - (col + 1) * nodeWidth - col * HorizontalPadding
-                    : startX + col * (nodeWidth + HorizontalPadding);
-
-                float y = alignBottom
-                    ? startY - (row + 1) * nodeHeight - row * VerticalPadding
-                    : startY + row * (nodeHeight + VerticalPadding);
-
-                node.X = x;
-                node.Y = y;
-                AdjustNode(node);
-                idx++;
+                minor = 0;
+                major++;
             }
         }
     }
