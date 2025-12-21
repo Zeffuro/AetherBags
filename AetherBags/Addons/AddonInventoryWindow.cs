@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using AetherBags.Extensions;
 using AetherBags.Inventory;
@@ -11,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
-using Lumina.Data.Parsing.Uld;
 
 namespace AetherBags.Addons;
 
@@ -38,6 +36,9 @@ public class AddonInventoryWindow : NativeAddon
     private const float FooterHeight = 28f;
     private const float FooterTopSpacing = 4f;
 
+    private bool _refreshQueued;
+    private bool _refreshAutosizeQueued;
+
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         _categoriesNode = new WrappingGridNode<InventoryCategoryNode>
@@ -57,15 +58,17 @@ public class AddonInventoryWindow : NativeAddon
         _searchInputNode = new TextInputWithHintNode
         {
             Position = headerSize / 2.0f - size / 2.0f + new Vector2(25.0f, 10.0f),
+
             Size = size,
-            OnInputReceived = _ => RefreshCategories(false),
+
+            OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         _searchInputNode.AttachNode(this);
 
         _footerNode = new InventoryFooterNode
         {
             Size = ContentSize with { Y = FooterHeight },
-            SlotAmountText = InventoryState.GetEmptyItemSlotsString()
+            SlotAmountText = InventoryState.GetEmptyItemSlotsString(),
         };
         _footerNode.AttachNode(this);
 
@@ -74,49 +77,70 @@ public class AddonInventoryWindow : NativeAddon
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
-        RefreshCategories();
+        InventoryState.RefreshFromGame();
+
+        RefreshCategoriesCore(autosize: true);
+
         base.OnSetup(addon);
     }
 
+
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
+        if (_refreshQueued)
+        {
+            bool doAutosize = _refreshAutosizeQueued;
+            _refreshQueued = false;
+            _refreshAutosizeQueued = false;
+
+            RefreshCategoriesCore(doAutosize);
+        }
+
         base.OnUpdate(addon);
     }
 
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
     {
-        RefreshCategories();
+        InventoryState.RefreshFromGame();
+
+        RefreshCategoriesCore(autosize: true);
     }
 
     protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
-        RefreshCategories();
+
+        InventoryState.RefreshFromGame();
+
+        RefreshCategoriesCore(autosize: true);
     }
 
-    private void RefreshCategories(bool autosize = true)
+    private void RefreshCategoriesCore(bool autosize)
     {
         _footerNode.SlotAmountText = InventoryState.GetEmptyItemSlotsString();
 
-        var categories = InventoryState.GetInventoryItemCategories(_searchInputNode.SearchString.ExtractText());
+        string filter = _searchInputNode.SearchString.ExtractText();
+        IReadOnlyList<CategorizedInventory> categories = InventoryState.GetInventoryItemCategories(filter);
 
         float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
 
-        _categoriesNode.SyncWithListData(
-            categories,
-            node => node.CategorizedInventory,
-            data => new InventoryCategoryNode
+        _categoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
+            dataList: categories,
+            getKeyFromData: c => c.Key,
+            getKeyFromNode: n => n.CategorizedInventory.Key,
+            updateNode: (node, data) =>
             {
-                Size = ContentSize with { Y = 120 },
-                CategorizedInventory = data,
-                ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine)
+                node.CategorizedInventory = data;
+                node.ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine);
+            },
+            createNodeMethod: _ =>
+            {
+                return new InventoryCategoryNode
+                {
+                    Size = ContentSize with { Y = 120 },
+                };
             });
-
-        foreach (InventoryCategoryNode node in _categoriesNode.GetNodes<InventoryCategoryNode>())
-        {
-            node.ItemsPerLine = Math.Min(node.CategorizedInventory.Items.Count, maxItemsPerLine);
-        }
 
         WireHoverHandlers();
 
@@ -130,11 +154,12 @@ public class AddonInventoryWindow : NativeAddon
 
     private void WireHoverHandlers()
     {
-        List<InventoryCategoryNode> categoryNodes = _categoriesNode.GetNodes<InventoryCategoryNode>().ToList();
+        var nodes = _categoriesNode.Nodes;
 
-        for (int i = 0; i < categoryNodes.Count; i++)
+        for (int i = 0; i < nodes.Count; i++)
         {
-            InventoryCategoryNode node = categoryNodes[i];
+            if (nodes[i] is not InventoryCategoryNode node)
+                continue;
 
             if (!_hoverSubscribed.Add(node))
                 continue;
@@ -148,7 +173,7 @@ public class AddonInventoryWindow : NativeAddon
 
     private int CalculateOptimalItemsPerLine(float availableWidth)
     {
-        return Math.Clamp((int)Math.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
+        return Math.Clamp((int)MathF.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
     }
 
     private void LayoutContent()
@@ -170,15 +195,28 @@ public class AddonInventoryWindow : NativeAddon
 
     private void AutoSizeWindow()
     {
-        List<InventoryCategoryNode> childNodes = _categoriesNode.GetNodes<InventoryCategoryNode>().ToList();
-        if (childNodes.Count == 0)
+        var nodes = _categoriesNode.Nodes;
+
+        float maxChildWidth = 0f;
+        int childCount = 0;
+
+        for (int i = 0; i < nodes.Count; i++)
         {
-            ResizeWindow(MinWindowWidth, MinWindowHeight);
+            if (nodes[i] is not InventoryCategoryNode cat)
+                continue;
+
+            childCount++;
+            float w = cat.Width;
+            if (w > maxChildWidth) maxChildWidth = w;
+        }
+
+        if (childCount == 0)
+        {
+            ResizeWindow(MinWindowWidth, MinWindowHeight, recalcLayout: true);
             return;
         }
 
-        float requiredWidth = childNodes.Max(node => node.Width);
-        requiredWidth += ContentStartPosition.X * 2;
+        float requiredWidth = maxChildWidth + (ContentStartPosition.X * 2);
         float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
 
         float contentWidth = finalWidth - (ContentStartPosition.X * 2);
@@ -194,27 +232,32 @@ public class AddonInventoryWindow : NativeAddon
         float requiredContentHeight = requiredGridHeight + FooterTopSpacing + FooterHeight;
 
         float requiredWindowHeight = requiredContentHeight + ContentStartPosition.Y + ContentStartPosition.X;
-
         float finalHeight = Math.Clamp(requiredWindowHeight, MinWindowHeight, MaxWindowHeight);
 
-        ResizeWindow(finalWidth, finalHeight);
+        ResizeWindow(finalWidth, finalHeight, recalcLayout: false);
+    }
+
+    private void ResizeWindow(float width, float height, bool recalcLayout)
+    {
+        SetWindowSize(width, height);
+        LayoutContent();
+
+        if (recalcLayout)
+            _categoriesNode.RecalculateLayout();
     }
 
     private void ResizeWindow(float width, float height)
-    {
-        SetWindowSize(width, height);
-
-        LayoutContent();
-
-        _categoriesNode.RecalculateLayout();
-    }
+        => ResizeWindow(width, height, recalcLayout: true);
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
-        base.OnFinalize(addon);
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         _hoverSubscribed.Clear();
+        _refreshQueued = false;
+        _refreshAutosizeQueued = false;
+
+        base.OnFinalize(addon);
     }
 }
