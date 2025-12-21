@@ -62,7 +62,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         _itemGridNode.AttachNode(this);
     }
 
-    public required CategorizedInventory CategorizedInventory
+    public CategorizedInventory CategorizedInventory
     {
         get;
         set

@@ -76,6 +76,9 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         return false;
     }
 
+    public bool DescriptionContains(string value)
+        => Description.Contains(value, StringComparison.OrdinalIgnoreCase);
+
     public bool Equals(ItemInfo? other)
         => other is not null && Item.ItemId == other.Item.ItemId && ItemCount == other.ItemCount;
 
