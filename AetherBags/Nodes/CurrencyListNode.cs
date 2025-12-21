@@ -6,9 +6,5 @@ namespace AetherBags.Nodes;
 
 public class CurrencyListNode : HorizontalListNode
 {
-    public List<CurrencyInfo> CurrencyInfoList
-    {
-        get;
-        set;
-    }
+    public List<CurrencyInfo>? CurrencyInfoList { get; set; }
 }

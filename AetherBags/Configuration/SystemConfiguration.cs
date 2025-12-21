@@ -8,4 +8,5 @@ public class SystemConfiguration
     public const string FileName = "AetherBags.json";
 
     public CurrencySettings Currency { get; set; } = new();
+    public CategorySettings Categories { get; set; } = new();
 }

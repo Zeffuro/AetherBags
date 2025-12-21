@@ -125,6 +125,7 @@ public class AddonInventoryWindow : NativeAddon
     private void RefreshCategoriesCore(bool autosize)
     {
         _footerNode.SlotAmountText = InventoryState.GetEmptyItemSlotsString();
+        _footerNode.RefreshCurrencies();
 
         string filter = _searchInputNode.SearchString.ExtractText();
         IReadOnlyList<CategorizedInventory> categories = InventoryState.GetInventoryItemCategories(filter);
@@ -141,12 +142,9 @@ public class AddonInventoryWindow : NativeAddon
                 node.CategorizedInventory = data;
                 node.ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine);
             },
-            createNodeMethod: _ =>
+            createNodeMethod: _ => new InventoryCategoryNode
             {
-                return new InventoryCategoryNode
-                {
-                    Size = ContentSize with { Y = 120 },
-                };
+                Size = ContentSize with { Y = 120 },
             });
 
         WireHoverHandlers();

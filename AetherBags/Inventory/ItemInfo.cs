@@ -43,6 +43,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     public int Level => Row.LevelEquip;
     public int ItemLevel => (int)Row.LevelItem.RowId;
     public int Rarity => Row.Rarity;
+    public uint VendorPrice => Row.PriceLow;
 
     public RowRef<ItemUICategory> UiCategory => Row.ItemUICategory;
 
