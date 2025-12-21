@@ -1,5 +1,6 @@
 using System.Numerics;
 using AetherBags.Addons;
+using AetherBags.Configuration;
 using AetherBags.Helpers;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
@@ -17,6 +18,8 @@ public class Plugin : IDalamudPlugin
         BackupHelper.DoConfigBackup(pluginInterface);
 
         KamiToolKitLibrary.Initialize(pluginInterface);
+
+        System.Config = Util.LoadConfigOrDefault();
 
         System.AddonInventoryWindow = new AddonInventoryWindow
         {
@@ -38,6 +41,7 @@ public class Plugin : IDalamudPlugin
             HelpMessage = HelpDescription
         });
         Services.ClientState.Login += OnLogin;
+        Services.ClientState.Logout += OnLogout;
 
         if (Services.ClientState.IsLoggedIn) {
             Services.Framework.RunOnFrameworkThread(OnLogin);
@@ -46,7 +50,10 @@ public class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        Util.SaveConfig(System.Config);
+
         Services.ClientState.Login -= OnLogin;
+        Services.ClientState.Logout -= OnLogout;
 
         Services.CommandManager.RemoveHandler("/aetherbags");
         Services.CommandManager.RemoveHandler("/ab");
@@ -70,9 +77,18 @@ public class Plugin : IDalamudPlugin
         }
     }
 
-    private void OnLogin() {
+    private void OnLogin()
+    {
+        System.Config = Util.LoadConfigOrDefault();
+
         #if DEBUG
             System.AddonInventoryWindow.Toggle();
         #endif
+    }
+
+    private void OnLogout(int type, int code)
+    {
+        Util.SaveConfig(System.Config);
+        System.AddonInventoryWindow.Close();
     }
 }

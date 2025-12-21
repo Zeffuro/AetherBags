@@ -44,10 +44,11 @@ public class CurrencyNode : SimpleComponentNode
             _countNode.Position = new Vector2(_iconImageNode.Bounds.Right + 2f, 0f);
 
             // Limit > Capped > Normal
+            var config = System.Config.Currency;
             _countNode.TextColor =
-                value.LimitReached ? ColorHelper.GetColor(17) :
-                value.IsCapped ? ColorHelper.GetColor(43) :
-                ColorHelper.GetColor(8);
+                value.LimitReached ? config.LimitColor :
+                value.IsCapped ? config.CappedColor :
+                config.DefaultColor;
         }
     }
 }
