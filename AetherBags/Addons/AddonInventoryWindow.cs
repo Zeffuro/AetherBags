@@ -54,13 +54,20 @@ public class AddonInventoryWindow : NativeAddon
 
         var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
 
-        Vector2 headerSize = new Vector2(addon->WindowHeaderCollisionNode->Width, addon->WindowHeaderCollisionNode->Height);
+        var header = addon->WindowHeaderCollisionNode;
+
+        float headerX = header->X;
+        float headerY = header->Y;
+        float headerW = header->Width;
+        float headerH = header->Height;
+
+        float x = headerX + (headerW - size.X) * 0.5f;
+        float y = headerY + (headerH - size.Y) * 0.5f;
+
         _searchInputNode = new TextInputWithHintNode
         {
-            Position = headerSize / 2.0f - size / 2.0f + new Vector2(25.0f, 10.0f),
-
+            Position = new Vector2(x, y),
             Size = size,
-
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
         _searchInputNode.AttachNode(this);
