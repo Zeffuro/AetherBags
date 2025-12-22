@@ -155,7 +155,7 @@ public static unsafe class InventoryState
             UserCategoriesSortedScratch.AddRange(userCategories);
             UserCategoriesSortedScratch.Sort((a, b) =>
             {
-                int p = b.Priority.CompareTo(a.Priority);
+                int p = a.Priority.CompareTo(b.Priority);
                 if (p != 0) return p;
 
                 int o = a.Order.CompareTo(b.Order);
