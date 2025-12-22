@@ -56,6 +56,8 @@ public static unsafe class InventoryState
 
     private static readonly List<CategorizedInventory> FilteredCategories = new(capacity: 256);
 
+    private static readonly List<UserCategoryDefinition> UserCategoriesSortedScratch = new(capacity: 64);
+
     private static readonly List<uint> RemoveKeysScratch = new(capacity: 256);
 
     private const uint UserCategoryKeyFlag = 0x8000_0000;
@@ -149,9 +151,22 @@ public static unsafe class InventoryState
 
         if (userCategoriesEnabled && userCategories.Count > 0)
         {
-            for (int c = 0; c < userCategories.Count; c++)
+            UserCategoriesSortedScratch.Clear();
+            UserCategoriesSortedScratch.AddRange(userCategories);
+            UserCategoriesSortedScratch.Sort((a, b) =>
             {
-                UserCategoryDefinition category = userCategories[c];
+                int p = b.Priority.CompareTo(a.Priority);
+                if (p != 0) return p;
+
+                int o = a.Order.CompareTo(b.Order);
+                if (o != 0) return o;
+
+                return string.Compare(a.Id, b.Id, StringComparison.OrdinalIgnoreCase);
+            });
+
+            for (int c = 0; c < UserCategoriesSortedScratch.Count; c++)
+            {
+                UserCategoryDefinition category = UserCategoriesSortedScratch[c];
                 uint key = MakeUserCategoryKey(category.Order);
 
                 if (!BucketsByKey.TryGetValue(key, out CategoryBucket? bucket))
@@ -182,11 +197,15 @@ public static unsafe class InventoryState
                 foreach (var itemKvp in ItemInfoByItemId)
                 {
                     ItemInfo item = itemKvp.Value;
+                    uint itemId = item.Item.ItemId;
+
+                    if (claimedItemIds.Contains(itemId))
+                        continue;
 
                     if (UserCategoryMatcher.Matches(item, category))
                     {
                         bucket.Items.Add(item);
-                        claimedItemIds.Add(item.Item.ItemId);
+                        claimedItemIds.Add(itemId);
                     }
                 }
 

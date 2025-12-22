@@ -47,6 +47,12 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public RowRef<ItemUICategory> UiCategory => Row.ItemUICategory;
 
+    public bool IsUntradable => Row.IsUntradable;
+    public bool IsUnique => Row.IsUnique;
+    public bool IsCollectable => Row.IsCollectable;
+    public bool IsDyeable => Row.DyeCount > 0;
+    public bool IsRepairable => Row.ItemRepair.RowId != 0;
+
     private string Description => _description ??= Row.Description.ToString();
 
     public bool IsRegexMatch(string searchTerms)

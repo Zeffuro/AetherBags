@@ -3,13 +3,12 @@ using System.Numerics;
 
 namespace AetherBags.Configuration.Import;
 
-// Possible Mapping:
-// Index -> Order
-// Color/Id/Name
-// AllowedItemNames -> AllowedItemNamePatterns
-// AllowedItemTypes -> AllowedUiCategoryIds
-// AllowedItemRarities -> AllowedRarities
-// ItemLevelFilter / VendorPriceFilter -> RangeFilter
+public sealed class SortaKindaImportFile
+{
+    public List<SortaKindaCategory> Rules { get; set; } = new();
+
+    public object? MainInventory { get; set; }
+}
 
 public sealed class SortaKindaCategory
 {
@@ -19,15 +18,38 @@ public sealed class SortaKindaCategory
     public int Index { get; set; }
 
     public List<string> AllowedItemNames { get; set; } = new();
+
+    public List<AllowedNameRegexDto> AllowedNameRegexes { get; set; } = new();
+
+    // Common
     public List<uint> AllowedItemTypes { get; set; } = new();
     public List<int> AllowedItemRarities { get; set; } = new();
 
+    public ExternalRangeFilterDto<int>? LevelFilter { get; set; }
     public ExternalRangeFilterDto<int> ItemLevelFilter { get; set; } = new();
     public ExternalRangeFilterDto<uint> VendorPriceFilter { get; set; } = new();
+
+    public ExternalStateFilterDto? UntradableFilter { get; set; }
+    public ExternalStateFilterDto? UniqueFilter { get; set; }
+    public ExternalStateFilterDto? CollectableFilter { get; set; }
+    public ExternalStateFilterDto? DyeableFilter { get; set; }
+    public ExternalStateFilterDto? RepairableFilter { get; set; }
 
     public int Direction { get; set; }
     public int FillMode { get; set; }
     public int SortMode { get; set; }
+    public bool InclusiveAnd { get; set; }
+}
+
+public sealed class AllowedNameRegexDto
+{
+    public string Text { get; set; } = string.Empty;
+}
+
+public sealed class ExternalStateFilterDto
+{
+    public int State { get; set; }
+    public int Filter { get; set; }
 }
 
 public sealed class ExternalRangeFilterDto<T> where T : struct

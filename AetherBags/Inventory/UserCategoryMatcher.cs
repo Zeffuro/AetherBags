@@ -24,11 +24,20 @@ internal static class UserCategoryMatcher
         if (rules.AllowedRarities.Count > 0 && !rules.AllowedRarities.Contains(item.Rarity))
             return false;
 
+        if (rules.Level.Enabled && !InRange(item.Level, rules.Level.Min, rules.Level.Max))
+            return false;
+
         if (rules.ItemLevel.Enabled && !InRange(item.ItemLevel, rules.ItemLevel.Min, rules.ItemLevel.Max))
             return false;
 
         if (rules.VendorPrice.Enabled && !InRange(item.VendorPrice, rules.VendorPrice.Min, rules.VendorPrice.Max))
             return false;
+
+        if (!MatchesToggle(rules.Untradable, item.IsUntradable)) return false;
+        if (!MatchesToggle(rules.Unique, item.IsUnique)) return false;
+        if (!MatchesToggle(rules.Collectable, item.IsCollectable)) return false;
+        if (!MatchesToggle(rules.Dyeable, item.IsDyeable)) return false;
+        if (!MatchesToggle(rules.Repairable, item.IsRepairable)) return false;
 
         if (rules.AllowedItemNamePatterns.Count > 0)
         {
@@ -63,4 +72,13 @@ internal static class UserCategoryMatcher
 
     private static bool InRange<T>(T value, T min, T max) where T : struct, IComparable<T>
         => value.CompareTo(min) >= 0 && value.CompareTo(max) <= 0;
+
+    private static bool MatchesToggle(StateFilter filter, bool itemHasProperty)
+        => filter.ToggleState switch
+        {
+            ToggleFilterState.Ignored => true,
+            ToggleFilterState.Allow => itemHasProperty,
+            ToggleFilterState.Disallow => !itemHasProperty,
+            _ => true
+        };
 }

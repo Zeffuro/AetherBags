@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text.Json.Serialization;
 using KamiToolKit.Classes;
 
 namespace AetherBags.Configuration;
@@ -33,8 +34,14 @@ public class CategoryRuleSet
     public List<uint> AllowedUiCategoryIds { get; set; } = new();
     public List<int> AllowedRarities { get; set; } = new();
 
+    public RangeFilter<int> Level { get; set; } = new() { Enabled = false, Min = 0, Max = 200 };
     public RangeFilter<int> ItemLevel { get; set; } = new() { Enabled = false, Min = 0, Max = 2000 };
     public RangeFilter<uint> VendorPrice { get; set; } = new() { Enabled = false, Min = 0, Max = 9_999_999 };
+    public StateFilter Untradable { get; set; } = new();
+    public StateFilter Unique { get; set; } = new();
+    public StateFilter Collectable { get; set; } = new();
+    public StateFilter Dyeable { get; set; } = new();
+    public StateFilter Repairable { get; set; } = new();
 }
 
 public class RangeFilter<T> where T : struct, IComparable<T>
@@ -42,4 +49,24 @@ public class RangeFilter<T> where T : struct, IComparable<T>
     public bool Enabled { get; set; }
     public T Min { get; set; }
     public T Max { get; set; }
+}
+
+public class StateFilter
+{
+    public int State { get; set; } = 0;
+    public int Filter { get; set; } = 0;
+
+    [JsonIgnore]
+    public ToggleFilterState ToggleState
+    {
+        get => Enum.IsDefined(typeof(ToggleFilterState), State) ? (ToggleFilterState)State : ToggleFilterState.Ignored;
+        set => State = (int)value;
+    }
+}
+
+public enum ToggleFilterState
+{
+    Ignored = 0,
+    Allow = 1,
+    Disallow = 2,
 }

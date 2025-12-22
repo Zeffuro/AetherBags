@@ -52,7 +52,19 @@ public static class SortaKindaImportExport
             return false;
         }
 
-        var external = Util.DeserializeCompressed<SortaKindaCategory[]>(input.Trim(), ExternalJsonOptions);
+        string trimmed = input.Trim();
+
+        SortaKindaCategory[]? external = null;
+
+        SortaKindaImportFile? file = Util.DeserializeCompressed<SortaKindaImportFile>(trimmed, ExternalJsonOptions);
+        if (file?.Rules is { Count: > 0 })
+        {
+            external = file.Rules.ToArray();
+        }
+        else
+        {
+            external = Util.DeserializeCompressed<SortaKindaCategory[]>(trimmed, ExternalJsonOptions);
+        }
 
         if (external is null)
         {
@@ -104,10 +116,15 @@ public static class SortaKindaImportExport
 
     public static string ExportToJson(SystemConfiguration sourceConfig)
     {
-        var exported = sourceConfig.Categories.UserCategories
-            .OrderBy(c => c.Order)
-            .Select(MapToExternal)
-            .ToArray();
+        var exported = new SortaKindaImportFile
+        {
+            Rules = sourceConfig.Categories.UserCategories
+                .OrderBy(c => c.Priority)
+                .Select(MapToExternal)
+                .ToList(),
+
+            // MainInventory = new { InventoryConfigs = new[] { new { } } }
+        };
 
         return Util.SerializeCompressed(exported, ExternalJsonOptions);
     }
@@ -122,14 +139,28 @@ public static class SortaKindaImportExport
             Name = external.Name,
             Description = string.Empty,
             Order = external.Index,
-            Priority = 100,
+            Priority = external.Index,
             Color = external.Color,
             Rules = new CategoryRuleSet
             {
                 AllowedItemIds = new List<uint>(),
-                AllowedItemNamePatterns = external.AllowedItemNames?.ToList() ?? new List<string>(),
+
+                AllowedItemNamePatterns =
+                    (external.AllowedItemNames ?? new List<string>())
+                    .Concat((external.AllowedNameRegexes ?? new List<AllowedNameRegexDto>())
+                        .Select(r => r.Text)
+                        .Where(t => !string.IsNullOrWhiteSpace(t)))
+                    .ToList(),
+
                 AllowedUiCategoryIds = external.AllowedItemTypes?.ToList() ?? new List<uint>(),
                 AllowedRarities = external.AllowedItemRarities?.ToList() ?? new List<int>(),
+
+                Level = new RangeFilter<int>
+                {
+                    Enabled = external.LevelFilter?.Enable ?? false,
+                    Min = external.LevelFilter?.MinValue ?? 0,
+                    Max = external.LevelFilter?.MaxValue ?? 200,
+                },
                 ItemLevel = new RangeFilter<int>
                 {
                     Enabled = external.ItemLevelFilter?.Enable ?? false,
@@ -141,7 +172,13 @@ public static class SortaKindaImportExport
                     Enabled = external.VendorPriceFilter?.Enable ?? false,
                     Min = external.VendorPriceFilter?.MinValue ?? 0u,
                     Max = external.VendorPriceFilter?.MaxValue ?? 9_999_999u,
-                }
+                },
+
+                Untradable = new StateFilter { State = external.UntradableFilter?.State ?? 0, Filter = external.UntradableFilter?.Filter ?? 0 },
+                Unique     = new StateFilter { State = external.UniqueFilter?.State ?? 0,     Filter = external.UniqueFilter?.Filter ?? 0 },
+                Collectable= new StateFilter { State = external.CollectableFilter?.State ?? 0,Filter = external.CollectableFilter?.Filter ?? 0 },
+                Dyeable    = new StateFilter { State = external.DyeableFilter?.State ?? 0,    Filter = external.DyeableFilter?.Filter ?? 0 },
+                Repairable = new StateFilter { State = external.RepairableFilter?.State ?? 0, Filter = external.RepairableFilter?.Filter ?? 0 },
             }
         };
 
@@ -151,10 +188,26 @@ public static class SortaKindaImportExport
             Color = internalCat.Color,
             Id = internalCat.Id,
             Name = internalCat.Name,
-            Index = internalCat.Order,
-            AllowedItemNames = internalCat.Rules.AllowedItemNamePatterns?.ToList() ?? new List<string>(),
+            Index = internalCat.Priority,
+
+            AllowedItemNames = new List<string>(),
+            AllowedNameRegexes =
+                (internalCat.Rules.AllowedItemNamePatterns ?? new List<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => new AllowedNameRegexDto { Text = s })
+                .ToList(),
+
             AllowedItemTypes = internalCat.Rules.AllowedUiCategoryIds?.ToList() ?? new List<uint>(),
             AllowedItemRarities = internalCat.Rules.AllowedRarities?.ToList() ?? new List<int>(),
+
+            LevelFilter = new ExternalRangeFilterDto<int>
+            {
+                Enable = internalCat.Rules.Level.Enabled,
+                Label = "Level Filter",
+                MinValue = internalCat.Rules.Level.Min,
+                MaxValue = internalCat.Rules.Level.Max
+            },
+
             ItemLevelFilter = new ExternalRangeFilterDto<int>
             {
                 Enable = internalCat.Rules.ItemLevel.Enabled,
@@ -169,8 +222,16 @@ public static class SortaKindaImportExport
                 MinValue = internalCat.Rules.VendorPrice.Min,
                 MaxValue = internalCat.Rules.VendorPrice.Max
             },
+
+            UntradableFilter = new ExternalStateFilterDto { State = internalCat.Rules.Untradable.State, Filter = internalCat.Rules.Untradable.Filter },
+            UniqueFilter     = new ExternalStateFilterDto { State = internalCat.Rules.Unique.State,     Filter = internalCat.Rules.Unique.Filter },
+            CollectableFilter= new ExternalStateFilterDto { State = internalCat.Rules.Collectable.State,Filter = internalCat.Rules.Collectable.Filter },
+            DyeableFilter    = new ExternalStateFilterDto { State = internalCat.Rules.Dyeable.State,    Filter = internalCat.Rules.Dyeable.Filter },
+            RepairableFilter = new ExternalStateFilterDto { State = internalCat.Rules.Repairable.State, Filter = internalCat.Rules.Repairable.Filter },
+
             Direction = 0,
             FillMode = 0,
-            SortMode = 0
+            SortMode = 0,
+            InclusiveAnd = false,
         };
 }
