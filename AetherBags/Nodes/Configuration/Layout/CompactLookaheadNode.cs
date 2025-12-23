@@ -1,6 +1,7 @@
 ﻿using AetherBags.Configuration;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
 using System.Numerics;
 
@@ -8,18 +9,19 @@ namespace AetherBags.Nodes.Configuration.Layout;
 
 internal sealed class CompactLookaheadNode : SimpleComponentNode
 {
+    public readonly LabelTextNode TitleNode;
     public readonly NumericInputNode CompactLookahead = null!;
 
     public unsafe CompactLookaheadNode()
     {
         GeneralSettings config = System.Config.General;
 
-        var titleNode = new LabelTextNode
+        TitleNode = new LabelTextNode
         {
             Size = Size with { Y = 24 },
             String = "Compact Lookahead",
         };
-        titleNode.AttachNode(this);
+        TitleNode.AttachNode(this);
 
         CompactLookahead = new NumericInputNode
         {
@@ -35,5 +37,24 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
         };
         CompactLookahead.ComponentBase->SetEnabledState(config.CompactPackingEnabled);
         CompactLookahead.AttachNode(this);
+
+        TitleNode.AddTimeline(new TimelineBuilder()
+            .AddFrameSetWithFrame(1, 10, 1, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(11, 20, 11, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(21, 30, 21, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(31, 40, 31, alpha: 102, multiplyColor: new Vector3(80.0f))
+            .AddFrameSetWithFrame(41, 50, 41, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(51, 60, 51, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(61, 70, 61, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(71, 80, 71, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(81, 90, 81, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(91, 100, 91, alpha: 102, multiplyColor: new Vector3(80.0f))
+            .AddFrameSetWithFrame(101, 110, 101, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(111, 115, 111, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(116, 135, 116, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(126, 135, 126, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(136, 145, 136, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .AddFrameSetWithFrame(146, 155, 146, alpha: 255, multiplyColor: new Vector3(100.0f))
+            .Build());
     }
 }
