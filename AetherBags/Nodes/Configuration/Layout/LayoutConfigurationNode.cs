@@ -1,0 +1,83 @@
+﻿using System.Numerics;
+using AetherBags.Configuration;
+using KamiToolKit.Nodes;
+using KamiToolKit.Classes;
+
+namespace AetherBags.Nodes.Configuration.Layout;
+
+internal class LayoutConfigurationNode : TabbedVerticalListNode
+{
+    private readonly CompactLookaheadNode _compactLookaheadNode = null!;
+    private readonly CheckboxNode _preferLargestFitCheckboxNode = null!;
+    private readonly CheckboxNode _useStableInsertCheckboxNode = null!;
+
+    public unsafe LayoutConfigurationNode()
+    {
+        GeneralSettings config = System.Config.General;
+
+        var titleNode = new LabelTextNode
+        {
+            Size = Size with { Y = 18 },
+            String = "Layout Configuration",
+            TextColor = ColorHelper.GetColor(2),
+            TextOutlineColor = ColorHelper.GetColor(0),
+        };
+        AddNode(titleNode);
+
+        AddTab(1);
+
+        var compactPackingCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Use Compact Packing",
+            IsChecked = config.CompactPackingEnabled,
+            OnClick = isChecked =>
+            {
+                config.CompactPackingEnabled = isChecked;
+                _preferLargestFitCheckboxNode.IsEnabled = isChecked;
+                _useStableInsertCheckboxNode.IsEnabled = isChecked;
+                _compactLookaheadNode.CompactLookahead.ComponentBase->SetEnabledState(isChecked);
+                System.AddonInventoryWindow.ManualRefresh();
+            }
+        };
+        AddNode(compactPackingCheckboxNode);
+
+        AddTab(1);
+        _preferLargestFitCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Prefer Largest Fit",
+            IsEnabled = config.CompactPackingEnabled,
+            IsChecked = config.CompactPreferLargestFit,
+            OnClick = isChecked =>
+            {
+                config.CompactPreferLargestFit = isChecked;
+                System.AddonInventoryWindow.ManualRefresh();
+            }
+        };
+        AddNode(_preferLargestFitCheckboxNode);
+
+        _useStableInsertCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Use Stable Insert",
+            IsEnabled = config.CompactPackingEnabled,
+            IsChecked = config.CompactStableInsert,
+            OnClick = isChecked =>
+            {
+                config.CompactStableInsert = isChecked;
+                System.AddonInventoryWindow.ManualRefresh();
+            }
+        };
+        AddNode(_useStableInsertCheckboxNode);
+
+        _compactLookaheadNode = new CompactLookaheadNode
+        {
+            Size = new Vector2(320, 20)
+        };
+        AddNode(_compactLookaheadNode);
+    }
+}

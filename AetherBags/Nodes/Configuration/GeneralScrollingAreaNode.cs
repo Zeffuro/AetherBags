@@ -1,8 +1,9 @@
+using AetherBags.Configuration;
+using AetherBags.Nodes.Configuration.Layout;
+using KamiToolKit.Nodes;
 using System;
 using System.Linq;
 using System.Numerics;
-using AetherBags.Configuration;
-using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration;
 
@@ -10,7 +11,8 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
 {
     private readonly CheckboxNode _debugCheckboxNode = null!;
     private readonly LabeledDropdownNode _stackDropDown = null!;
-    public GeneralScrollingAreaNode()
+
+    public unsafe GeneralScrollingAreaNode()
     {
         GeneralSettings config = System.Config.General;
 
@@ -31,6 +33,8 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
         };
         ContentNode.AddNode(_stackDropDown);
 
+        ContentNode.AddNode(new LayoutConfigurationNode());
+
         _debugCheckboxNode = new CheckboxNode
         {
             Size = new Vector2(300, 20),
@@ -40,7 +44,6 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
             OnClick = isChecked => { config.DebugEnabled = isChecked; }
         };
         ContentNode.AddNode(_debugCheckboxNode);
-
     }
 
     private void RefreshInventory() => System.AddonInventoryWindow.ManualRefresh();

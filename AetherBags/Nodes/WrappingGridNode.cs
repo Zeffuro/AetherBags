@@ -31,6 +31,12 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
     private float _lastVSpace = float.NaN;
     private float _lastTopPadding = float.NaN;
     private float _lastBottomPadding = float.NaN;
+    private bool _lastuseCompactPacking;
+    private bool _lastpreferLargestFit;
+    private bool _lastuseStableInsert;
+    private int _lastCompactLookahead;
+
+    private int[] _orderScratch = Array.Empty<int>();
 
     public WrappingGridNode()
     {
@@ -55,6 +61,22 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
             return;
         }
 
+        if (System.Config.General.CompactPackingEnabled)
+        {
+            if (_rows.Count != 0 && LayoutParamsMatchLast() && NodeSetMatchesExistingLayout(count))
+            {
+                RepositionExistingRows();
+                _requiredHeightDirty = true;
+                RememberLayoutParams();
+                return;
+            }
+
+            FullReflowCompact(count);
+            _requiredHeightDirty = true;
+            RememberLayoutParams();
+            return;
+        }
+
         if (_rows.Count != 0 && TryUpdateLayoutWithoutReflowOrTailReflow(count))
         {
             _requiredHeightDirty = true;
@@ -65,6 +87,20 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         FullReflow(count);
         _requiredHeightDirty = true;
         RememberLayoutParams();
+    }
+
+    private bool NodeSetMatchesExistingLayout(int count)
+    {
+        if (_rowIndex.Count != count)
+            return false;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!_rowIndex.ContainsKey(NodeList[i]))
+                return false;
+        }
+
+        return true;
     }
 
     private bool TryUpdateLayoutWithoutReflowOrTailReflow(int count)
@@ -347,6 +383,134 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         }
     }
 
+    private void FullReflowCompact(int count)
+    {
+        RecycleAllRows();
+        _rowIndex.Clear();
+        _rowIndex.EnsureCapacity(count);
+
+        float availableWidth = Width;
+        float hSpace = HorizontalSpacing;
+        float vSpace = VerticalSpacing;
+        float startX = FirstItemSpacing;
+
+        float y = TopPadding;
+
+        EnsureOrderScratch(count);
+        for (int i = 0; i < count; i++)
+            _orderScratch[i] = i;
+
+        int lookahead = System.Config.General.CompactLookahead;
+        if (lookahead < 0) lookahead = 0;
+
+        int p = 0;
+        int rowIdx = 0;
+
+        while (p < count)
+        {
+            List<NodeBase> row = RentRowList(capacityHint: 8);
+
+            float x = startX;
+            float rowHeight = 0f;
+
+            while (p < count)
+            {
+                int idx = _orderScratch[p];
+                NodeBase node = NodeList[idx];
+                float w = node.Width;
+
+                if (row.Count == 0 || (x + w) <= availableWidth)
+                {
+                    node.X = x;
+                    node.Y = y;
+
+                    AdjustNode(node);
+
+                    float h = node.Height;
+                    if (h > rowHeight) rowHeight = h;
+
+                    row.Add(node);
+                    _rowIndex[node] = rowIdx;
+
+                    x += w + hSpace;
+                    p++;
+                    continue;
+                }
+
+                int bestPos = -1;
+                float bestWidth = 0f;
+
+                int end = p + lookahead;
+                if (end >= count) end = count - 1;
+
+                for (int s = p + 1; s <= end; s++)
+                {
+                    int candIdx = _orderScratch[s];
+                    NodeBase cand = NodeList[candIdx];
+                    float cw = cand.Width;
+
+                    if ((x + cw) <= availableWidth)
+                    {
+                        if (!System.Config.General.CompactPreferLargestFit)
+                        {
+                            bestPos = s;
+                            break;
+                        }
+
+                        if (cw > bestWidth)
+                        {
+                            bestWidth = cw;
+                            bestPos = s;
+                        }
+                    }
+                }
+
+                if (bestPos < 0)
+                    break;
+
+                if (bestPos != p)
+                {
+                    int chosen = _orderScratch[bestPos];
+
+                    if (System.Config.General.CompactStableInsert)
+                    {
+                        Array.Copy(_orderScratch, p, _orderScratch, p + 1, bestPos - p);
+                        _orderScratch[p] = chosen;
+                    }
+                    else
+                    {
+                        _orderScratch[bestPos] = _orderScratch[p];
+                        _orderScratch[p] = chosen;
+                    }
+                }
+            }
+
+            if (row.Count == 0)
+            {
+                int idx = _orderScratch[p];
+                NodeBase node = NodeList[idx];
+                float w = node.Width;
+
+                node.X = startX;
+                node.Y = y;
+
+                AdjustNode(node);
+
+                rowHeight = node.Height;
+
+                row.Add(node);
+                _rowIndex[node] = rowIdx;
+
+                p++;
+            }
+
+            _rows.Add(row);
+            rowIdx++;
+
+            y += rowHeight + vSpace;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float GetRequiredHeight()
     {
@@ -400,15 +564,29 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         _rowPool.Push(row);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool NearlyEqual(float a, float b)
+    {
+        float diff = MathF.Abs(a - b);
+        if (diff <= 0.05f) return true;
+
+        float max = MathF.Max(MathF.Abs(a), MathF.Abs(b));
+        return diff <= max * 0.0005f;
+    }
+
     private bool LayoutParamsMatchLast()
     {
         return
-            _lastAvailableWidth == Width &&
-            _lastStartX == FirstItemSpacing &&
-            _lastHSpace == HorizontalSpacing &&
-            _lastVSpace == VerticalSpacing &&
-            _lastTopPadding == TopPadding &&
-            _lastBottomPadding == BottomPadding;
+            NearlyEqual(_lastAvailableWidth, Width) &&
+            NearlyEqual(_lastStartX, FirstItemSpacing) &&
+            NearlyEqual(_lastHSpace, HorizontalSpacing) &&
+            NearlyEqual(_lastVSpace, VerticalSpacing) &&
+            NearlyEqual(_lastTopPadding, TopPadding) &&
+            NearlyEqual(_lastBottomPadding, BottomPadding) &&
+            _lastuseCompactPacking == System.Config.General.CompactPackingEnabled &&
+            _lastpreferLargestFit == System.Config.General.CompactPreferLargestFit &&
+            _lastuseStableInsert == System.Config.General.CompactStableInsert &&
+            _lastCompactLookahead == System.Config.General.CompactLookahead;
     }
 
     private void RememberLayoutParams()
@@ -419,6 +597,22 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         _lastVSpace = VerticalSpacing;
         _lastTopPadding = TopPadding;
         _lastBottomPadding = BottomPadding;
+
+        _lastuseCompactPacking = System.Config.General.CompactPackingEnabled;
+        _lastpreferLargestFit = System.Config.General.CompactPreferLargestFit;
+        _lastuseStableInsert = System.Config.General.CompactStableInsert;
+        _lastCompactLookahead = System.Config.General.CompactLookahead;
+    }
+
+    private void EnsureOrderScratch(int needed)
+    {
+        if (_orderScratch.Length >= needed)
+            return;
+
+        int newSize = _orderScratch.Length == 0 ? 64 : _orderScratch.Length;
+        while (newSize < needed) newSize *= 2;
+
+        _orderScratch = new int[newSize];
     }
 
     private sealed class RowsReadOnlyView : IReadOnlyList<IReadOnlyList<NodeBase>>
