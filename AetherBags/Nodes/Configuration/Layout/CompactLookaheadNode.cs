@@ -12,7 +12,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
     public readonly LabelTextNode TitleNode;
     public readonly NumericInputNode CompactLookahead = null!;
 
-    public unsafe CompactLookaheadNode()
+    public CompactLookaheadNode()
     {
         GeneralSettings config = System.Config.General;
 
@@ -28,6 +28,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             Position = Position with { X = 240 },
             Size = Size with { X = 88 },
             IsVisible = true,
+            IsEnabled = config.CompactPackingEnabled,
             Value = config.CompactLookahead,
             OnValueUpdate = value =>
             {
@@ -35,7 +36,6 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
                 System.AddonInventoryWindow.ManualInventoryRefresh();
             }
         };
-        CompactLookahead.ComponentBase->SetEnabledState(config.CompactPackingEnabled);
         CompactLookahead.AttachNode(this);
 
         TitleNode.AddTimeline(new TimelineBuilder()

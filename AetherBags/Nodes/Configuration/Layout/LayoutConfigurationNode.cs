@@ -11,7 +11,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _preferLargestFitCheckboxNode = null!;
     private readonly CheckboxNode _useStableInsertCheckboxNode = null!;
 
-    public unsafe LayoutConfigurationNode()
+    public LayoutConfigurationNode()
     {
         GeneralSettings config = System.Config.General;
 
@@ -37,7 +37,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 config.CompactPackingEnabled = isChecked;
                 _preferLargestFitCheckboxNode.IsEnabled = isChecked;
                 _useStableInsertCheckboxNode.IsEnabled = isChecked;
-                _compactLookaheadNode.CompactLookahead.ComponentBase->SetEnabledState(isChecked);
+                _compactLookaheadNode.CompactLookahead.IsEnabled = isChecked;
                 System.AddonInventoryWindow.ManualInventoryRefresh();
             }
         };
