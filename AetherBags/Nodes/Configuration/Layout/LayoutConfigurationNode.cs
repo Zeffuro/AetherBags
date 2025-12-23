@@ -38,7 +38,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 _preferLargestFitCheckboxNode.IsEnabled = isChecked;
                 _useStableInsertCheckboxNode.IsEnabled = isChecked;
                 _compactLookaheadNode.CompactLookahead.ComponentBase->SetEnabledState(isChecked);
-                System.AddonInventoryWindow.ManualRefresh();
+                System.AddonInventoryWindow.ManualInventoryRefresh();
             }
         };
         AddNode(compactPackingCheckboxNode);
@@ -54,7 +54,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.CompactPreferLargestFit = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                System.AddonInventoryWindow.ManualInventoryRefresh();
             }
         };
         AddNode(_preferLargestFitCheckboxNode);
@@ -69,7 +69,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.CompactStableInsert = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                System.AddonInventoryWindow.ManualInventoryRefresh();
             }
         };
         AddNode(_useStableInsertCheckboxNode);

@@ -28,5 +28,6 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
         </Content>
+        <Content Include="Media\Textures\*.*" />
     </ItemGroup>
 </Project>

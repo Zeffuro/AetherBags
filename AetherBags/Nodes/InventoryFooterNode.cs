@@ -34,6 +34,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         {
             Position = new Vector2(0, 0),
             Size = new Vector2(120, 28),
+            IsVisible = System.Config.Currency.Enabled
         };
         _currencyListNode.AttachNode(this);
 
@@ -42,6 +43,8 @@ public sealed class InventoryFooterNode : SimpleComponentNode
 
     public void RefreshCurrencies()
     {
+        _currencyListNode.IsVisible = System.Config.Currency.Enabled;
+
         IReadOnlyList<CurrencyInfo> currencyInfoList = InventoryState.GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
         _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
             dataList: currencyInfoList,

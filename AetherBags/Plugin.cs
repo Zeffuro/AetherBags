@@ -88,7 +88,7 @@ public class Plugin : IDalamudPlugin
                 {
                     // Manually import from SortaKinda for testing until we have a proper config window
                     ImportExportResetHelper.TryImportSortaKindaFromClipboard(true);
-                    System.AddonInventoryWindow.ManualRefresh();
+                    System.AddonInventoryWindow.ManualInventoryRefresh();
                 }
                 break;
         }

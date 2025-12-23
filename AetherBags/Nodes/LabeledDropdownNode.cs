@@ -17,15 +17,8 @@ public class LabeledDropdownNode : SimpleComponentNode {
         };
         _gridNode.AttachNode(this);
 
-        _labelNode = new TextNode {
-            AlignmentType = AlignmentType.Bottom,
-            FontType = FontType.Axis,
-            FontSize = 14,
-            LineSpacing = 14,
-            TextColor = ColorHelper.GetColor(8),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            TextFlags = TextFlags.Edge | TextFlags.AutoAdjustNodeSize,
-            String = string.Empty,
+        _labelNode = new LabelTextNode {
+            String = String.Empty,
         };
         _labelNode.AttachNode(_gridNode[0, 0]);
 
