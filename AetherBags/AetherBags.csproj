@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <Content Include=".gitignore" />
+      <Content Include="changelog.md" />
         <Content Include="Media\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
