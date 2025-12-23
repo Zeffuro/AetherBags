@@ -45,9 +45,13 @@ public class CurrencyNode : SimpleComponentNode
 
             // Limit > Capped > Normal
             var config = System.Config.Currency;
+
+            var isLimited = config.ColorWhenLimited && value.LimitReached;
+            var isCapped  = config.ColorWhenCapped && value.IsCapped;
+
             _countNode.TextColor =
-                value.LimitReached ? config.LimitColor :
-                value.IsCapped ? config.CappedColor :
+                isLimited ? config.LimitColor :
+                isCapped  ? config.CappedColor :
                 config.DefaultColor;
         }
     }
