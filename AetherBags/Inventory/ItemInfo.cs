@@ -5,6 +5,7 @@ using Lumina.Excel.Sheets;
 using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace AetherBags.Inventory;
 

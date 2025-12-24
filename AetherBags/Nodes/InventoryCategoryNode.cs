@@ -7,9 +7,12 @@ using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using System;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 // TODO: Switch back to CS version when Dalamud Updated
 using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
+using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags.Nodes;
 
@@ -285,11 +288,45 @@ public class InventoryCategoryNode : SimpleComponentNode
 
     private unsafe void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo itemInfo)
     {
-        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2}");
-        InventoryType inventoryType = (InventoryType)payload.Int1;
+        if (payload.Type != DragDropType.Item) return;
+        InventoryItem item = itemInfo.Item;
+        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2} ReferenceIndex: {payload.ReferenceIndex}");
+        InventoryType inventoryType = InventoryType.GetInventoryTypeFromContainerId(payload.Int1);
         ushort sourceSlot = (ushort)payload.Int2;
-        System.AddonInventoryWindow.ManualInventoryRefresh();
+        ItemOrderModuleSorterItemEntry* itemEntry = item.GetItemOrderData();
+        Services.Logger.Debug($"{item.Slot} vs {item.GetSlot()}: entry: {itemEntry->Slot}");
+        Services.Logger.Info($"[OnPayload] Moving {inventoryType}@{sourceSlot} -> {item.Container}@{item.Slot} -> {item.Name.ExtractText()}");
+        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, item.Container, item.GetSlot(), true);
+
+
+        // System.AddonInventoryWindow.ManualInventoryRefresh();
+
         // Should work for swapping item but need a fake empty slot to put new items in probably.
-        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot());
+        // Services.Logger.Debug($"Moving Item from {inventoryType} Slot {sourceSlot} to {itemInfo.Item.Container} Slot {itemInfo.Item.GetSlot()}");
+        //MoveItem(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot());
+    }
+
+    // Possibly still use this
+    private unsafe void MoveItem(InventoryType sourceInventory, uint sourceSlot, InventoryType destinationInventory, uint destinationSlot)
+    {
+        var sourceContainerId = sourceInventory.AgentItemContainerId;
+        var destinationContainerId = destinationInventory.AgentItemContainerId;
+
+        if (sourceContainerId != 0 && destinationContainerId != 0) {
+            var atkValues = stackalloc AtkValue[4];
+            for (var i = 0; i < 4; i++) atkValues[i].Type = ValueType.UInt;
+
+            atkValues[0].UInt = sourceContainerId;
+            atkValues[1].UInt = sourceSlot;
+            atkValues[2].UInt = destinationContainerId;
+            atkValues[3].UInt = destinationSlot;
+
+            var retVal = stackalloc AtkValue[1];
+
+            RaptureAtkModule* atkModule = RaptureAtkModule.Instance();
+            // (RaptureAtkModule* a1, void* outValue, AtkValue* atkValues);
+            // (AtkValue* returnValue, AtkValue* values, uint valueCount)
+            atkModule->HandleItemMove(retVal, atkValues, 4);
+        }
     }
 }

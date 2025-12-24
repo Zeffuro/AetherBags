@@ -630,6 +630,11 @@ public static unsafe class InventoryState
         };
     }
 
+    public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
+    {
+        return InventoryManager.Instance()->GetInventoryContainer(inventoryType);
+    }
+
     private struct AggregatedItem
     {
         public InventoryItem First;

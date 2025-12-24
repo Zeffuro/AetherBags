@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
 
@@ -60,6 +61,13 @@ public static unsafe class InventoryItemExtensions {
             }
 
             return null;
+        }
+
+        public ItemOrderModuleSorterItemEntry* GetItemOrderData()
+        {
+            InventoryType type = item.GetInventoryType();
+            int slot = item.GetSlot();
+            return type.GetInventorySorter->Items[slot + type.GetInventoryStartIndex];
         }
 
         public bool IsRegexMatch(string searchString) {
