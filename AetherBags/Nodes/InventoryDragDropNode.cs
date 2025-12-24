@@ -7,9 +7,12 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
+// TODO: Switch back to CS version when Dalamud Updated
+using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
+
 namespace AetherBags.Nodes;
 
-public class InventoryDragDropNode : DragDropNode
+public class InventoryDragDropNode : DragDropFixedNode
 {
     private readonly TextNode _quantityTextNode;
     public unsafe InventoryDragDropNode()

@@ -8,12 +8,15 @@ using KamiToolKit.Nodes;
 using System;
 using System.Numerics;
 
+// TODO: Switch back to CS version when Dalamud Updated
+using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
+
 namespace AetherBags.Nodes;
 
 public class InventoryCategoryNode : SimpleComponentNode
 {
     private readonly TextNode _categoryNameTextNode;
-    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
+    private readonly HybridDirectionalFlexNode<DragDropFixedNode> _itemGridNode;
 
     private const float FallbackItemSize = 46;
     private const float HeaderHeight = 16;
@@ -48,7 +51,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         _categoryNameTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
-        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
+        _itemGridNode = new HybridDirectionalFlexNode<DragDropFixedNode>
         {
             Position = new Vector2(0, HeaderHeight),
             Size = new Vector2(240, 92),
@@ -249,16 +252,20 @@ public class InventoryCategoryNode : SimpleComponentNode
             Size = new Vector2(42, 46),
             IsVisible = true,
             IconId = item.IconId,
-            AcceptedType = DragDropType.Nothing,
-            IsDraggable = false,
+            AcceptedType = DragDropType.Item,
+            IsDraggable = true,
             Payload = new DragDropPayload
             {
-                Type = DragDropType.Item,
-                Int1 = (int)item.Container,
-                Int2 = (int)item.ItemId,
+                Type = DragDropType.Inventory_Item,
+                Int1 = (int)item.GetInventoryType(),
+                Int2 = item.Slot,
             },
             IsClickable = true,
-
+            OnEnd = _ =>
+            {
+                System.AddonInventoryWindow.ManualInventoryRefresh();
+            },
+            OnPayloadAccepted = (n, p) => OnPayloadAccepted(n, p, data),
             OnRollOver = n =>
             {
                 BeginHeaderHover();
@@ -274,5 +281,15 @@ public class InventoryCategoryNode : SimpleComponentNode
         };
 
         return node;
+    }
+
+    private unsafe void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo itemInfo)
+    {
+        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2}");
+        InventoryType inventoryType = (InventoryType)payload.Int1;
+        ushort sourceSlot = (ushort)payload.Int2;
+        System.AddonInventoryWindow.ManualInventoryRefresh();
+        // Should work for swapping item but need a fake empty slot to put new items in probably.
+        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot());
     }
 }

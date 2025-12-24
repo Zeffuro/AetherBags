@@ -12,7 +12,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
     private readonly CheckboxNode _debugCheckboxNode = null!;
     private readonly LabeledDropdownNode _stackDropDown = null!;
 
-    public unsafe GeneralScrollingAreaNode()
+    public GeneralScrollingAreaNode()
     {
         GeneralSettings config = System.Config.General;
 
@@ -21,6 +21,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
         _stackDropDown = new LabeledDropdownNode
         {
             Size = new Vector2(300, 20),
+            IsEnabled = true,
             LabelText = "Stack Mode",
             Options = Enum.GetNames(typeof(InventoryStackMode)).ToList(),
             SelectedOption = config.StackMode.ToString(),
