@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using AetherBags.Currency;
 using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Currency;
 
 public class CurrencyListNode : HorizontalListNode
 {

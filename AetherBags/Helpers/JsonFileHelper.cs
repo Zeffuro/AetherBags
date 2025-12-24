@@ -5,7 +5,7 @@ using Dalamud.Utility;
 
 namespace AetherBags.Helpers;
 
-public static class FileHelpers {
+public static class JsonFileHelper {
     private static readonly JsonSerializerOptions SerializerOptions = new() {
         WriteIndented = true,
         IncludeFields = true,

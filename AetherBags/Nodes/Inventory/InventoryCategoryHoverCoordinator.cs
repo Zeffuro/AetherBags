@@ -1,6 +1,6 @@
-﻿using System;
+﻿using AetherBags.Nodes.Layout;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Inventory;
 
 public sealed class InventoryCategoryHoverCoordinator
 {

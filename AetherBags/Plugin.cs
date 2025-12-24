@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Helpers;
+using AetherBags.Hooks;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using Dalamud.Hooking;
@@ -13,6 +14,9 @@ namespace AetherBags;
 public unsafe class Plugin : IDalamudPlugin
 {
     private static string HelpDescription => "Opens your inventory.";
+
+    private readonly InventoryHooks _inventoryHooks;
+
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Services>();
@@ -59,31 +63,7 @@ public unsafe class Plugin : IDalamudPlugin
             Services.Framework.RunOnFrameworkThread(OnLogin);
         }
 
-        try
-        {
-            _moveItemSlotHook = Services.GameInteropProvider.HookFromSignature<MoveItemSlotDelegate>("E8 ?? ?? ?? ?? 48 8B 03 66 FF C5", MoveItemSlotDetour);
-            _moveItemSlotHook.Enable();
-
-            Services.Logger.Debug("MoveItemSlot hooked successfully.");
-        }
-        catch (Exception e)
-        {
-            Services.Logger.Error(e, "Failed to hook MoveItemSlot");
-        }
-    }
-
-    private unsafe delegate int MoveItemSlotDelegate(InventoryManager* inventoryManager, InventoryType srcContainer, ushort srcSlot, InventoryType dstContainer, ushort dstSlot, bool unk);
-
-    private Hook<MoveItemSlotDelegate>? _moveItemSlotHook;
-
-    private unsafe int MoveItemSlotDetour(InventoryManager* manager, InventoryType srcType, ushort srcSlot, InventoryType dstType, ushort dstSlot, bool unk)
-    {
-        InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
-        InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
-        Services.Logger.Info($"[MoveItemSlot] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId}  Unk: {unk}");
-
-        // Call the original function
-        return _moveItemSlotHook!.Original(manager, srcType, srcSlot, dstType, dstSlot, unk);
+        _inventoryHooks = new InventoryHooks();
     }
 
     public void Dispose()
@@ -101,7 +81,7 @@ public unsafe class Plugin : IDalamudPlugin
 
         KamiToolKitLibrary.Dispose();
 
-        _moveItemSlotHook?.Dispose();
+        _inventoryHooks.Dispose();
     }
 
     private void OnCommand(string command, string args)

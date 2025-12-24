@@ -1,11 +1,11 @@
-using KamiToolKit;
-using KamiToolKit.Nodes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using KamiToolKit;
+using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Layout;
 
 public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
 {

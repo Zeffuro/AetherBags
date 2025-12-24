@@ -4,9 +4,8 @@ using AetherBags.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using Lumina.Excel.Sheets;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Currency;
 
 public class CurrencyNode : SimpleComponentNode
 {

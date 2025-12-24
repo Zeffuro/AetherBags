@@ -1,20 +1,18 @@
-using AetherBags.Extensions;
-using AetherBags.Inventory;
-using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 using System;
 using System.Numerics;
+using AetherBags.Inventory;
+using AetherBags.Nodes.Layout;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 // TODO: Switch back to CS version when Dalamud Updated
 using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Inventory;
 
 public class InventoryCategoryNode : SimpleComponentNode
 {

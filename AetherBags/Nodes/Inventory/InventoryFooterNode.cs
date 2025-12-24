@@ -1,15 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Currency;
 using AetherBags.Inventory;
-using FFXIVClientStructs.FFXIV.Client.Game;
+using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using Lumina.Excel.Sheets;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Inventory;
 
 public sealed class InventoryFooterNode : SimpleComponentNode
 {

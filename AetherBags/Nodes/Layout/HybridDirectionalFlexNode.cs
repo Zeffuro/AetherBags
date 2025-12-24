@@ -1,9 +1,7 @@
 using KamiToolKit;
 using KamiToolKit.Nodes;
-using System;
-using System.Runtime.CompilerServices;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Layout;
 
 public class HybridDirectionalFlexNode : HybridDirectionalFlexNode<NodeBase> { }
 

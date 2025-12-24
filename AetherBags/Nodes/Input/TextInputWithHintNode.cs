@@ -4,19 +4,19 @@ using KamiToolKit.Nodes;
 using Lumina.Text;
 using Lumina.Text.ReadOnly;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Input;
 
 public class TextInputWithHintNode : SimpleComponentNode {
-    private readonly TextInputNode textInputNode;
-    private readonly ImageNode helpNode;
+    private readonly TextInputNode _textInputNode;
+    private readonly ImageNode _helpNode;
 
     public TextInputWithHintNode() {
-        textInputNode = new TextInputNode {
+        _textInputNode = new TextInputNode {
             PlaceholderString = "Search . . .",
         };
-        textInputNode.AttachNode(this);
+        _textInputNode.AttachNode(this);
 
-        helpNode = new SimpleImageNode {
+        _helpNode = new SimpleImageNode {
             TexturePath = "ui/uld/CircleButtons.tex",
             TextureCoordinates = new Vector2(112.0f, 84.0f),
             TextureSize = new Vector2(28.0f, 28.0f),
@@ -26,26 +26,26 @@ public class TextInputWithHintNode : SimpleComponentNode {
                 .Append("Start input with '$' to search by description")
                 .ToReadOnlySeString(),
         };
-        helpNode.AttachNode(this);
+        _helpNode.AttachNode(this);
     }
 
     public required Action<ReadOnlySeString>? OnInputReceived {
-        get => textInputNode.OnInputReceived;
-        set => textInputNode.OnInputReceived = value;
+        get => _textInputNode.OnInputReceived;
+        set => _textInputNode.OnInputReceived = value;
     }
 
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
-        helpNode.Size = new Vector2(Height, Height);
-        helpNode.Position = new Vector2(Width - helpNode.Width - 5.0f, 0.0f);
+        _helpNode.Size = new Vector2(Height, Height);
+        _helpNode.Position = new Vector2(Width - _helpNode.Width - 5.0f, 0.0f);
 
-        textInputNode.Size = new Vector2(Width - helpNode.Width - 5.0f, Height);
-        textInputNode.Position = new Vector2(0.0f, 0.0f);
+        _textInputNode.Size = new Vector2(Width - _helpNode.Width - 5.0f, Height);
+        _textInputNode.Position = new Vector2(0.0f, 0.0f);
     }
 
     public ReadOnlySeString SearchString {
-        get => textInputNode.SeString;
-        set => textInputNode.SeString = value;
+        get => _textInputNode.SeString;
+        set => _textInputNode.SeString = value;
     }
 }

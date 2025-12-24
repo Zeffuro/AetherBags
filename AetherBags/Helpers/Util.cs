@@ -80,14 +80,14 @@ public static class Util
 
     public static void SaveConfig(SystemConfiguration config)
     {
-        FileInfo file = FileHelpers.GetFileInfo(SystemConfiguration.FileName);
-        FileHelpers.SaveFile(config, file.FullName);
+        FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
+        JsonFileHelper.SaveFile(config, file.FullName);
     }
 
     private static SystemConfiguration LoadConfig()
     {
-        FileInfo file = FileHelpers.GetFileInfo(SystemConfiguration.FileName);
-        return FileHelpers.LoadFile<SystemConfiguration>(file.FullName);
+        FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
+        return JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName);
     }
 
     public static SystemConfiguration LoadConfigOrDefault()

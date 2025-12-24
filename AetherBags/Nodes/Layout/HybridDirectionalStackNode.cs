@@ -1,8 +1,7 @@
-using System;
 using KamiToolKit;
 using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes;
+namespace AetherBags.Nodes.Layout;
 
 public class HybridDirectionalStackNode<T> : LayoutListNode where T : NodeBase
 {
