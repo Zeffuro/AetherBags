@@ -38,7 +38,7 @@ public static unsafe class InventoryState
         InventoryStackMode stackMode = config.General.StackMode;
         bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled;
         bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled;
-        List<UserCategoryDefinition> userCategories = config.Categories.UserCategories;
+        List<UserCategoryDefinition> userCategories = config.Categories.UserCategories.Where(category => category.Enabled).ToList();
 
         Services.Logger.DebugOnly($"RefreshFromGame StackMode={stackMode}");
 

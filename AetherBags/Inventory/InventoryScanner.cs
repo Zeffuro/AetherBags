@@ -85,7 +85,7 @@ public static unsafe class InventoryScanner
                 bool isHq = (item.Flags & InventoryItem.ItemFlags.HighQuality) != 0;
 
                 ulong key = stackMode == InventoryStackMode.AggregateByItemId
-                    ?  MakeAggregatedItemKey(id, isHq)
+                    ? MakeAggregatedItemKey(id, isHq)
                     : MakeNaturalSlotKey(inventoryType, slot);
 
                 Services.Logger.DebugOnly($"Slot {inventoryType}[{slot}] ItemId={id} Qty={quantity} Key=0x{key: X16}");
@@ -120,7 +120,7 @@ public static unsafe class InventoryScanner
             ulong key = kvp.Key;
             AggregatedItem agg = kvp.Value;
 
-            if (!itemInfoByKey.TryGetValue(key, out ItemInfo?  info))
+            if (!itemInfoByKey.TryGetValue(key, out ItemInfo? info))
             {
                 info = new ItemInfo
                 {

@@ -1,11 +1,11 @@
-using AetherBags.Configuration;
-using AetherBags.Nodes.Configuration.Layout;
-using KamiToolKit.Nodes;
 using System;
 using System.Linq;
 using System.Numerics;
+using AetherBags.Configuration;
+using AetherBags.Nodes.Configuration.Layout;
+using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes.Configuration;
+namespace AetherBags.Nodes.Configuration.General;
 
 public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
 {
@@ -28,8 +28,10 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
             OnOptionSelected = selected =>
             {
                 if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
+                {
                     config.StackMode = parsed;
-                RefreshInventory();
+                    System.AddonInventoryWindow.ManualInventoryRefresh();
+                }
             }
         };
         ContentNode.AddNode(_stackDropDown);
