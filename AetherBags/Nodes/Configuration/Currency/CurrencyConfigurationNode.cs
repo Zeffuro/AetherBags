@@ -1,12 +1,8 @@
-using System.Drawing;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Nodes.Color;
-using Dalamud.Interface;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Addons;
-using KamiToolKit.Premade.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Currency;
 
@@ -49,11 +45,9 @@ public sealed class CurrencyConfigurationNode : TabbedVerticalListNode
             Size = new Vector2(300, 24),
             CurrentColor = config.DefaultColor,
             DefaultColor = new CurrencySettings().DefaultColor,
-            OnColorConfirmed = color =>
-            {
-                config.DefaultColor = color;
-                RefreshCurrency();
-            },
+            OnColorConfirmed = ApplyColorChange,
+            OnColorChange = ApplyColorChange,
+            OnColorCanceled = ApplyColorChange,
         };
         AddNode(defaultCurrencyColorNode);
 
@@ -120,6 +114,14 @@ public sealed class CurrencyConfigurationNode : TabbedVerticalListNode
             },
         };
         AddNode(limitCurrencyColorNode);
+
+        return;
+
+        void ApplyColorChange(Vector4 color)
+        {
+            config.DefaultColor = color;
+            RefreshCurrency();
+        }
     }
 
     private void RefreshCurrency() => System.AddonInventoryWindow.ManualCurrencyRefresh();
