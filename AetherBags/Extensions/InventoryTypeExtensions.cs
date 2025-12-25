@@ -158,7 +158,7 @@ public static unsafe class InventoryTypeExtensions
             {
                 _ when inventoryType.IsMainInventory => InventoryType.Inventory1,
                 _ when inventoryType.IsSaddleBag => inventoryType is InventoryType. SaddleBag1 or InventoryType.SaddleBag2
-                    ?  InventoryType. SaddleBag1
+                    ? InventoryType. SaddleBag1
                     : InventoryType.PremiumSaddleBag1,
                 _ => inventoryType,
             };

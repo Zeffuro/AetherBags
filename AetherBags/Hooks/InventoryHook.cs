@@ -17,14 +17,14 @@ public sealed unsafe class InventoryHooks :  IDisposable
         ushort dstSlot,
         bool unk);
 
-    private readonly Hook<MoveItemSlotDelegate>?  _moveItemSlotHook;
+    private readonly Hook<MoveItemSlotDelegate>? _moveItemSlotHook;
 
     public InventoryHooks()
     {
         try
         {
             _moveItemSlotHook = Services.GameInteropProvider.HookFromSignature<MoveItemSlotDelegate>(
-                "E8 ?? ?? ?? ??  48 8B 03 66 FF C5",
+                "E8 ?? ?? ?? ?? 48 8B 03 66 FF C5",
                 MoveItemSlotDetour);
             _moveItemSlotHook.Enable();
 
@@ -36,8 +36,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
         }
     }
 
-    private int MoveItemSlotDetour(
-        InventoryManager* manager,
+    private int MoveItemSlotDetour(InventoryManager* manager,
         InventoryType srcType,
         ushort srcSlot,
         InventoryType dstType,
@@ -47,8 +46,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
         InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
         InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
 
-        Services.Logger.Info(
-            $"[MoveItemSlot] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk:  {unk}");
+        Services.Logger.Debug($"[MoveItemSlot] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk:  {unk}");
 
         return _moveItemSlotHook!.Original(manager, srcType, srcSlot, dstType, dstSlot, unk);
     }

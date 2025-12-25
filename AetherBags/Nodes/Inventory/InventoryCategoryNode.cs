@@ -23,7 +23,7 @@ public class InventoryCategoryNode : SimpleComponentNode
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
 
-    private float?  _fixedWidth;
+    private float? _fixedWidth;
     private int _hoverRefs;
     private bool _headerSuppressed;
     private bool _headerExpanded;
@@ -92,7 +92,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         }
     }
 
-    public float?  FixedWidth
+    public float? FixedWidth
     {
         get => _fixedWidth;
         set
@@ -184,8 +184,8 @@ public class InventoryCategoryNode : SimpleComponentNode
         int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
         int actualColumns = Math.Min(itemCount, itemsPerLine);
 
-        float cellW = _itemGridNode.Nodes.Count > 0 ?  _itemGridNode.Nodes[0].Width : FallbackItemSize;
-        float cellH = _itemGridNode.Nodes.Count > 0 ?  _itemGridNode.Nodes[0].Height : FallbackItemSize;
+        float cellW = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Width : FallbackItemSize;
+        float cellH = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Height : FallbackItemSize;
 
         float hPad = _itemGridNode.HorizontalPadding;
         float vPad = _itemGridNode.VerticalPadding;
@@ -259,7 +259,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         InventoryType targetContainer = targetItemInfo.Item.Container;
         ushort targetSlot = (ushort)targetItemInfo.Item.Slot;
 
-        Services.Logger.Info($"[OnPayload] Moving {sourceContainer}@{sourceSlot} -> {targetContainer}@{targetSlot}");
+        Services.Logger.Debug($"[OnPayload] Moving {sourceContainer}@{sourceSlot} -> {targetContainer}@{targetSlot}");
 
         InventoryMoveHelper.MoveItem(sourceContainer, sourceSlot, targetContainer, targetSlot);
     }

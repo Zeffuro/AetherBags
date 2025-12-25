@@ -122,12 +122,14 @@ public class AddonInventoryWindow : NativeAddon
 
     public void ManualInventoryRefresh()
     {
+        if (!Services.ClientState.IsLoggedIn) return;
         InventoryState.RefreshFromGame();
         RefreshCategoriesCore(true);
     }
 
     public void ManualCurrencyRefresh()
     {
+        if (!Services.ClientState.IsLoggedIn) return;
         _footerNode.RefreshCurrencies();
     }
 

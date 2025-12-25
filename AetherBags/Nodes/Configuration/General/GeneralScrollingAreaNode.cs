@@ -28,8 +28,10 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
             OnOptionSelected = selected =>
             {
                 if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
+                {
                     config.StackMode = parsed;
-                RefreshInventory();
+                    System.AddonInventoryWindow.ManualInventoryRefresh();
+                }
             }
         };
         ContentNode.AddNode(_stackDropDown);
