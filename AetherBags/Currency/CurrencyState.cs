@@ -71,12 +71,12 @@ public static unsafe class CurrencyState
         return currencyInfoList;
     }
 
-    private static uint?  GetLimitedTomestoneItemIdCached()
+    private static uint? GetLimitedTomestoneItemIdCached()
     {
         if (_cachedLimitedTomestoneItemId.HasValue)
             return _cachedLimitedTomestoneItemId.Value;
 
-        uint?  itemId = Services.DataManager.GetExcelSheet<TomestonesItem>()
+        uint? itemId = Services.DataManager.GetExcelSheet<TomestonesItem>()
             .FirstOrDefault(t => t.Tomestones.RowId == 3)
             .Item.RowId;
 
@@ -84,7 +84,7 @@ public static unsafe class CurrencyState
         return itemId;
     }
 
-    private static uint?  GetNonLimitedTomestoneItemIdCached()
+    private static uint? GetNonLimitedTomestoneItemIdCached()
     {
         if (_cachedNonLimitedTomestoneItemId.HasValue)
             return _cachedNonLimitedTomestoneItemId.Value;

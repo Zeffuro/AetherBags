@@ -1,16 +1,16 @@
 using System;
 using System.Numerics;
+using AetherBags.Extensions;
+using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+
 // TODO: Switch back to CS version when Dalamud Updated
 using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -24,13 +24,10 @@ public class InventoryCategoryNode : SimpleComponentNode
     private const float MinWidth = 40;
 
     private float? _fixedWidth;
-
     private int _hoverRefs;
     private bool _headerSuppressed;
     private bool _headerExpanded;
-
     private float _baseHeaderWidth = 96f;
-
     private string _fullHeaderText = string.Empty;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
@@ -77,7 +74,6 @@ public class InventoryCategoryNode : SimpleComponentNode
 
             _categoryNameTextNode.String = _fullHeaderText;
             _categoryNameTextNode.TextColor = value.Category.Color;
-
             _categoryNameTextNode.TooltipString = value.Category.Description;
 
             UpdateItemGrid();
@@ -114,7 +110,6 @@ public class InventoryCategoryNode : SimpleComponentNode
 
         _headerExpanded = true;
         ApplyHeaderVisualStateAndSize();
-
         HeaderHoverChanged?.Invoke(this, true);
     }
 
@@ -127,7 +122,6 @@ public class InventoryCategoryNode : SimpleComponentNode
 
         _headerExpanded = false;
         ApplyHeaderVisualStateAndSize();
-
         HeaderHoverChanged?.Invoke(this, false);
     }
 
@@ -140,12 +134,11 @@ public class InventoryCategoryNode : SimpleComponentNode
 
     private void ApplyHeaderVisualStateAndSize()
     {
-        _categoryNameTextNode.IsVisible = !_headerSuppressed;
+        _categoryNameTextNode.IsVisible = ! _headerSuppressed;
         if (_headerSuppressed)
             return;
 
         var flags = _categoryNameTextNode.TextFlags;
-
         flags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
 
         if (_headerExpanded)
@@ -153,7 +146,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             flags &= ~(TextFlags.OverflowHidden | TextFlags.Ellipsis);
             _categoryNameTextNode.TextFlags = flags;
 
-            if (!string.IsNullOrEmpty(_fullHeaderText))
+            if (! string.IsNullOrEmpty(_fullHeaderText))
                 _categoryNameTextNode.String = _fullHeaderText;
 
             Vector2 drawSize = _categoryNameTextNode.GetTextDrawSize();
@@ -167,7 +160,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             if (!string.IsNullOrEmpty(_fullHeaderText))
                 _categoryNameTextNode.String = _fullHeaderText;
 
-            flags |= (TextFlags.OverflowHidden | TextFlags.Ellipsis);
+            flags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
             _categoryNameTextNode.TextFlags = flags;
         }
     }
@@ -179,58 +172,30 @@ public class InventoryCategoryNode : SimpleComponentNode
         if (itemCount == 0)
         {
             float width = _fixedWidth ?? MinWidth;
-
             Size = new Vector2(width, HeaderHeight);
-
             _baseHeaderWidth = width;
-
             _itemGridNode.Position = new Vector2(0, HeaderHeight);
             _itemGridNode.Size = new Vector2(width, 0);
-
             ApplyHeaderVisualStateAndSize();
             return;
         }
 
-        int itemsPerLine = _itemGridNode.ItemsPerLine;
-        if (itemsPerLine < 1) itemsPerLine = 1;
-
+        int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
         int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
         int actualColumns = Math.Min(itemCount, itemsPerLine);
 
-        float cellW, cellH;
-        if (_itemGridNode.Nodes.Count > 0)
-        {
-            var firstChild = _itemGridNode.Nodes[0];
-            cellW = firstChild.Width;
-            cellH = firstChild.Height;
-        }
-        else
-        {
-            cellW = FallbackItemSize;
-            cellH = FallbackItemSize;
-        }
+        float cellW = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Width : FallbackItemSize;
+        float cellH = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Height : FallbackItemSize;
 
         float hPad = _itemGridNode.HorizontalPadding;
         float vPad = _itemGridNode.VerticalPadding;
 
-        float calculatedWidth;
-        if (_fixedWidth.HasValue)
-        {
-            calculatedWidth = _fixedWidth.Value;
-        }
-        else
-        {
-            calculatedWidth = actualColumns * cellW + (actualColumns - 1) * hPad;
-            if (calculatedWidth < MinWidth) calculatedWidth = MinWidth;
-        }
-
+        float calculatedWidth = _fixedWidth ?? Math.Max(MinWidth, actualColumns * cellW + (actualColumns - 1) * hPad);
         float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
 
         Size = new Vector2(calculatedWidth, height);
-
         _itemGridNode.Position = new Vector2(0, HeaderHeight);
         _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
-
         _baseHeaderWidth = calculatedWidth;
 
         ApplyHeaderVisualStateAndSize();
@@ -248,7 +213,7 @@ public class InventoryCategoryNode : SimpleComponentNode
     {
         InventoryItem item = data.Item;
 
-        var node = new InventoryDragDropNode
+        return new InventoryDragDropNode
         {
             Size = new Vector2(42, 46),
             IsVisible = true,
@@ -258,14 +223,11 @@ public class InventoryCategoryNode : SimpleComponentNode
             Payload = new DragDropPayload
             {
                 Type = DragDropType.Inventory_Item,
-                Int1 = (int)item.GetInventoryType(),
+                Int1 = (int)item.Container,
                 Int2 = item.Slot,
             },
             IsClickable = true,
-            OnEnd = _ =>
-            {
-                System.AddonInventoryWindow.ManualInventoryRefresh();
-            },
+            OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
             OnPayloadAccepted = (n, p) => OnPayloadAccepted(n, p, data),
             OnRollOver = n =>
             {
@@ -277,54 +239,54 @@ public class InventoryCategoryNode : SimpleComponentNode
                 EndHeaderHover();
                 n.HideTooltip();
             },
-
             ItemInfo = data
         };
-
-        return node;
     }
 
-    private unsafe void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo itemInfo)
+    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
     {
-        if (payload.Type != DragDropType.Item) return;
-        InventoryItem item = itemInfo.Item;
-        Services.Logger.Debug($"Inventory DragDropNode Payload Accepted: {payload.Type} Int1: {payload.Int1} Int2: {payload.Int2} ReferenceIndex: {payload.ReferenceIndex}");
-        InventoryType inventoryType = InventoryType.GetInventoryTypeFromContainerId(payload.Int1);
-        ushort sourceSlot = (ushort)payload.Int2;
-        ItemOrderModuleSorterItemEntry* itemEntry = item.GetItemOrderData();
-        Services.Logger.Debug($"{item.Slot} vs {item.GetSlot()}: entry: {itemEntry->Slot}");
-        Services.Logger.Info($"[OnPayload] Moving {inventoryType}@{sourceSlot} -> {item.Container}@{item.Slot} -> {item.Name.ExtractText()}");
-        InventoryManager.Instance()->MoveItemSlot(inventoryType, sourceSlot, item.Container, item.GetSlot(), true);
+        if (payload.Type != DragDropType.Item && payload.Type != DragDropType.Inventory_Item)
+            return;
 
+        var (sourceContainer, sourceSlot) = ResolveSourceFromPayload(payload);
 
-        // System.AddonInventoryWindow.ManualInventoryRefresh();
-
-        // Should work for swapping item but need a fake empty slot to put new items in probably.
-        // Services.Logger.Debug($"Moving Item from {inventoryType} Slot {sourceSlot} to {itemInfo.Item.Container} Slot {itemInfo.Item.GetSlot()}");
-        //MoveItem(inventoryType, sourceSlot, itemInfo.Item.Container, itemInfo.Item.GetSlot());
-    }
-
-    // Possibly still use this
-    private unsafe void MoveItem(InventoryType sourceInventory, uint sourceSlot, InventoryType destinationInventory, uint destinationSlot)
-    {
-        var sourceContainerId = sourceInventory.AgentItemContainerId;
-        var destinationContainerId = destinationInventory.AgentItemContainerId;
-
-        if (sourceContainerId != 0 && destinationContainerId != 0) {
-            var atkValues = stackalloc AtkValue[4];
-            for (var i = 0; i < 4; i++) atkValues[i].Type = ValueType.UInt;
-
-            atkValues[0].UInt = sourceContainerId;
-            atkValues[1].UInt = sourceSlot;
-            atkValues[2].UInt = destinationContainerId;
-            atkValues[3].UInt = destinationSlot;
-
-            var retVal = stackalloc AtkValue[1];
-
-            RaptureAtkModule* atkModule = RaptureAtkModule.Instance();
-            // (RaptureAtkModule* a1, void* outValue, AtkValue* atkValues);
-            // (AtkValue* returnValue, AtkValue* values, uint valueCount)
-            atkModule->HandleItemMove(retVal, atkValues, 4);
+        if (sourceContainer == 0)
+        {
+            Services.Logger.Warning($"[OnPayload] Could not resolve source from payload");
+            return;
         }
+
+        InventoryType targetContainer = targetItemInfo.Item.Container;
+        ushort targetSlot = (ushort)targetItemInfo.Item.Slot;
+
+        Services.Logger.Debug($"[OnPayload] Moving {sourceContainer}@{sourceSlot} -> {targetContainer}@{targetSlot}");
+
+        InventoryMoveHelper.MoveItem(sourceContainer, sourceSlot, targetContainer, targetSlot);
+    }
+
+    private static (InventoryType Container, ushort Slot) ResolveSourceFromPayload(DragDropPayload payload)
+    {
+        if (payload.Type == DragDropType.Inventory_Item)
+        {
+            return ((InventoryType)payload.Int1, (ushort)payload.Int2);
+        }
+
+        int containerId = payload.Int1;
+        int slotIndex = payload.Int2;
+
+        InventoryType sourceContainer = InventoryType.GetInventoryTypeFromContainerId(containerId);
+
+        if (sourceContainer == 0)
+            return (0, 0);
+
+        // For main inventory, resolve the real slot via ItemOrderModule
+        if (sourceContainer.IsMainInventory)
+        {
+            var (realContainer, realSlot) = sourceContainer.GetRealItemLocation(slotIndex);
+            return (realContainer, realSlot);
+        }
+
+        // For other containers (saddlebags, armory, etc.), use the slot directly
+        return (sourceContainer, (ushort)slotIndex);
     }
 }

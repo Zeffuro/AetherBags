@@ -1,13 +1,12 @@
-using AetherBags.Nodes.Configuration.Currency;
 using KamiToolKit.Nodes;
 
-namespace AetherBags.Nodes.Configuration;
+namespace AetherBags.Nodes.Configuration.Currency;
 
 public sealed class CurrencyScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
 {
     public CurrencyScrollingAreaNode()
     {
-        ContentNode.AddNode(new CurrencyConfigurationNode
+        ContentNode.AddNode(new CurrencyGeneralConfigurationNode
         {
             Size = Size
         });

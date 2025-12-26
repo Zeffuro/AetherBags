@@ -6,9 +6,9 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Currency;
 
-public sealed class CurrencyConfigurationNode : TabbedVerticalListNode
+public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 {
-    public CurrencyConfigurationNode()
+    public CurrencyGeneralConfigurationNode()
     {
         CurrencySettings config = System.Config.Currency;
 

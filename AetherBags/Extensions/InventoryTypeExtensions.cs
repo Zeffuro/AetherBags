@@ -85,14 +85,88 @@ public static unsafe class InventoryTypeExtensions
             InventoryType.SaddleBag2 => ItemOrderModule.Instance()->SaddleBagSorter,
             InventoryType.PremiumSaddleBag1 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
             InventoryType.PremiumSaddleBag2 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
-            _ => throw new Exception($"Type Not Implemented: {inventoryType}"),
+            _ => null,
         };
 
         public int GetInventoryStartIndex => inventoryType switch {
             InventoryType.Inventory2 => inventoryType.GetInventorySorter->ItemsPerPage,
             InventoryType.Inventory3 => inventoryType.GetInventorySorter->ItemsPerPage * 2,
             InventoryType.Inventory4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
+            InventoryType.SaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
+            InventoryType.PremiumSaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
             _ => 0,
         };
+
+        public bool IsMainInventory => inventoryType is
+            InventoryType.Inventory1 or
+            InventoryType.Inventory2 or
+            InventoryType.Inventory3 or
+            InventoryType.Inventory4;
+
+        public bool IsSaddleBag => inventoryType is
+            InventoryType.SaddleBag1 or
+            InventoryType.SaddleBag2 or
+            InventoryType.PremiumSaddleBag1 or
+            InventoryType.PremiumSaddleBag2;
+
+        public bool IsArmory => inventoryType is
+            InventoryType.ArmoryMainHand or
+            InventoryType.ArmoryHead or
+            InventoryType.ArmoryBody or
+            InventoryType.ArmoryHands or
+            InventoryType.ArmoryLegs or
+            InventoryType.ArmoryFeets or
+            InventoryType.ArmoryOffHand or
+            InventoryType.ArmoryEar or
+            InventoryType.ArmoryNeck or
+            InventoryType.ArmoryWrist or
+            InventoryType.ArmoryRings or
+            InventoryType.ArmorySoulCrystal;
+
+        public int ContainerGroup => inventoryType switch
+        {
+            _ when inventoryType.IsMainInventory => 1,
+            _ when inventoryType.IsSaddleBag => 2,
+            _ when inventoryType.IsArmory => 3,
+            _ => 0,
+        };
+
+        public bool IsSameContainerGroup(InventoryType other)
+            => inventoryType.ContainerGroup == other.ContainerGroup;
+
+        /// <summary>
+        /// Resolves the real container and slot for this inventory type using ItemOrderModule.
+        /// For sorted inventories, the visual slot differs from the actual storage slot.
+        /// </summary>
+        public (InventoryType Container, ushort Slot) GetRealItemLocation(int visualSlot)
+        {
+            var sorter = inventoryType.GetInventorySorter;
+            if (sorter == null)
+                return (inventoryType, (ushort)visualSlot);
+
+            int startIndex = inventoryType.GetInventoryStartIndex;
+            int sorterIndex = startIndex + visualSlot;
+
+            if (sorterIndex < 0 || sorterIndex >= sorter->Items.LongCount)
+                return (inventoryType, (ushort)visualSlot);
+
+            var entry = sorter->Items[sorterIndex].Value;
+            if (entry == null)
+                return (inventoryType, (ushort)visualSlot);
+
+            InventoryType baseType = inventoryType switch
+            {
+                _ when inventoryType.IsMainInventory => InventoryType.Inventory1,
+                _ when inventoryType.IsSaddleBag => inventoryType is InventoryType. SaddleBag1 or InventoryType.SaddleBag2
+                    ? InventoryType. SaddleBag1
+                    : InventoryType.PremiumSaddleBag1,
+                _ => inventoryType,
+            };
+
+            InventoryType realContainer = baseType + entry->Page;
+            ushort realSlot = entry->Slot;
+
+            return (realContainer, realSlot);
+        }
     }
 }

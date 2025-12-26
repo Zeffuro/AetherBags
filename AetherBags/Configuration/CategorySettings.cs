@@ -16,6 +16,7 @@ public class CategorySettings
 
 public class UserCategoryDefinition
 {
+    public bool Enabled { get; set; } = true;
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "New Category";
     public string Description { get; set; } = string.Empty;
