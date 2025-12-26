@@ -248,6 +248,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         if (payload.Type != DragDropType.Item && payload.Type != DragDropType.Inventory_Item)
             return;
 
+        Services.Logger.Debug($"[OnPayload] Received payload of type {payload.Type}, Int1={payload.Int1}, Int2={payload.Int2}, RefIndex={payload.ReferenceIndex}, Text={payload.Text}");
         var (sourceContainer, sourceSlot) = ResolveSourceFromPayload(payload);
 
         if (sourceContainer == 0)
@@ -272,21 +273,35 @@ public class InventoryCategoryNode : SimpleComponentNode
         }
 
         int containerId = payload.Int1;
-        int slotIndex = payload.Int2;
+        int uiSlot = payload.Int2;
 
         InventoryType sourceContainer = InventoryType.GetInventoryTypeFromContainerId(containerId);
 
         if (sourceContainer == 0)
             return (0, 0);
 
-        // For main inventory, resolve the real slot via ItemOrderModule
-        if (sourceContainer.IsMainInventory)
+        // Retainers have special handling:  UI has 5 tabs × 35 slots, data has 7 pages × 25 slots
+        if (sourceContainer. IsRetainer)
         {
-            var (realContainer, realSlot) = sourceContainer.GetRealItemLocation(slotIndex);
+            // Container IDs 52-56 = UI tabs 0-4
+            int uiTabIndex = containerId - 52;
+
+            // Convert to global data index
+            int globalDataIndex = (uiTabIndex * 35) + uiSlot;
+
+            // Calculate data page and slot
+            int dataPage = globalDataIndex / 25;
+            int dataSlot = globalDataIndex % 25;
+
+            InventoryType dataContainer = InventoryType.RetainerPage1 + (uint)dataPage;
+
+            // Now resolve through sorter for the actual storage location
+            var (realContainer, realSlot) = dataContainer.GetRealItemLocation(dataSlot);
             return (realContainer, realSlot);
         }
 
-        // For other containers (saddlebags, armory, etc.), use the slot directly
-        return (sourceContainer, (ushort)slotIndex);
+        // For non-retainers, use the standard resolution
+        var (realContainerOther, realSlotOther) = sourceContainer.GetRealItemLocation(uiSlot);
+        return (realContainerOther, realSlotOther);
     }
 }

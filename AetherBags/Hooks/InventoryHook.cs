@@ -46,7 +46,7 @@ public sealed unsafe class InventoryHooks :  IDisposable
         InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
         InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
 
-        Services.Logger.Debug($"[MoveItemSlot] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk:  {unk}");
+        Services.Logger.Debug($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk: {unk}");
 
         return _moveItemSlotHook!.Original(manager, srcType, srcSlot, dstType, dstSlot, unk);
     }

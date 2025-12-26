@@ -17,6 +17,11 @@ public static unsafe class InventoryTypeExtensions
                 InventoryType.Inventory2 => 49,
                 InventoryType.Inventory3 => 50,
                 InventoryType.Inventory4 => 51,
+                InventoryType.RetainerPage1 => 52,
+                InventoryType.RetainerPage2 => 53,
+                InventoryType.RetainerPage3 => 54,
+                InventoryType.RetainerPage4 => 55,
+                InventoryType.RetainerPage5 => 56,
                 InventoryType.ArmoryMainHand => 57,
                 InventoryType.ArmoryHead => 58,
                 InventoryType.ArmoryBody => 59,
@@ -45,6 +50,11 @@ public static unsafe class InventoryTypeExtensions
                 49 => InventoryType.Inventory2,
                 50 => InventoryType.Inventory3,
                 51 => InventoryType.Inventory4,
+                52 => InventoryType.RetainerPage1,
+                53 => InventoryType.RetainerPage2,
+                54 => InventoryType.RetainerPage3,
+                55 => InventoryType.RetainerPage4,
+                56 => InventoryType.RetainerPage5,
                 57 => InventoryType.ArmoryMainHand,
                 58 => InventoryType.ArmoryHead,
                 59 => InventoryType.ArmoryBody,
@@ -85,6 +95,13 @@ public static unsafe class InventoryTypeExtensions
             InventoryType.SaddleBag2 => ItemOrderModule.Instance()->SaddleBagSorter,
             InventoryType.PremiumSaddleBag1 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
             InventoryType.PremiumSaddleBag2 => ItemOrderModule.Instance()->PremiumSaddleBagSorter,
+            InventoryType.RetainerPage1 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage2 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage3 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage4 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage5 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage6 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
+            InventoryType.RetainerPage7 => ItemOrderModule.Instance()->GetActiveRetainerSorter(),
             _ => null,
         };
 
@@ -94,6 +111,12 @@ public static unsafe class InventoryTypeExtensions
             InventoryType.Inventory4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
             InventoryType.SaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
             InventoryType.PremiumSaddleBag2 => inventoryType.GetInventorySorter->ItemsPerPage,
+            InventoryType.RetainerPage2 => inventoryType.GetInventorySorter->ItemsPerPage,
+            InventoryType.RetainerPage3 => inventoryType.GetInventorySorter->ItemsPerPage * 2,
+            InventoryType.RetainerPage4 => inventoryType.GetInventorySorter->ItemsPerPage * 3,
+            InventoryType.RetainerPage5 => inventoryType.GetInventorySorter->ItemsPerPage * 4,
+            InventoryType.RetainerPage6 => inventoryType.GetInventorySorter->ItemsPerPage * 5,
+            InventoryType.RetainerPage7 => inventoryType.GetInventorySorter->ItemsPerPage * 6,
             _ => 0,
         };
 
@@ -123,11 +146,21 @@ public static unsafe class InventoryTypeExtensions
             InventoryType.ArmoryRings or
             InventoryType.ArmorySoulCrystal;
 
+        public bool IsRetainer => inventoryType is
+            InventoryType.RetainerPage1 or
+            InventoryType.RetainerPage2 or
+            InventoryType.RetainerPage3 or
+            InventoryType.RetainerPage4 or
+            InventoryType.RetainerPage5 or
+            InventoryType.RetainerPage6 or
+            InventoryType.RetainerPage7;
+
         public int ContainerGroup => inventoryType switch
         {
             _ when inventoryType.IsMainInventory => 1,
             _ when inventoryType.IsSaddleBag => 2,
             _ when inventoryType.IsArmory => 3,
+            _ when inventoryType.IsRetainer => 4,
             _ => 0,
         };
 
@@ -157,9 +190,10 @@ public static unsafe class InventoryTypeExtensions
             InventoryType baseType = inventoryType switch
             {
                 _ when inventoryType.IsMainInventory => InventoryType.Inventory1,
-                _ when inventoryType.IsSaddleBag => inventoryType is InventoryType. SaddleBag1 or InventoryType.SaddleBag2
-                    ? InventoryType. SaddleBag1
+                _ when inventoryType.IsSaddleBag => inventoryType is InventoryType.SaddleBag1 or InventoryType.SaddleBag2
+                    ? InventoryType.SaddleBag1
                     : InventoryType.PremiumSaddleBag1,
+                _ when inventoryType.IsRetainer => InventoryType.RetainerPage1,
                 _ => inventoryType,
             };
 
@@ -167,6 +201,44 @@ public static unsafe class InventoryTypeExtensions
             ushort realSlot = entry->Slot;
 
             return (realContainer, realSlot);
+        }
+
+        public int GetVisualSlotFromReal(int realSlot)
+        {
+            var sorter = inventoryType.GetInventorySorter;
+            if (sorter == null)
+                return realSlot;
+
+            int startIndex = inventoryType.GetInventoryStartIndex;
+            long itemCount = sorter->Items.LongCount;
+
+            // Search through the sorter to find which visual index maps to this real slot
+            for (int visualIdx = 0; visualIdx < itemCount; visualIdx++)
+            {
+                var entry = sorter->Items[visualIdx]. Value;
+                if (entry == null) continue;
+
+                // Calculate what container this entry belongs to
+                InventoryType baseType = inventoryType switch
+                {
+                    _ when inventoryType.IsMainInventory => InventoryType. Inventory1,
+                    _ when inventoryType.IsSaddleBag => inventoryType is InventoryType.SaddleBag1 or InventoryType.SaddleBag2
+                        ?  InventoryType. SaddleBag1
+                        : InventoryType.PremiumSaddleBag1,
+                    _ when inventoryType.IsRetainer => InventoryType.RetainerPage1,
+                    _ => inventoryType,
+                };
+
+                InventoryType entryContainer = baseType + entry->Page;
+
+                if (entryContainer == inventoryType && entry->Slot == realSlot)
+                {
+                    // Found it!  Return visual index relative to the container's start
+                    return visualIdx - startIndex;
+                }
+            }
+
+            return realSlot; // Fallback
         }
     }
 }

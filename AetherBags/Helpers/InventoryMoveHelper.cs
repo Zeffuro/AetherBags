@@ -10,6 +10,10 @@ public static unsafe class InventoryMoveHelper
 {
     public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
+        Services.Logger.Debug($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
+        InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
+        System.AddonInventoryWindow.ManualInventoryRefresh();
+        return;
         bool isCrossContainerMove = ! sourceContainer.IsSameContainerGroup(destContainer);
 
         if (isCrossContainerMove)
