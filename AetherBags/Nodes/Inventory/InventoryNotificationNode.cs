@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
@@ -18,12 +19,10 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
     private readonly TextNode titleTextNode;
     private readonly TextNode messageTextNode;
 
-    private Dictionary<InventoryNotificationType, InventoryNotificationInfo> notificationCache = null!;
+    private static readonly InventoryNotificationState NotificationState = new();
 
     public InventoryNotificationNode()
     {
-        PopulateNotificationCache();
-
         AddTimeline(ParentLabels);
 
         glowNode = new SimpleNineGridNode {
@@ -76,26 +75,6 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
         messageTextNode.Size = Size with { Y = 16 };
     }
 
-    private void PopulateNotificationCache()
-    {
-        ExcelSheet<Addon> addonSheet = Services.DataManager.GetExcelSheet<Addon>();
-        notificationCache = new Dictionary<InventoryNotificationType, InventoryNotificationInfo>
-        {
-            {
-                InventoryNotificationType.SaddleBag,
-                new InventoryNotificationInfo(addonSheet.GetRow(891).Text, addonSheet.GetRow(892).Text)
-            },
-            {
-                InventoryNotificationType.RetainerEntrust,
-                new InventoryNotificationInfo(addonSheet.GetRow(910).Text, addonSheet.GetRow(3573).Text)
-            },
-            {
-                InventoryNotificationType.RetainerEquip,
-                new InventoryNotificationInfo(addonSheet.GetRow(910).Text, addonSheet.GetRow(3585).Text)
-            }
-        };
-    }
-
     public InventoryNotificationType NotificationType
     {
         get;
@@ -108,11 +87,15 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
                 messageTextNode.String = string.Empty;
                 Timeline?.PlayAnimation(17); // Hide
             }
-            else if (notificationCache.TryGetValue(value, out var texts))
+            else
             {
-                titleTextNode.SeString = texts.Title;
-                messageTextNode.SeString = texts.Message;
-                Timeline?.PlayAnimation(101); // Show
+                var info = NotificationState.GetNotificationInfo((uint)value);
+                if (info != null)
+                {
+                    titleTextNode.SeString = info.Title;
+                    messageTextNode.SeString = info.Message;
+                    Timeline?.PlayAnimation(101); // Show
+                }
             }
         }
     } = InventoryNotificationType.None;
@@ -148,15 +131,4 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
         .AddFrame(59, alpha: 255, addColor: new Vector3(0, 0, 0))
         .EndFrameSet()
         .Build();
-
-
-    private record InventoryNotificationInfo(ReadOnlySeString Title, ReadOnlySeString Message);
-}
-
-public enum InventoryNotificationType
-{
-    None,
-    SaddleBag,
-    RetainerEntrust,
-    RetainerEquip
 }

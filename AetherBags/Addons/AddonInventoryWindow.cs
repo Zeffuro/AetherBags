@@ -9,6 +9,7 @@ using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.Gui;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
@@ -22,6 +23,7 @@ public class AddonInventoryWindow : NativeAddon
     private readonly InventoryCategoryHoverCoordinator _hoverCoordinator = new();
     private readonly HashSet<InventoryCategoryNode> _hoverSubscribed = new();
 
+    private InventoryNotificationNode _notificationNode = null!;
     private WrappingGridNode<InventoryCategoryNode> _categoriesNode = null!;
     private TextInputWithHintNode _searchInputNode = null!;
     private CircleButtonNode _settingsButtonNode = null!;
@@ -69,13 +71,12 @@ public class AddonInventoryWindow : NativeAddon
         float x = headerX + (headerW - size.X) * 0.5f;
         float y = headerY + (headerH - size.Y) * 0.5f;
 
-        InventoryNotificationNode notificationNode = new InventoryNotificationNode
+        _notificationNode = new InventoryNotificationNode
         {
             Position = new Vector2(WindowNode!.X - 4f, WindowNode!.Y - 32f),
             Size = new Vector2(headerW, 28f),
         };
-        notificationNode.AttachNode(this);
-        //notificationNode.NotificationType = InventoryNotificationType.SaddleBag;
+        _notificationNode.AttachNode(this);
 
         _searchInputNode = new TextInputWithHintNode
         {
@@ -113,7 +114,6 @@ public class AddonInventoryWindow : NativeAddon
         base.OnSetup(addon);
     }
 
-
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
         if (_refreshQueued)
@@ -124,6 +124,9 @@ public class AddonInventoryWindow : NativeAddon
 
             RefreshCategoriesCore(doAutosize);
         }
+
+        InventoryNotificationType currentNotificationType = (InventoryNotificationType) AgentInventory.Instance()->OpenTitleId;
+        if(currentNotificationType != _notificationNode.NotificationType) _notificationNode.NotificationType = currentNotificationType;
 
         base.OnUpdate(addon);
     }
