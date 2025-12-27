@@ -69,6 +69,14 @@ public class AddonInventoryWindow : NativeAddon
         float x = headerX + (headerW - size.X) * 0.5f;
         float y = headerY + (headerH - size.Y) * 0.5f;
 
+        InventoryNotificationNode notificationNode = new InventoryNotificationNode
+        {
+            Position = new Vector2(WindowNode!.X - 4f, WindowNode!.Y - 32f),
+            Size = new Vector2(headerW, 28f),
+        };
+        notificationNode.AttachNode(this);
+        //notificationNode.NotificationType = InventoryNotificationType.SaddleBag;
+
         _searchInputNode = new TextInputWithHintNode
         {
             Position = new Vector2(x, y),

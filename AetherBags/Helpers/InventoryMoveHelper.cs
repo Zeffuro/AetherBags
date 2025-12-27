@@ -8,24 +8,16 @@ namespace AetherBags. Helpers;
 
 public static unsafe class InventoryMoveHelper
 {
+    // Requires the visual UI slots instead of actual slots.
     public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
         Services.Logger.Debug($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
         InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
-        System.AddonInventoryWindow.ManualInventoryRefresh();
-        return;
-        bool isCrossContainerMove = ! sourceContainer.IsSameContainerGroup(destContainer);
-
-        if (isCrossContainerMove)
-        {
-            MoveItemViaAgent(sourceContainer, sourceSlot, destContainer, destSlot);
-        }
-        else
-        {
-            InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
-        }
+        Services.Framework.DelayTicks(2);
+        Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualInventoryRefresh);
     }
 
+    /*
     private static void MoveItemViaAgent(InventoryType sourceInventory, ushort sourceSlot, InventoryType destInventory, ushort destSlot)
     {
         uint sourceContainerId = sourceInventory.AgentItemContainerId;
@@ -53,4 +45,5 @@ public static unsafe class InventoryMoveHelper
         RaptureAtkModule* atkModule = RaptureAtkModule.Instance();
         atkModule->HandleItemMove(retVal, atkValues, 4);
     }
+    */
 }

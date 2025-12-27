@@ -1,4 +1,5 @@
 using System;
+using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
@@ -17,6 +18,7 @@ public static unsafe class InventoryTypeExtensions
                 InventoryType.Inventory2 => 49,
                 InventoryType.Inventory3 => 50,
                 InventoryType.Inventory4 => 51,
+                // It's possible that these are actually UI IDs
                 InventoryType.RetainerPage1 => 52,
                 InventoryType.RetainerPage2 => 53,
                 InventoryType.RetainerPage3 => 54,
@@ -171,21 +173,21 @@ public static unsafe class InventoryTypeExtensions
         /// Resolves the real container and slot for this inventory type using ItemOrderModule.
         /// For sorted inventories, the visual slot differs from the actual storage slot.
         /// </summary>
-        public (InventoryType Container, ushort Slot) GetRealItemLocation(int visualSlot)
+        public InventoryLocation GetRealItemLocation(int visualSlot)
         {
             var sorter = inventoryType.GetInventorySorter;
             if (sorter == null)
-                return (inventoryType, (ushort)visualSlot);
+                return new InventoryLocation(inventoryType, (ushort)visualSlot);
 
             int startIndex = inventoryType.GetInventoryStartIndex;
             int sorterIndex = startIndex + visualSlot;
 
             if (sorterIndex < 0 || sorterIndex >= sorter->Items.LongCount)
-                return (inventoryType, (ushort)visualSlot);
+                return new InventoryLocation(inventoryType, (ushort)visualSlot);
 
             var entry = sorter->Items[sorterIndex].Value;
             if (entry == null)
-                return (inventoryType, (ushort)visualSlot);
+                return new InventoryLocation(inventoryType, (ushort)visualSlot);
 
             InventoryType baseType = inventoryType switch
             {
@@ -200,45 +202,7 @@ public static unsafe class InventoryTypeExtensions
             InventoryType realContainer = baseType + entry->Page;
             ushort realSlot = entry->Slot;
 
-            return (realContainer, realSlot);
-        }
-
-        public int GetVisualSlotFromReal(int realSlot)
-        {
-            var sorter = inventoryType.GetInventorySorter;
-            if (sorter == null)
-                return realSlot;
-
-            int startIndex = inventoryType.GetInventoryStartIndex;
-            long itemCount = sorter->Items.LongCount;
-
-            // Search through the sorter to find which visual index maps to this real slot
-            for (int visualIdx = 0; visualIdx < itemCount; visualIdx++)
-            {
-                var entry = sorter->Items[visualIdx]. Value;
-                if (entry == null) continue;
-
-                // Calculate what container this entry belongs to
-                InventoryType baseType = inventoryType switch
-                {
-                    _ when inventoryType.IsMainInventory => InventoryType. Inventory1,
-                    _ when inventoryType.IsSaddleBag => inventoryType is InventoryType.SaddleBag1 or InventoryType.SaddleBag2
-                        ?  InventoryType. SaddleBag1
-                        : InventoryType.PremiumSaddleBag1,
-                    _ when inventoryType.IsRetainer => InventoryType.RetainerPage1,
-                    _ => inventoryType,
-                };
-
-                InventoryType entryContainer = baseType + entry->Page;
-
-                if (entryContainer == inventoryType && entry->Slot == realSlot)
-                {
-                    // Found it!  Return visual index relative to the container's start
-                    return visualIdx - startIndex;
-                }
-            }
-
-            return realSlot; // Fallback
+            return new InventoryLocation(realContainer, realSlot);
         }
     }
 }

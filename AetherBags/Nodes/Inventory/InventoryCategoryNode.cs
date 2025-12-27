@@ -243,65 +243,24 @@ public class InventoryCategoryNode : SimpleComponentNode
         };
     }
 
-    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
+    private void OnPayloadAccepted(DragDropNode _, DragDropPayload payload, ItemInfo targetItemInfo)
     {
-        if (payload.Type != DragDropType.Item && payload.Type != DragDropType.Inventory_Item)
+        Services.Logger.Debug($"[OnPayload] Received payload of type {payload.Type}, Int1={payload.Int1}, Int2={payload.Int2}, RefIndex={payload.ReferenceIndex}, Text={payload.Text}");
+        if (!payload.IsValidInventoryPayload)
             return;
 
-        Services.Logger.Debug($"[OnPayload] Received payload of type {payload.Type}, Int1={payload.Int1}, Int2={payload.Int2}, RefIndex={payload.ReferenceIndex}, Text={payload.Text}");
-        var (sourceContainer, sourceSlot) = ResolveSourceFromPayload(payload);
+        InventoryLocation sourceLocation = payload.InventoryLocation;
 
-        if (sourceContainer == 0)
+        if (!sourceLocation.IsValid)
         {
             Services.Logger.Warning($"[OnPayload] Could not resolve source from payload");
             return;
         }
 
-        InventoryType targetContainer = targetItemInfo.Item.Container;
-        ushort targetSlot = (ushort)targetItemInfo.Item.Slot;
+        InventoryLocation targetLocation = new InventoryLocation(targetItemInfo.Item.Container, (ushort)targetItemInfo.Item.Slot);
 
-        Services.Logger.Debug($"[OnPayload] Moving {sourceContainer}@{sourceSlot} -> {targetContainer}@{targetSlot}");
+        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation.ToString()} -> {targetLocation.ToString()}");
 
-        InventoryMoveHelper.MoveItem(sourceContainer, sourceSlot, targetContainer, targetSlot);
-    }
-
-    private static (InventoryType Container, ushort Slot) ResolveSourceFromPayload(DragDropPayload payload)
-    {
-        if (payload.Type == DragDropType.Inventory_Item)
-        {
-            return ((InventoryType)payload.Int1, (ushort)payload.Int2);
-        }
-
-        int containerId = payload.Int1;
-        int uiSlot = payload.Int2;
-
-        InventoryType sourceContainer = InventoryType.GetInventoryTypeFromContainerId(containerId);
-
-        if (sourceContainer == 0)
-            return (0, 0);
-
-        // Retainers have special handling:  UI has 5 tabs × 35 slots, data has 7 pages × 25 slots
-        if (sourceContainer. IsRetainer)
-        {
-            // Container IDs 52-56 = UI tabs 0-4
-            int uiTabIndex = containerId - 52;
-
-            // Convert to global data index
-            int globalDataIndex = (uiTabIndex * 35) + uiSlot;
-
-            // Calculate data page and slot
-            int dataPage = globalDataIndex / 25;
-            int dataSlot = globalDataIndex % 25;
-
-            InventoryType dataContainer = InventoryType.RetainerPage1 + (uint)dataPage;
-
-            // Now resolve through sorter for the actual storage location
-            var (realContainer, realSlot) = dataContainer.GetRealItemLocation(dataSlot);
-            return (realContainer, realSlot);
-        }
-
-        // For non-retainers, use the standard resolution
-        var (realContainerOther, realSlotOther) = sourceContainer.GetRealItemLocation(uiSlot);
-        return (realContainerOther, realSlotOther);
+        InventoryMoveHelper.MoveItem(sourceLocation.Container, sourceLocation.Slot, targetLocation.Container, targetLocation.Slot);
     }
 }
