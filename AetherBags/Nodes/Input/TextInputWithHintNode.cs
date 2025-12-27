@@ -20,7 +20,7 @@ public class TextInputWithHintNode : SimpleComponentNode {
             TexturePath = "ui/uld/CircleButtons.tex",
             TextureCoordinates = new Vector2(112.0f, 84.0f),
             TextureSize = new Vector2(28.0f, 28.0f),
-            Tooltip = new SeStringBuilder()
+            TextTooltip = new SeStringBuilder()
                 .Append("Supports Regex Search")
                 .AppendNewLine()
                 .Append("Start input with '$' to search by description")

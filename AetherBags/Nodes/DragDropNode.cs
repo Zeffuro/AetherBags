@@ -151,28 +151,6 @@
                 }
             }
 
-            public override ReadOnlySeString? Tooltip {
-                get;
-                set {
-                    field = value;
-                    switch (value) {
-                        case { IsEmpty: false } when !TooltipRegistered:
-                            AddEvent(AtkEventType.DragDropRollOver, ShowTooltip);
-                            AddEvent(AtkEventType.DragDropRollOut, HideTooltip);
-
-                            TooltipRegistered = true;
-                            break;
-
-                        case null when TooltipRegistered:
-                            RemoveEvent(AtkEventType.DragDropRollOver, ShowTooltip);
-                            RemoveEvent(AtkEventType.DragDropRollOut, HideTooltip);
-
-                            TooltipRegistered = false;
-                            break;
-                    }
-                }
-            }
-
             private void DragDropInsertHandler(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
                 atkEvent->SetEventIsHandled();
 

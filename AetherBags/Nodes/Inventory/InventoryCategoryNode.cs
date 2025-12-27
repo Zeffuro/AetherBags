@@ -5,6 +5,7 @@ using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -74,7 +75,7 @@ public class InventoryCategoryNode : SimpleComponentNode
 
             _categoryNameTextNode.String = _fullHeaderText;
             _categoryNameTextNode.TextColor = value.Category.Color;
-            _categoryNameTextNode.TooltipString = value.Category.Description;
+            _categoryNameTextNode.TextTooltip = value.Category.Description;
 
             UpdateItemGrid();
             RecalculateSize();
@@ -209,7 +210,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             CreateInventoryDragDropNode);
     }
 
-    private InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
+    private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
 
@@ -228,16 +229,18 @@ public class InventoryCategoryNode : SimpleComponentNode
             },
             IsClickable = true,
             OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
-            OnPayloadAccepted = (n, p) => OnPayloadAccepted(n, p, data),
-            OnRollOver = n =>
+            OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
+            OnRollOver = node =>
             {
                 BeginHeaderHover();
-                n.ShowInventoryItemTooltip(item.Container, item.Slot);
+                node.ShowInventoryItemTooltip(item.Container, item.Slot);
             },
-            OnRollOut = n =>
+            OnRollOut = node =>
             {
                 EndHeaderHover();
-                n.HideTooltip();
+
+                ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(node)->Id;
+                AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
             },
             ItemInfo = data
         };
