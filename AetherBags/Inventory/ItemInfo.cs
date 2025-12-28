@@ -59,6 +59,35 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     private string Description => _description ??= Row.Description.ToString();
 
+    public InventoryMappedLocation VisualLocation =>
+        IsMainInventory ? InventoryContextState.GetVisualLocation(InventoryPage, Item.Slot)
+            : new InventoryMappedLocation((int)Item.Container.AgentItemContainerId, Item. Slot);
+
+
+    public int InventoryPage => Item.Container switch
+    {
+        InventoryType.Inventory1 => 0,
+        InventoryType.Inventory2 => 1,
+        InventoryType.Inventory3 => 2,
+        InventoryType.Inventory4 => 3,
+        _ => -1
+    };
+
+    public bool IsSlotBlocked => InventoryContextState.IsSlotBlocked(Item.Container, Item.Slot);
+
+    public bool IsEligibleForContext
+    {
+        get
+        {
+            if (!InventoryContextState.HasActiveContext)
+                return true;
+
+            return IsMainInventory && InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+        }
+    }
+
+    public bool IsMainInventory => InventoryPage >= 0;
+
     public bool IsRegexMatch(string searchTerms)
     {
         if (string.IsNullOrEmpty(searchTerms))

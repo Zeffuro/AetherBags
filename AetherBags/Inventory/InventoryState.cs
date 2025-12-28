@@ -52,6 +52,8 @@ public static unsafe class InventoryState
         InventoryScanner.ScanBags(inventoryManager, stackMode, AggByKey);
         CategoryBucketManager.ResetBuckets(BucketsByKey);
         InventoryScanner.BuildItemInfos(AggByKey, ItemInfoByKey);
+        InventoryContextState.RefreshMaps();
+        InventoryContextState.RefreshBlockedSlots();
 
         if (userCategoriesEnabled && userCategories.Count > 0)
         {

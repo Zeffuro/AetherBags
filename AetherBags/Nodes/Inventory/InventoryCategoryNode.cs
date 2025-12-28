@@ -6,6 +6,7 @@ using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -213,19 +214,21 @@ public class InventoryCategoryNode : SimpleComponentNode
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
+        InventoryMappedLocation location = data.VisualLocation;
 
         return new InventoryDragDropNode
         {
             Size = new Vector2(42, 46),
+            Alpha = data.IsEligibleForContext || data.IsSlotBlocked ? 1.0f : 0.4f,
             IsVisible = true,
             IconId = item.IconId,
             AcceptedType = DragDropType.Item,
-            IsDraggable = true,
+            IsDraggable = !data.IsSlotBlocked,
             Payload = new DragDropPayload
             {
                 Type = DragDropType.Inventory_Item,
-                Int1 = (int)item.Container,
-                Int2 = item.Slot,
+                Int1 = location.Container,
+                Int2 = location.Slot,
             },
             IsClickable = true,
             OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),

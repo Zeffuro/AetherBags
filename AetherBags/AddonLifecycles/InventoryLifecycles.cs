@@ -20,6 +20,17 @@ public class InventoryLifecycles : IDisposable
         Services.Logger.Verbose("InventoryLifecycles initialized");
     }
 
+    /*
+    values[0] = OpenType
+    values[1] = OpenTitleId
+    values[2] = tab index
+    values[3] = InventoryAddonId | (OpenerAddonId << 16)
+    values[4] = focus
+    values[5] = title
+    values[6] = upper title
+    values[7] = can use Saddlebags (Agent InventoryBuddy IsActivatable)
+    */
+
     private unsafe void PreRefreshHandler(AddonEvent type, AddonArgs args)
     {
         if (args is not AddonRefreshArgs refreshArgs)
