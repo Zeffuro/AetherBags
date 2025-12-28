@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AetherBags.AddonLifecycles;
 using AetherBags.Addons;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
@@ -16,6 +17,7 @@ public unsafe class Plugin : IDalamudPlugin
     private static string HelpDescription => "Opens your inventory.";
 
     private readonly InventoryHooks _inventoryHooks;
+    private readonly InventoryLifecycles _inventoryLifecycles;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -64,6 +66,7 @@ public unsafe class Plugin : IDalamudPlugin
         }
 
         _inventoryHooks = new InventoryHooks();
+        _inventoryLifecycles = new InventoryLifecycles();
     }
 
     public void Dispose()
@@ -82,6 +85,7 @@ public unsafe class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Dispose();
 
         _inventoryHooks.Dispose();
+        _inventoryLifecycles.Dispose();
     }
 
     private void OnCommand(string command, string args)
