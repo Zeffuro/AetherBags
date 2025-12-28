@@ -1,5 +1,8 @@
 using AetherBags.Configuration;
+using AetherBags.Inventory;
+using Dalamud.Game.Text.SeStringHandling;
 using KamiToolKit.Premade;
+using SeStringBuilder = Lumina.Text.SeStringBuilder;
 
 namespace AetherBags.Addons;
 
@@ -13,7 +16,8 @@ public class CategoryWrapper(UserCategoryDefinition categoryDefinition) : IInfoN
     }
 
     public string GetSubLabel() {
-        return CategoryDefinition!.Enabled ? "Enabled" : "Disabled";
+        if(UserCategoryMatcher.IsCatchAll(CategoryDefinition!)) return " No valid rules!";
+        return CategoryDefinition!.Enabled ? "✓ Enabled" : " Disabled";
     }
 
     public uint? GetId() => null;

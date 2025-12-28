@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Inventory;
 using AetherBags.Nodes.Color;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -8,6 +9,7 @@ using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using Lumina.Text;
 using Action = System.Action;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -64,6 +66,17 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 
         FitContents = true;
         ItemSpacing = 4.0f;
+
+        var catchAllWarningNode = new TextNode
+        {
+            Size = new Vector2(300, 40),
+            TextFlags = TextFlags.MultiLine | TextFlags.AutoAdjustNodeSize,
+            SeString = new SeStringBuilder().Append(" Warning: No rules configured\nThis category won't match anything!").ToReadOnlySeString(),
+            TextColor = ColorHelper.GetColor(17),
+            LineSpacing = 20,
+            IsVisible = UserCategoryMatcher.IsCatchAll(CategoryDefinition),
+        };
+        AddNode(catchAllWarningNode);
 
         AddNode(CreateSectionHeader("Basic Settings"));
 
@@ -297,7 +310,7 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 
     private static void NotifyChanged()
     {
-        System.AddonInventoryWindow?.ManualInventoryRefresh();
+        System.AddonInventoryWindow.ManualInventoryRefresh();
     }
 
     private void NotifyCategoryPropertyChanged()

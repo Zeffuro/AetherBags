@@ -54,6 +54,13 @@ public static class CategoryBucketManager
         for (int i = 0; i < sortedScratch.Count; i++)
         {
             UserCategoryDefinition category = sortedScratch[i];
+
+            if (!category.Enabled)
+                continue;
+
+            if (UserCategoryMatcher.IsCatchAll(category))
+                continue;
+
             uint bucketKey = MakeUserCategoryKey(category.Order);
 
             if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket? bucket))
