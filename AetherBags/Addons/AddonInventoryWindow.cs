@@ -152,7 +152,6 @@ public class AddonInventoryWindow : NativeAddon
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
 
-        InventoryContextState.RefreshMaps();
         InventoryState.RefreshFromGame();
 
         RefreshCategoriesCore(autosize: true);

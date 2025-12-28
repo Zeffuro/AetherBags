@@ -226,7 +226,7 @@ public class InventoryCategoryNode : SimpleComponentNode
             IsDraggable = !data.IsSlotBlocked,
             Payload = new DragDropPayload
             {
-                Type = DragDropType.Inventory_Item,
+                Type = DragDropType.Item,
                 Int1 = location.Container,
                 Int2 = location.Slot,
             },
@@ -251,7 +251,6 @@ public class InventoryCategoryNode : SimpleComponentNode
 
     private void OnPayloadAccepted(DragDropNode _, DragDropPayload payload, ItemInfo targetItemInfo)
     {
-        Services.Logger.Debug($"[OnPayload] Received payload of type {payload.Type}, Int1={payload.Int1}, Int2={payload.Int2}, RefIndex={payload.ReferenceIndex}, Text={payload.Text}");
         if (!payload.IsValidInventoryPayload)
             return;
 
@@ -263,10 +262,16 @@ public class InventoryCategoryNode : SimpleComponentNode
             return;
         }
 
-        InventoryLocation targetLocation = new InventoryLocation(targetItemInfo.Item.Container, (ushort)targetItemInfo.Item.Slot);
+        InventoryLocation targetLocation = new InventoryLocation(
+            targetItemInfo.Item.Container,
+            (ushort)targetItemInfo.Item.Slot
+        );
 
-        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation.ToString()} -> {targetLocation.ToString()}");
+        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation} -> {targetLocation}");
 
-        InventoryMoveHelper.MoveItem(sourceLocation.Container, sourceLocation.Slot, targetLocation.Container, targetLocation.Slot);
+        InventoryMoveHelper.MoveItem(
+            sourceLocation.Container, sourceLocation.Slot,
+            targetLocation.Container, targetLocation.Slot
+        );
     }
 }
