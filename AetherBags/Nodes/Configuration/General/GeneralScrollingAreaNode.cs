@@ -11,7 +11,6 @@ namespace AetherBags.Nodes.Configuration.General;
 public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNode>
 {
     private readonly CheckboxNode _debugCheckboxNode = null!;
-    private readonly LabeledDropdownNode _stackDropDown = null!;
 
     public GeneralScrollingAreaNode()
     {
@@ -19,24 +18,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingAreaNode<VerticalListNod
 
         ContentNode.ItemSpacing = 32;
 
-        _stackDropDown = new LabeledDropdownNode
-        {
-            Size = new Vector2(300, 20),
-            IsEnabled = true,
-            LabelText = "Stack Mode",
-            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetNames(typeof(InventoryStackMode)).ToList(),
-            SelectedOption = config.StackMode.ToString(),
-            OnOptionSelected = selected =>
-            {
-                if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
-                {
-                    config.StackMode = parsed;
-                    System.AddonInventoryWindow.ManualInventoryRefresh();
-                }
-            }
-        };
-        ContentNode.AddNode(_stackDropDown);
+        ContentNode.AddNode(new FunctionalConfigurationNode());
 
         ContentNode.AddNode(new LayoutConfigurationNode());
 

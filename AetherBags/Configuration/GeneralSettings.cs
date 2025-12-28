@@ -11,6 +11,8 @@ public class GeneralSettings
     public int CompactLookahead { get; set; } = 24;
     public bool CompactPreferLargestFit { get; set; } = true;
     public bool CompactStableInsert { get; set; } = true;
+    public bool OpenWithGameInventory { get; set; } = true;
+    public bool HideGameInventory { get; set; } = false;
 }
 
 public enum InventoryStackMode : byte

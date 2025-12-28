@@ -1,15 +1,9 @@
-using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
-using Lumina.Excel;
-using Lumina.Excel.Sheets;
-using Lumina.Text;
-using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -75,30 +69,25 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
         messageTextNode.Size = Size with { Y = 16 };
     }
 
-    public InventoryNotificationType NotificationType
+    public InventoryNotificationInfo NotificationInfo
     {
         get;
         set
         {
             field = value;
-            if (value == InventoryNotificationType.None)
+
+            titleTextNode.SeString = value.Title;
+            messageTextNode.SeString = value.Message;
+
+            if (value.Title.IsEmpty && value.Message.IsEmpty)
             {
-                titleTextNode.String = string.Empty;
-                messageTextNode.String = string.Empty;
-                Timeline?.PlayAnimation(17); // Hide
+                Timeline?.PlayAnimation(17);
+                return;
             }
-            else
-            {
-                var info = NotificationState.GetNotificationInfo((uint)value);
-                if (info != null)
-                {
-                    titleTextNode.SeString = info.Title;
-                    messageTextNode.SeString = info.Message;
-                    Timeline?.PlayAnimation(101); // Show
-                }
-            }
+
+            Timeline?.PlayAnimation(101);
         }
-    } = InventoryNotificationType.None;
+    }
 
     // Future Zeff, this always goes on a parent
     private Timeline ParentLabels => new TimelineBuilder()

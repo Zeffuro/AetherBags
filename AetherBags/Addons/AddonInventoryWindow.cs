@@ -125,9 +125,6 @@ public class AddonInventoryWindow : NativeAddon
             RefreshCategoriesCore(doAutosize);
         }
 
-        InventoryNotificationType currentNotificationType = (InventoryNotificationType) AgentInventory.Instance()->OpenTitleId;
-        if(currentNotificationType != _notificationNode.NotificationType) _notificationNode.NotificationType = currentNotificationType;
-
         base.OnUpdate(addon);
     }
 
@@ -291,6 +288,14 @@ public class AddonInventoryWindow : NativeAddon
 
     private void ResizeWindow(float width, float height)
         => ResizeWindow(width, height, recalcLayout: true);
+
+    public void SetNotification(InventoryNotificationInfo info)
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            if(IsOpen) _notificationNode.NotificationInfo = info;
+        }, delayTicks: 1);
+    }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {

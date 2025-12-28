@@ -56,8 +56,8 @@ public class InventoryNotificationState
         return notificationCache.GetValueOrDefault((InventoryNotificationType)openTitleId);
     }
 
-    public record InventoryNotificationInfo(ReadOnlySeString Title, ReadOnlySeString Message);
 }
+public record InventoryNotificationInfo(ReadOnlySeString Title, ReadOnlySeString Message);
 
 public enum InventoryNotificationType : uint
 {

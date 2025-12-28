@@ -50,7 +50,7 @@ public sealed class StringListEditorNode : VerticalListNode
                 if (!string.IsNullOrWhiteSpace(value) && ! _list.Contains(value))
                 {
                     _list.Add(value);
-                    _addInput.String = "";
+                    _addInput?.String = "";
                     RefreshItems();
                     _onChanged?.Invoke();
                 }

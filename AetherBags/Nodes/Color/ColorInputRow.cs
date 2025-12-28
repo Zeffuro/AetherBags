@@ -8,17 +8,15 @@ namespace AetherBags.Nodes.Color;
 
 public class ColorInputRow : HorizontalListNode
 {
-    private readonly GridNode _gridNode;
     private ColorPickerAddon? _colorPickerAddon;
     private readonly LabelTextNode _labelTextNode;
-    private ColorPreviewButtonNode _colorPreview;
-    private Vector4 _initialColor;
+    private readonly ColorPreviewButtonNode _colorPreview;
 
     public ColorInputRow()
     {
         InitializeColorPicker();
 
-        _initialColor = CurrentColor;
+        var initialColor = CurrentColor;
 
         _colorPreview = new ColorPreviewButtonNode
         {
@@ -33,7 +31,7 @@ public class ColorInputRow : HorizontalListNode
                 {
                     CurrentColor = color;
                     _colorPreview?.Color = color;
-                    _initialColor = color;
+                    initialColor = color;
                     OnColorConfirmed?.Invoke(color);
                 };
                 _colorPickerAddon?.OnColorPreviewed = color =>
@@ -41,7 +39,7 @@ public class ColorInputRow : HorizontalListNode
                     _colorPreview?.Color = color;
                     OnColorChange?.Invoke(color);
                 };
-                _colorPickerAddon?.OnColorCancelled = () => OnColorCanceled?.Invoke(_initialColor);
+                _colorPickerAddon?.OnColorCancelled = () => OnColorCanceled?.Invoke(initialColor);
             }
         };
         _colorPreview.AttachNode(this);
