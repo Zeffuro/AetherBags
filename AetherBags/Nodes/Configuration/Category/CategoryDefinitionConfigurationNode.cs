@@ -17,6 +17,7 @@ namespace AetherBags.Nodes.Configuration.Category;
 public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 {
     private readonly CheckboxNode _enabledCheckbox;
+    private readonly CheckboxNode _pinnedCheckbox;
     private readonly TextInputNode _nameInputNode;
     private readonly TextInputNode _descriptionInputNode;
     private readonly ColorInputRow _colorInputNode;
@@ -97,6 +98,20 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
             },
         };
         AddNode(_enabledCheckbox);
+
+        _pinnedCheckbox = new CheckboxNode
+        {
+            Size = new Vector2(200, 20),
+            String = "Pinned",
+            IsChecked = CategoryDefinition.Pinned,
+            OnClick = isChecked =>
+            {
+                CategoryDefinition.Pinned = isChecked;
+                NotifyChanged();
+                NotifyCategoryPropertyChanged();
+            },
+        };
+        AddNode(_pinnedCheckbox);
 
         AddNode(new LabelTextNode
         {
@@ -471,6 +486,7 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
         if (! _isInitialized) return;
 
         _enabledCheckbox.IsChecked = CategoryDefinition.Enabled;
+        _pinnedCheckbox.IsChecked = CategoryDefinition.Pinned;
         _colorInputNode.CurrentColor = CategoryDefinition.Color;
         _nameInputNode.String = CategoryDefinition.Name;
         _descriptionInputNode.String = CategoryDefinition.Description;

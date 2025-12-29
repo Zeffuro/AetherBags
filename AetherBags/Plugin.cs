@@ -1,14 +1,11 @@
-using System;
 using System.Numerics;
 using AetherBags.AddonLifecycles;
 using AetherBags.Addons;
 using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
+using AetherBags.Inventory;
 using Dalamud.Plugin;
-using Dalamud.Game.Command;
-using Dalamud.Hooking;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using KamiToolKit;
 
 namespace AetherBags;
@@ -50,6 +47,8 @@ public unsafe class Plugin : IDalamudPlugin
 
         _commandHandler = new CommandHandler();
 
+        Services.GameInventory.InventoryChanged += InventoryState.OnRawItemAdded;
+
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
@@ -64,6 +63,8 @@ public unsafe class Plugin : IDalamudPlugin
     public void Dispose()
     {
         Util.SaveConfig(System.Config);
+
+        Services.GameInventory.InventoryChanged -= InventoryState.OnRawItemAdded;
 
         Services.ClientState.Login -= OnLogin;
         Services.ClientState.Logout -= OnLogout;
@@ -82,16 +83,19 @@ public unsafe class Plugin : IDalamudPlugin
     private void OnLogin()
     {
         System.Config = Util.LoadConfigOrDefault();
+        InventoryState.TrackLootedItems = true;
 
-        #if DEBUG
-            System.AddonInventoryWindow.Toggle();
-            System.AddonConfigurationWindow.Toggle();
-        #endif
+#if DEBUG
+        System.AddonInventoryWindow.Toggle();
+        System.AddonConfigurationWindow.Toggle();
+#endif
     }
 
     private void OnLogout(int type, int code)
     {
         Util.SaveConfig(System.Config);
+        InventoryState.TrackLootedItems = false;
         System.AddonInventoryWindow.Close();
+        System.AddonConfigurationWindow.Close();
     }
 }

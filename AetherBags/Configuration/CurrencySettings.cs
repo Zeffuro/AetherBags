@@ -1,6 +1,5 @@
 using System.Numerics;
 using KamiToolKit.Classes;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace AetherBags.Configuration;
 

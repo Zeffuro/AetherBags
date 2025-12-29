@@ -1,10 +1,10 @@
 using AetherBags.Configuration;
+using AetherBags.Currency;
 using Dalamud.Game.Inventory;
+using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using System.Collections.Generic;
 using System.Linq;
-using AetherBags.Currency;
-using CurrencyManager = FFXIVClientStructs.FFXIV.Client.Game.CurrencyManager;
 
 namespace AetherBags.Inventory;
 
@@ -21,6 +21,9 @@ public static unsafe class InventoryState
     private static readonly List<UserCategoryDefinition> UserCategoriesSortedScratch = new(capacity: 64);
     private static readonly List<ulong> RemoveKeysScratch = new(capacity:  256);
     private static readonly HashSet<ulong> ClaimedKeys = new(capacity: 512);
+    private static readonly List<LootedItemInfo>? LootedItems = new(capacity: 512);
+
+    public static bool TrackLootedItems = false;
 
     public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
@@ -135,6 +138,38 @@ public static unsafe class InventoryState
     public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
         => InventoryScanner.GetInventoryContainer(inventoryType);
 
+    internal static void OnRawItemAdded(IReadOnlyCollection<InventoryEventArgs> events)
+    {
+        if (!TrackLootedItems) return;
+
+        bool updateRequested = false;
+
+        foreach (var eventData in events)
+        {
+            if (!StandardInventories.Contains(eventData.Item.ContainerType)) continue;
+
+            if (!Services.ClientState.IsLoggedIn) return;
+            if (eventData is not (InventoryItemAddedArgs or InventoryItemChangedArgs)) return;
+            if (eventData is InventoryItemChangedArgs changedArgs && changedArgs.OldItemState.Quantity >= changedArgs.Item.Quantity) return;
+
+            var inventoryItem = (InventoryItem*)eventData.Item.Address;
+            var changeAmount = eventData is InventoryItemChangedArgs changed ? changed.Item.Quantity - changed.OldItemState.Quantity : eventData.Item.Quantity;
+
+            LootedItems?.Add(new LootedItemInfo(
+                LootedItems.Count,
+                *inventoryItem,
+                changeAmount)
+            );
+
+            updateRequested = true;
+        }
+
+        if (updateRequested)
+        {
+            System.AddonInventoryWindow?.UpdateLootedCategory(LootedItems ?? []);
+        }
+    }
+
     private static void ClearAll()
     {
         AggByKey.Clear();
@@ -152,5 +187,6 @@ public static unsafe class InventoryState
         FilteredCategories.Clear();
         RemoveKeysScratch.Clear();
         ClaimedKeys.Clear();
+        LootedItems?.Clear();
     }
 }

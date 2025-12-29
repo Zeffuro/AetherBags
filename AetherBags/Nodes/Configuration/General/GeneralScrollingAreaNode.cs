@@ -1,9 +1,6 @@
-using System;
-using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Nodes.Configuration.Layout;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;

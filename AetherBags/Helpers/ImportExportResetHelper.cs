@@ -1,8 +1,6 @@
-using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Helpers.Import;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.ImGuiNotification;
 
 namespace AetherBags.Helpers;

@@ -1,4 +1,3 @@
-using System;
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;

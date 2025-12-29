@@ -1,12 +1,10 @@
 using System;
 using System.Numerics;
-using AetherBags.Extensions;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -106,6 +104,8 @@ public class InventoryCategoryNode : SimpleComponentNode
             RecalculateSize();
         }
     }
+
+    public bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
 
     public void BeginHeaderHover()
     {

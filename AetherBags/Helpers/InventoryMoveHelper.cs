@@ -1,8 +1,4 @@
-using AetherBags. Extensions;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Component. GUI;
-using ValueType = FFXIVClientStructs. FFXIV. Component.GUI.ValueType;
 
 namespace AetherBags. Helpers;
 

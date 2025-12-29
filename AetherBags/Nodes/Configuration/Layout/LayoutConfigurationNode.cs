@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using AetherBags.Configuration;
 using KamiToolKit.Nodes;
-using KamiToolKit.Classes;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
@@ -40,7 +39,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         var compactPackingCheckboxNode = new CheckboxNode
         {
-            Size = Size with { Y = 18 },
+            Height = 18,
             IsVisible = true,
             String = "Use Compact Packing",
             IsChecked = config.CompactPackingEnabled,
@@ -58,7 +57,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
         AddTab(1);
         _preferLargestFitCheckboxNode = new CheckboxNode
         {
-            Size = Size with { Y = 18 },
+            Height = 18,
             IsVisible = true,
             String = "Prefer Largest Fit",
             IsEnabled = config.CompactPackingEnabled,
@@ -73,7 +72,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         _useStableInsertCheckboxNode = new CheckboxNode
         {
-            Size = Size with { Y = 18 },
+            Height = 18,
             IsVisible = true,
             String = "Use Stable Insert",
             IsEnabled = config.CompactPackingEnabled,

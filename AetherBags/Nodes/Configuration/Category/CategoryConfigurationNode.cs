@@ -1,7 +1,5 @@
 using System;
-using System.Numerics;
 using AetherBags.Addons;
-using AetherBags.Configuration;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Nodes;
 

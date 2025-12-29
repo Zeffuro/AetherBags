@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
-using AetherBags.Extensions;
 using AetherBags.Inventory;
-using AetherBags.Nodes;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.Gui;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -21,6 +17,7 @@ namespace AetherBags.Addons;
 public class AddonInventoryWindow : NativeAddon
 {
     private readonly InventoryCategoryHoverCoordinator _hoverCoordinator = new();
+    private readonly InventoryCategoryPinCoordinator _pinCoordinator = new();
     private readonly HashSet<InventoryCategoryNode> _hoverSubscribed = new();
 
     private InventoryNotificationNode _notificationNode = null!;
@@ -135,6 +132,20 @@ public class AddonInventoryWindow : NativeAddon
         RefreshCategoriesCore(true);
     }
 
+    public void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItemInfos)
+    {
+        if (!Services.ClientState.IsLoggedIn) return;
+        _recentlyLootedCategoryNode?.CategorizedInventory.Items.AddRange(
+            lootedItemInfos.Select(x => new ItemInfo
+            {
+                ItemCount = x.Quantity,
+                Key = uint.MaxValue - 1,
+                Item = x.Item,
+            })
+            .ToList());
+        RefreshCategoriesCore(true);
+    }
+
     public void ManualCurrencyRefresh()
     {
         if (!Services.ClientState.IsLoggedIn) return;
@@ -182,6 +193,10 @@ public class AddonInventoryWindow : NativeAddon
                 Size = ContentSize with { Y = 120 },
             });
 
+        bool pinsChanged = _pinCoordinator.ApplyPinnedStates(_categoriesNode);
+        if (pinsChanged)
+            _hoverCoordinator.ResetAll(_categoriesNode);
+
         WireHoverHandlers();
 
         if (autosize) AutoSizeWindow();
@@ -191,6 +206,7 @@ public class AddonInventoryWindow : NativeAddon
             _categoriesNode.RecalculateLayout();
         }
     }
+
 
     private void WireHoverHandlers()
     {

@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using AetherBags.Extensions;
 using AetherBags.Interop;
 using FFXIVClientStructs.FFXIV.Client.Enums;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -9,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
-using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes;
 

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace AetherBags.Extensions;
 
 public static class LoggerExtensions

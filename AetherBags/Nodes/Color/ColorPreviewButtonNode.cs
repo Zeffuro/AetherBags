@@ -1,7 +1,5 @@
 using System.Numerics;
-using Dalamud.Game.Addon.Events.EventDataTypes;
 using KamiToolKit.Nodes;
-using ColorPreviewNode = AetherBags.Nodes.Color.ColorPreviewNode;
 
 namespace AetherBags.Nodes.Color;
 

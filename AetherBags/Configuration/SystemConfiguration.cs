@@ -1,6 +1,3 @@
-using System.Numerics;
-using KamiToolKit.Classes;
-
 namespace AetherBags.Configuration;
 
 public class SystemConfiguration

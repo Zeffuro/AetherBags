@@ -1,6 +1,5 @@
 using AetherBags.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace AetherBags.Inventory;

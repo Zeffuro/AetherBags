@@ -73,6 +73,7 @@ public static class CategoryBucketManager
                         Name = category.Name,
                         Description = category.Description,
                         Color = category.Color,
+                        IsPinned = category.Pinned,
                     },
                     Items = new List<ItemInfo>(capacity: 16),
                     FilteredItems = new List<ItemInfo>(capacity: 16),
@@ -86,6 +87,7 @@ public static class CategoryBucketManager
                 bucket.Category.Name = category.Name;
                 bucket.Category.Description = category.Description;
                 bucket.Category.Color = category.Color;
+                bucket.Category.IsPinned = category.Pinned;
             }
 
             foreach (var itemKvp in itemInfoByKey)
