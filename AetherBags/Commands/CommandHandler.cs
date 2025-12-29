@@ -1,5 +1,6 @@
 using System;
 using AetherBags.Helpers;
+using AetherBags.Inventory;
 using Dalamud.Game.Command;
 
 namespace AetherBags.Commands;
@@ -74,13 +75,19 @@ public class CommandHandler : IDisposable
                 break;
 
             case "import":
-                ImportExportResetHelper.TryImportConfigFromClipboard(System.Config);
+                ImportExportResetHelper.TryImportConfigFromClipboard();
                 System.AddonInventoryWindow.ManualInventoryRefresh();
                 break;
 
             case "reset":
                 ImportExportResetHelper.TryResetConfig();
                 System.AddonInventoryWindow.ManualInventoryRefresh();
+                break;
+
+            case "count":
+            case "stats":
+                var stats = InventoryState.GetInventoryStats();
+                PrintChat($"{stats.UsedSlots}/{stats.TotalSlots} slots used ({stats.UsagePercent:F0}%) | {stats.TotalItems} unique items | {stats.CategoryCount} categories");
                 break;
 
             case "help":

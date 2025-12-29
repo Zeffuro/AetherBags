@@ -97,6 +97,32 @@ public static unsafe class InventoryState
             invert);
     }
 
+    public static InventoryStats GetInventoryStats()
+    {
+        int totalItems = ItemInfoByKey.Count;
+        int totalQuantity = 0;
+
+        foreach (var kvp in ItemInfoByKey)
+        {
+            totalQuantity += kvp.Value.ItemCount;
+        }
+
+        uint emptySlots = InventoryManager.Instance()->GetEmptySlotsInBag();
+        const int totalSlots = 140;
+
+        var categories = GetInventoryItemCategories(string.Empty);
+        int categoryCount = categories.Count;
+
+        return new InventoryStats
+        {
+            TotalItems = totalItems,
+            TotalQuantity = totalQuantity,
+            EmptySlots = (int)emptySlots,
+            TotalSlots = totalSlots,
+            CategoryCount = categoryCount,
+        };
+    }
+
     public static string GetEmptyItemSlotsString()
         => InventoryScanner.GetEmptyItemSlotsString();
 

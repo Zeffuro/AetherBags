@@ -1,5 +1,6 @@
 using System.Numerics;
 using AetherBags.Inventory;
+using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -41,13 +42,21 @@ public class InventoryDragDropNode : DragDropFixedNode
 
     private unsafe void OnItemMouseDown(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         InventoryItem item = ItemInfo.Item;
+        if (Services.KeyState[VirtualKey.SHIFT] && atkEventData->IsLeftClick && System.Config.General.LinkItemEnabled)
+        {
+            AgentChatLog.Instance()->LinkItem(item.ItemId);
+            return;
+        }
+
         if (!atkEventData->IsRightClick) return;
 
         AgentInventoryContext* context = AgentInventoryContext.Instance();
         context->OpenForItemSlot(item.Container, item.Slot, 0, context->AddonId);
     }
 
-    private unsafe void OnItemClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+    private unsafe void OnItemClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
+    {
+        if (Services.KeyState[VirtualKey.SHIFT] && System.Config.General.LinkItemEnabled) return;
         InventoryItem item = ItemInfo.Item;
         if (!atkEventData->IsLeftClick) return;
         item.UseItem();

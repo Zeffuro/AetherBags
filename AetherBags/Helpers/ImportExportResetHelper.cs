@@ -8,11 +8,8 @@ using Dalamud.Interface.ImGuiNotification;
 namespace AetherBags.Helpers;
 
 public abstract class ImportExportResetHelper {
-    public static void TryImportConfigFromClipboard(SystemConfiguration currentOverlayConfig)
+    public static void TryImportConfigFromClipboard()
     {
-        if (!Services.KeyState[VirtualKey.SHIFT])
-            return;
-
         var clipboard = ImGui.GetClipboardText();
         var notification = new Notification { Content = "Configuration imported from clipboard.", Type = NotificationType.Success };
 
@@ -66,9 +63,6 @@ public abstract class ImportExportResetHelper {
 
     public static void TryImportSortaKindaFromClipboard(bool replaceExisting)
     {
-        //if (!Services.KeyState[VirtualKey.SHIFT])
-        //    return;
-
         var notification = new Notification { Content = "SortaKinda categories imported.", Type = NotificationType.Success };
 
         if (!SortaKindaImportExport.TryImportFromClipboard(System.Config, replaceExisting, out var error))

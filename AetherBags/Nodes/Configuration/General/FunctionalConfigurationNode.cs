@@ -55,6 +55,19 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         AddNode(_hideDefaultBagsCheckboxNode);
         SubtractTab(1);
 
+        var linkItemCheckBox = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Allow item linking with Shift+Click",
+            IsChecked = config.LinkItemEnabled,
+            OnClick = isChecked =>
+            {
+                config.LinkItemEnabled = isChecked;
+            }
+        };
+        AddNode(linkItemCheckBox);
+
         _stackDropDown = new LabeledDropdownNode
         {
             Size = new Vector2(300, 20),
