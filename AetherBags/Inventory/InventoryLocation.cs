@@ -4,9 +4,13 @@ namespace AetherBags.Inventory;
 
 public readonly record struct InventoryLocation(InventoryType Container, ushort Slot)
 {
-    public static readonly InventoryLocation Invalid = new(0, 0);
+    public static readonly InventoryLocation Invalid = new((InventoryType)uint.MaxValue, ushort.MaxValue);
 
-    public bool IsValid => Container != 0;
+    public bool IsValid => Container.IsMainInventory ||
+                           Container.IsSaddleBag ||
+                           Container.IsArmory ||
+                           Container.IsRetainer ||
+                           Container == InventoryType.EquippedItems;
 
     public override string ToString() => $"{Container}@{Slot}";
 }

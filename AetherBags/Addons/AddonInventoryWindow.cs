@@ -8,6 +8,8 @@ using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
@@ -325,6 +327,12 @@ public class AddonInventoryWindow : NativeAddon
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
+        if (blockingAddonId != 0)
+        {
+            RaptureAtkModule.Instance()->CloseAddon(blockingAddonId);
+        }
+
         Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 

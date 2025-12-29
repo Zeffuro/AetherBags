@@ -260,10 +260,14 @@ public class InventoryCategoryNode : SimpleComponentNode
         AgentInventoryContext.Instance()->DiscardItem(item.Item.GetLinkedItem(), item.Item.Container, item.Item.Slot, addonId);
     }
 
-    private void OnPayloadAccepted(DragDropNode _, DragDropPayload payload, ItemInfo targetItemInfo)
+    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
     {
+        InventoryItem item = targetItemInfo.Item;
         if (!payload.IsValidInventoryPayload)
+        {
+            Services.Logger.Warning($"[OnPayload] Invalid payload type: {payload.Type}");
             return;
+        }
 
         InventoryLocation sourceLocation = payload.InventoryLocation;
 
@@ -274,9 +278,18 @@ public class InventoryCategoryNode : SimpleComponentNode
         }
 
         InventoryLocation targetLocation = new InventoryLocation(
-            targetItemInfo.Item.Container,
-            (ushort)targetItemInfo.Item.Slot
+            item.Container,
+            (ushort)item.Slot
         );
+
+        if (sourceLocation.Container.IsSameContainerGroup(targetLocation.Container))
+        {
+            Services.Logger.Debug($"[OnPayload] Source and target are in the same container group; no move performed");
+            node.Payload = payload;
+            node.IconId = item.IconId;
+            System.AddonInventoryWindow.ManualInventoryRefresh();
+            return;
+        };
 
         Services.Logger.Debug($"[OnPayload] Moving {sourceLocation} -> {targetLocation}");
 
@@ -284,5 +297,6 @@ public class InventoryCategoryNode : SimpleComponentNode
             sourceLocation.Container, sourceLocation.Slot,
             targetLocation.Container, targetLocation.Slot
         );
+        System.AddonInventoryWindow.ManualInventoryRefresh();
     }
 }
