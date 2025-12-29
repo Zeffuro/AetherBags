@@ -24,6 +24,20 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
+        var showCategoryItemAmountCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Show Category Item Amount",
+            IsChecked = config.ShowCategoryItemCount,
+            OnClick = isChecked =>
+            {
+                config.ShowCategoryItemCount = isChecked;
+                System.AddonInventoryWindow.ManualInventoryRefresh();
+            }
+        };
+        AddNode(showCategoryItemAmountCheckboxNode);
+
         var compactPackingCheckboxNode = new CheckboxNode
         {
             Size = Size with { Y = 18 },

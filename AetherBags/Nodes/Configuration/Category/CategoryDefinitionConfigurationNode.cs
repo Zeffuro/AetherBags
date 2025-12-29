@@ -40,6 +40,10 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
     private readonly StateFilterRowNode _collectableFilter;
     private readonly StateFilterRowNode _dyeableFilter;
     private readonly StateFilterRowNode _repairableFilter;
+    private readonly StateFilterRowNode _hqFilter;
+    private readonly StateFilterRowNode _desynthFilter;
+    private readonly StateFilterRowNode _glamourFilter;
+    private readonly StateFilterRowNode _spiritbondFilter;
 
     private readonly UintListEditorNode _allowedItemIdsEditor;
     private readonly StringListEditorNode _allowedNamePatternsEditor;
@@ -240,6 +244,18 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 
         _repairableFilter = new StateFilterRowNode("Repairable", CategoryDefinition.Rules.Repairable, NotifyChanged);
         AddNode(_repairableFilter);
+
+        _hqFilter = new StateFilterRowNode("High Quality", CategoryDefinition.Rules.HighQuality, NotifyChanged);
+        AddNode(_hqFilter);
+
+        _desynthFilter = new StateFilterRowNode("Desynthesizable", CategoryDefinition.Rules.Desynthesizable, NotifyChanged);
+        AddNode(_desynthFilter);
+
+        _glamourFilter = new StateFilterRowNode("Glamourable", CategoryDefinition.Rules.Glamourable, NotifyChanged);
+        AddNode(_glamourFilter);
+
+        _spiritbondFilter = new StateFilterRowNode("Spiritbonded", CategoryDefinition.Rules.FullySpiritbonded, NotifyChanged);
+        AddNode(_spiritbondFilter);
 
         AddNode(CreateSectionHeader("List Filters"));
 

@@ -43,6 +43,10 @@ public class CategoryRuleSet
     public StateFilter Collectable { get; set; } = new();
     public StateFilter Dyeable { get; set; } = new();
     public StateFilter Repairable { get; set; } = new();
+    public StateFilter HighQuality { get; set; } = new();
+    public StateFilter Desynthesizable { get; set; } = new();
+    public StateFilter Glamourable { get; set; } = new();
+    public StateFilter FullySpiritbonded { get; set; } = new();
 }
 
 public class RangeFilter<T> where T : struct, IComparable<T>

@@ -73,6 +73,10 @@ internal static class UserCategoryMatcher
         if (!MatchesToggle(rules.Collectable, item.IsCollectable)) return false;
         if (!MatchesToggle(rules.Dyeable, item.IsDyeable)) return false;
         if (!MatchesToggle(rules.Repairable, item.IsRepairable)) return false;
+        if (!MatchesToggle(rules.HighQuality, item.IsHq)) return false;
+        if (!MatchesToggle(rules.Desynthesizable, item.IsDesynthesizable)) return false;
+        if (!MatchesToggle(rules.Glamourable, item.IsGlamourable)) return false;
+        if (!MatchesToggle(rules.FullySpiritbonded, item.IsSpiritbonded)) return false;
 
         return true;
     }

@@ -73,6 +73,16 @@ public class CommandHandler : IDisposable
                 HandleExport();
                 break;
 
+            case "import":
+                ImportExportResetHelper.TryImportConfigFromClipboard(System.Config);
+                System.AddonInventoryWindow.ManualInventoryRefresh();
+                break;
+
+            case "reset":
+                ImportExportResetHelper.TryResetConfig();
+                System.AddonInventoryWindow.ManualInventoryRefresh();
+                break;
+
             case "help":
             case "?":
                 PrintHelp();
@@ -101,8 +111,7 @@ public class CommandHandler : IDisposable
 
     private void HandleExport()
     {
-        // TODO: Implement export functionality
-        PrintChat("Export functionality coming soon!");
+        ImportExportResetHelper.TryExportConfigToClipboard(System.Config);
     }
 
     private void PrintHelp()
@@ -114,8 +123,10 @@ public class CommandHandler : IDisposable
   /ab hide         - Close inventory window
   /ab refresh      - Force refresh inventory
   /ab search <term> - Open and search for items
+  /ab import       - Import config from clipboard (hold Shift)
   /ab import-sk    - Import from SortaKinda clipboard
   /ab export       - Export config to clipboard
+  /ab reset        - Reset config to default
   /ab help         - Show this help message";
 
         PrintChat(helpText);

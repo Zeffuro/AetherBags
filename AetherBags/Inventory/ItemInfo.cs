@@ -57,6 +57,12 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     public bool IsDyeable => Row.DyeCount > 0;
     public bool IsRepairable => Row.ItemRepair.RowId != 0;
 
+    public bool IsHq => Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality);
+    public bool IsDesynthesizable => Row.Desynth > 0;
+    public bool IsCraftable => Row.ItemAction.RowId != 0 || Row.CanBeHq; // Simplified check
+    public bool IsGlamourable => Row.IsGlamorous;
+    public bool IsSpiritbonded => Item.SpiritbondOrCollectability >= 10000; // 100% = 10000
+
     private string Description => _description ??= Row.Description.ToString();
 
     public InventoryMappedLocation VisualLocation =>

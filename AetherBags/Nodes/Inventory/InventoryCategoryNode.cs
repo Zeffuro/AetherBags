@@ -72,7 +72,9 @@ public class InventoryCategoryNode : SimpleComponentNode
         {
             field = value;
 
-            _fullHeaderText = value.Category.Name;
+            _fullHeaderText = System.Config.General.ShowCategoryItemCount
+                ? $"{value.Category.Name} ({value.Items.Count})"
+                : value.Category.Name;
 
             _categoryNameTextNode.String = _fullHeaderText;
             _categoryNameTextNode.TextColor = value.Category.Color;
