@@ -5,6 +5,8 @@ using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -233,6 +235,7 @@ public class InventoryCategoryNode : SimpleComponentNode
                 Int2 = location.Slot,
             },
             IsClickable = true,
+            OnDiscard = node => OnDiscard(node, data),
             OnEnd = _ => System.AddonInventoryWindow.ManualInventoryRefresh(),
             OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
             OnRollOver = node =>
@@ -249,6 +252,12 @@ public class InventoryCategoryNode : SimpleComponentNode
             },
             ItemInfo = data
         };
+    }
+
+    private unsafe void OnDiscard(DragDropNode node, ItemInfo item)
+    {
+        uint addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(node)->Id;
+        AgentInventoryContext.Instance()->DiscardItem(item.Item.GetLinkedItem(), item.Item.Container, item.Item.Slot, addonId);
     }
 
     private void OnPayloadAccepted(DragDropNode _, DragDropPayload payload, ItemInfo targetItemInfo)
