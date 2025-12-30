@@ -266,17 +266,20 @@ public class InventoryCategoryNode : SimpleComponentNode
     private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
     {
         InventoryItem item = targetItemInfo.Item;
-        if (!payload.IsValidInventoryPayload)
+        if (! payload.IsValidInventoryPayload)
         {
             Services.Logger.Warning($"[OnPayload] Invalid payload type: {payload.Type}");
             return;
         }
 
+        // Debug:  log raw payload values
+        Services. Logger.Debug($"[OnPayload] Raw payload: Type={payload.Type} Int1={payload.Int1} Int2={payload.Int2}");
+
         InventoryLocation sourceLocation = payload.InventoryLocation;
 
-        if (!sourceLocation.IsValid)
+        if (! sourceLocation.IsValid)
         {
-            Services.Logger.Warning($"[OnPayload] Could not resolve source from payload");
+            Services.Logger. Warning($"[OnPayload] Could not resolve source from payload");
             return;
         }
 
@@ -284,6 +287,11 @@ public class InventoryCategoryNode : SimpleComponentNode
             item.Container,
             (ushort)item.Slot
         );
+
+        // Debug: log resolved locations
+        Services.Logger.Debug($"[OnPayload] Source: {sourceLocation. Container} @ {sourceLocation. Slot}");
+        Services.Logger.Debug($"[OnPayload] Target: {targetLocation.Container} @ {targetLocation.Slot}");
+
 
         if (sourceLocation.Container.IsSameContainerGroup(targetLocation.Container))
         {
@@ -293,6 +301,12 @@ public class InventoryCategoryNode : SimpleComponentNode
             OnRefreshRequested?.Invoke();
             return;
         };
+
+        if (!sourceLocation.Container.IsLoaded || !targetLocation.Container.IsLoaded)
+        {
+            Services.Logger.Debug($"[OnPayload] Source or target container is not loaded; cannot move");
+            return;
+        }
 
         Services.Logger.Debug($"[OnPayload] Moving {sourceLocation} -> {targetLocation}");
 

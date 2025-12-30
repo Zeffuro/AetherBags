@@ -21,6 +21,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected WrappingGridNode<InventoryCategoryNode> CategoriesNode = null!;
     protected TextInputWithHintNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
+    protected TextNode?  SlotCounterNode { get; set; }
     protected CircleButtonNode SettingsButtonNode = null!;
 
     protected virtual float MinWindowWidth => 600;
@@ -41,6 +42,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
 
     protected virtual bool HasFooter => true;
     protected virtual bool HasPinning => true;
+    protected virtual bool HasSlotCounter => false;
 
     public void ManualInventoryRefresh()
     {
@@ -127,10 +129,16 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         Vector2 contentPos = ContentStartPosition;
         Vector2 contentSize = ContentSize;
 
+        float footerH = HasFooter || HasSlotCounter ?  FooterHeight : 0;
+
         if (HasFooter)
         {
-            FooterNode.Position = new Vector2(contentPos.X, contentPos.Y + contentSize.Y - FooterHeight);
-            FooterNode.Size = new Vector2(contentSize.X, FooterHeight);
+            FooterNode.Position = new Vector2(contentPos.X, contentPos.Y + contentSize.Y - footerH);
+            FooterNode.Size = new Vector2(contentSize.X, footerH);
+        }
+        else if (HasSlotCounter && SlotCounterNode != null)
+        {
+            SlotCounterNode.Position = new Vector2(contentSize.X -80f, contentPos.Y + contentSize.Y - footerH + 4f);
         }
 
         float gridH = contentSize.Y - (HasFooter ? FooterHeight + FooterTopSpacing : 0);
@@ -168,7 +176,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
 
         float contentWidth = finalWidth - (ContentStartPosition.X * 2);
 
-        float footerSpace = HasFooter ? FooterHeight + FooterTopSpacing : 0;
+        float footerSpace = HasFooter || HasSlotCounter ?  FooterHeight + FooterTopSpacing : 0;
         float gridBudget = Math.Max(0f, MaxWindowHeight - footerSpace);
 
         CategoriesNode.Position = ContentStartPosition;

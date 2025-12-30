@@ -115,6 +115,9 @@ public static unsafe class InventoryItemExtensions {
             if (InventoryManager.Instance()->GetInventoryItemCount(itemId, true) > 0)
                 itemId += 1_000_000;
 
+            if (!item.Container.IsMainInventory)
+                return;
+
             AgentInventoryContext.Instance()->UseItem(itemId, type);
         }
     }

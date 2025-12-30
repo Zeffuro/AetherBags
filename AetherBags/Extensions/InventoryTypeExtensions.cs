@@ -165,6 +165,8 @@ public static unsafe class InventoryTypeExtensions
             _ => 0,
         };
 
+        public bool IsLoaded => InventoryManager.Instance()->GetInventoryContainer(inventoryType)->IsLoaded;
+
         public bool IsSameContainerGroup(InventoryType other)
             => inventoryType.ContainerGroup == other.ContainerGroup;
 

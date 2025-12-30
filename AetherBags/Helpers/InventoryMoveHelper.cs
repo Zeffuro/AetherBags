@@ -4,7 +4,6 @@ namespace AetherBags. Helpers;
 
 public static unsafe class InventoryMoveHelper
 {
-    // Requires the visual UI slots instead of actual slots.
     public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
         Services.Logger.Debug($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");

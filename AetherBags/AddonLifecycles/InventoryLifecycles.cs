@@ -17,7 +17,8 @@ public class InventoryLifecycles : IDisposable
 
     public InventoryLifecycles()
     {
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], PreRefreshHandler);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], InventoryPreRefreshHandler);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"], InventoryBuddyPreRefreshHandler);
         Services.Logger.Verbose("InventoryLifecycles initialized");
     }
 
@@ -32,7 +33,7 @@ public class InventoryLifecycles : IDisposable
     values[7] = can use Saddlebags (Agent InventoryBuddy IsActivatable)
     */
 
-    private unsafe void PreRefreshHandler(AddonEvent type, AddonArgs args)
+    private unsafe void InventoryPreRefreshHandler(AddonEvent type, AddonArgs args)
     {
         if (args is not AddonRefreshArgs refreshArgs)
             return;
@@ -69,8 +70,23 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
+    private void InventoryBuddyPreRefreshHandler(AddonEvent type, AddonArgs args)
+    {
+        if (args is not AddonRefreshArgs refreshArgs)
+            return;
+
+        GeneralSettings config = System.Config.General;
+
+        if (config.HideGameSaddleBags) refreshArgs.AtkValueCount = 0;
+        if (config.OpenSaddleBagsWithGameInventory)
+        {
+            System.AddonSaddleBagWindow.Toggle();
+        }
+    }
+
     public void Dispose()
     {
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
     }
 }

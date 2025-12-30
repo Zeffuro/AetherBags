@@ -80,6 +80,8 @@ public unsafe class Plugin : IDalamudPlugin
         _commandHandler.Dispose();
 
         System.AddonInventoryWindow.Dispose();
+        System.AddonSaddleBagWindow.Dispose();
+        //System.AddonRetainerWindow.Dispose();
         System.AddonConfigurationWindow.Dispose();
 
         KamiToolKitLibrary.Dispose();
@@ -104,6 +106,7 @@ public unsafe class Plugin : IDalamudPlugin
         Util.SaveConfig(System.Config);
         InventoryState.TrackLootedItems = false;
         System.AddonInventoryWindow.Close();
+        System.AddonSaddleBagWindow.Close();
         System.AddonConfigurationWindow.Close();
     }
 }

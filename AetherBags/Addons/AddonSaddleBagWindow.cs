@@ -7,6 +7,7 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -14,16 +15,20 @@ namespace AetherBags.Addons;
 public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 {
     private readonly SaddleBagState _inventoryState = new();
+    private TextNode _slotCounterNode = null!;
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
     protected override bool HasFooter => false;
+    protected override bool HasSlotCounter => true;
 
     protected override float MinWindowWidth => 400;
     protected override float MaxWindowWidth => 600;
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
+        WindowNode?.AddColor = new Vector3(-16f / 255f, -4f / 255f, 8f / 255f);
+
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
             Position = ContentStartPosition,
@@ -64,6 +69,19 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         };
         SettingsButtonNode.AttachNode(this);
 
+        _slotCounterNode = new TextNode
+        {
+            Position = new Vector2(Size.X - 10, 0),
+            Size = new Vector2(82, 20),
+            AlignmentType = AlignmentType.Right,
+            FontType = FontType.MiedingerMed,
+            TextFlags = TextFlags.Glare,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(32) // Could also be Color 65
+        };
+        _slotCounterNode.AttachNode(this);
+        SlotCounterNode = _slotCounterNode;
+
         LayoutContent();
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
@@ -72,6 +90,13 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         RefreshCategoriesCore(autosize: true);
 
         base.OnSetup(addon);
+    }
+
+    protected override void RefreshCategoriesCore(bool autosize)
+    {
+        _slotCounterNode.String = _inventoryState.GetEmptySlotsString();
+
+        base.RefreshCategoriesCore(autosize);
     }
 
     protected override void OnUpdate(AtkUnitBase* addon)
