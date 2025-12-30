@@ -19,6 +19,7 @@ public class InventoryLifecycles : IDisposable
     {
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], InventoryPreRefreshHandler);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"], InventoryBuddyPreRefreshHandler);
+        //Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["RetainerGrid0"], InventoryRetainerPreRefreshHandler);
         Services.Logger.Verbose("InventoryLifecycles initialized");
     }
 
@@ -70,6 +71,7 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
+    // TODO: Inventory/Retainers are not perma open, need some way to close it too.
     private void InventoryBuddyPreRefreshHandler(AddonEvent type, AddonArgs args)
     {
         if (args is not AddonRefreshArgs refreshArgs)
@@ -84,9 +86,26 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
+    // TODO: Inventory/Retainers are not perma open, need some way to close it too.
+    // TODO: Don't have the right retainer prerefresh handler yet.
+    private void InventoryRetainerPreRefreshHandler(AddonEvent type, AddonArgs args)
+    {
+        if (args is not AddonRefreshArgs refreshArgs)
+            return;
+
+        GeneralSettings config = System.Config.General;
+
+        if (config.HideGameRetainer) refreshArgs.AtkValueCount = 0;
+        if (config.OpenRetainerWithGameInventory)
+        {
+            System.AddonRetainerWindow.Toggle();
+        }
+    }
+
     public void Dispose()
     {
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["RetainerGrid0"]);
     }
 }

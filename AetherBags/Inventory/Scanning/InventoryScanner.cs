@@ -186,6 +186,8 @@ public static unsafe class InventoryScanner
         {
             InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
             InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
+            InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
+            InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
             InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
             _ => 0,
         };

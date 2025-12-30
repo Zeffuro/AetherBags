@@ -47,6 +47,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
 
     public void ManualRefresh()
     {
+        if (!IsOpen) return;
         if (!Services.ClientState.IsLoggedIn) return;
         if (_isRefreshing) return;
         try
@@ -61,13 +62,13 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         }
     }
 
-    protected virtual void RefreshAllInventoryWindows()
+    protected static void RefreshAllInventoryWindows()
     {
         Services.Framework.RunOnTick(() =>
         {
             System.AddonInventoryWindow?.ManualRefresh();
             System.AddonSaddleBagWindow?.ManualRefresh();
-            //AetherBags.System.AddonRetainerWindow?.ManualRefresh();
+            System.AddonRetainerWindow?.ManualRefresh();
         }, delayTicks: 2);
     }
 

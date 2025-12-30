@@ -12,6 +12,8 @@ public class GeneralSettings
     public bool HideGameInventory { get; set; } = false;
     public bool OpenSaddleBagsWithGameInventory { get; set; } = true;
     public bool HideGameSaddleBags { get; set; } = false;
+    public bool OpenRetainerWithGameInventory { get; set; } = true;
+    public bool HideGameRetainer { get; set; } = false;
     public bool ShowCategoryItemCount { get; set; } = false;
     public bool LinkItemEnabled { get; set; } = false;
 }

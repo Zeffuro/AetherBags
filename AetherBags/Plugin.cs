@@ -43,6 +43,13 @@ public unsafe class Plugin : IDalamudPlugin
             Size = new Vector2(750, 750),
         };
 
+        System.AddonRetainerWindow = new AddonRetainerWindow
+        {
+            InternalName = "AetherBags_Retainer",
+            Title = "AetherBags",
+            Size = new Vector2(750, 750),
+        };
+
         System.AddonConfigurationWindow = new AddonConfigurationWindow
         {
             InternalName = "AetherBags Config",
@@ -81,7 +88,7 @@ public unsafe class Plugin : IDalamudPlugin
 
         System.AddonInventoryWindow.Dispose();
         System.AddonSaddleBagWindow.Dispose();
-        //System.AddonRetainerWindow.Dispose();
+        System.AddonRetainerWindow.Dispose();
         System.AddonConfigurationWindow.Dispose();
 
         KamiToolKitLibrary.Dispose();
@@ -107,6 +114,7 @@ public unsafe class Plugin : IDalamudPlugin
         InventoryState.TrackLootedItems = false;
         System.AddonInventoryWindow.Close();
         System.AddonSaddleBagWindow.Close();
+        System.AddonRetainerWindow.Close();
         System.AddonConfigurationWindow.Close();
     }
 }

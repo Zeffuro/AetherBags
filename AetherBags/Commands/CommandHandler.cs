@@ -3,6 +3,7 @@ using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
 using Dalamud.Game.Command;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AetherBags.Commands;
 
@@ -29,7 +30,7 @@ public class CommandHandler : IDisposable
         });
     }
 
-    private void OnCommand(string command, string args)
+    private unsafe void OnCommand(string command, string args)
     {
         var argsParts = args.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var subCommand = argsParts.Length > 0 ? argsParts[0].ToLowerInvariant() : string.Empty;
@@ -93,6 +94,10 @@ public class CommandHandler : IDisposable
 
             case "saddle":
                 System.AddonSaddleBagWindow.Toggle();
+                break;
+
+            case "retainer":
+                System.AddonRetainerWindow.Toggle();
                 break;
 
             case "help":
