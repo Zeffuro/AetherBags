@@ -78,11 +78,12 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         LayoutContent();
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
+        _isSetupComplete = true;
+
         _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize:  true);
+        RefreshCategoriesCore(autosize: true);
 
         base.OnSetup(addon);
     }
@@ -105,12 +106,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         if (!Services.ClientState.IsLoggedIn) return;
         FooterNode.RefreshCurrencies();
-    }
-
-    private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
-    {
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
     }
 
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
@@ -146,9 +141,9 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             RaptureAtkModule.Instance()->CloseAddon(blockingAddonId);
         }
 
-        Services.AddonLifecycle.UnregisterListener(OnInventoryUpdate);
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
+        _isSetupComplete = false;
         base.OnFinalize(addon);
     }
 }

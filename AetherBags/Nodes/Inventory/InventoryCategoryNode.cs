@@ -222,12 +222,16 @@ public class InventoryCategoryNode : SimpleComponentNode
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
     {
         InventoryItem item = data.Item;
-        InventoryMappedLocation location = data.VisualLocation;
+        InventoryMappedLocation visualLocation = data.VisualLocation;
+
+        bool useVisualLocation = item.Container.IsMainInventory;
+        bool isSlotBlocked = item.Container.IsMainInventory && data.IsSlotBlocked;
+        float alpha = !isSlotBlocked && data.IsEligibleForContext ? 1.0f : 0.4f;
 
         return new InventoryDragDropNode
         {
             Size = new Vector2(42, 46),
-            Alpha = data.IsEligibleForContext || data.IsSlotBlocked ? 1.0f : 0.4f,
+            Alpha = alpha,
             IsVisible = true,
             IconId = item.IconId,
             AcceptedType = DragDropType.Item,
@@ -235,8 +239,8 @@ public class InventoryCategoryNode : SimpleComponentNode
             Payload = new DragDropPayload
             {
                 Type = DragDropType.Item,
-                Int1 = location.Container,
-                Int2 = location.Slot,
+                Int1 = useVisualLocation ? visualLocation.Container : (int)item.Container,
+                Int2 = useVisualLocation ? visualLocation.Slot : item.Slot,
             },
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
@@ -273,8 +277,8 @@ public class InventoryCategoryNode : SimpleComponentNode
             return;
         }
 
-        // Debug:  log raw payload values
-        Services. Logger.Debug($"[OnPayload] Raw payload: Type={payload.Type} Int1={payload.Int1} Int2={payload.Int2}");
+        // Debug:log raw payload values
+        Services.Logger.Debug($"[OnPayload] Raw payload: Type={payload.Type} Int1={payload.Int1} Int2={payload.Int2} Ref={payload.ReferenceIndex}");
 
         InventoryLocation sourceLocation = payload.InventoryLocation;
 

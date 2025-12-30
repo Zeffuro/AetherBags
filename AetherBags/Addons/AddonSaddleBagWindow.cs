@@ -3,9 +3,6 @@ using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -84,9 +81,10 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         LayoutContent();
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
-
         _inventoryState.RefreshFromGame();
+
+        _isSetupComplete = true;
+
         RefreshCategoriesCore(autosize: true);
 
         base.OnSetup(addon);
@@ -94,6 +92,9 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     protected override void RefreshCategoriesCore(bool autosize)
     {
+        if (!_isSetupComplete)
+            return;
+
         _slotCounterNode.String = _inventoryState.GetEmptySlotsString();
 
         base.RefreshCategoriesCore(autosize);
@@ -111,12 +112,6 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         }
 
         base.OnUpdate(addon);
-    }
-
-    private void OnSaddleBagUpdate(AddonEvent type, AddonArgs args)
-    {
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
     }
 
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
@@ -138,8 +133,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
-        Services.AddonLifecycle.UnregisterListener(OnSaddleBagUpdate);
-
+        _isSetupComplete = false;
         base.OnFinalize(addon);
     }
 }

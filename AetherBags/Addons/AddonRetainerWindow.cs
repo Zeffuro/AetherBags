@@ -109,9 +109,9 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         LayoutContent();
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, ["InventoryRetainer", "InventoryRetainerLarge"], OnRetainerInventoryUpdate);
-
         _inventoryState.RefreshFromGame();
+        _isSetupComplete = true;
+
         RefreshCategoriesCore(autosize: true);
 
         base.OnSetup(addon);
@@ -119,7 +119,10 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     protected override void RefreshCategoriesCore(bool autosize)
     {
-        _slotCounterNode. String = _inventoryState.GetEmptySlotsString();
+        if (!_isSetupComplete)
+            return;
+
+        _slotCounterNode.String = _inventoryState.GetEmptySlotsString();
         _retainerNameNode.String = RetainerState.CurrentRetainerName;
 
         base.RefreshCategoriesCore(autosize);
@@ -165,12 +168,6 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         agent->SendCommand(0, [0]);
     }
 
-    private void OnRetainerInventoryUpdate(AddonEvent type, AddonArgs args)
-    {
-        _inventoryState.RefreshFromGame();
-        RefreshCategoriesCore(autosize: true);
-    }
-
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
@@ -190,8 +187,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
-        Services.AddonLifecycle.UnregisterListener(OnRetainerInventoryUpdate);
-
+        _isSetupComplete = false;
         base.OnFinalize(addon);
     }
 }

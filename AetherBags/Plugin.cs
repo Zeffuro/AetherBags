@@ -17,7 +17,7 @@ public unsafe class Plugin : IDalamudPlugin
 
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
-    private readonly InventoryLifecycles _inventoryLifecycles;
+    private readonly InventoryLifecycles inventoryLifecycles;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -72,7 +72,7 @@ public unsafe class Plugin : IDalamudPlugin
         }
 
         _inventoryHooks = new InventoryHooks();
-        _inventoryLifecycles = new InventoryLifecycles();
+        inventoryLifecycles = new InventoryLifecycles();
     }
 
     public void Dispose()
@@ -94,7 +94,7 @@ public unsafe class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Dispose();
 
         _inventoryHooks.Dispose();
-        _inventoryLifecycles.Dispose();
+        inventoryLifecycles.Dispose();
     }
 
     private void OnLogin()

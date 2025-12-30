@@ -66,7 +66,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public InventoryMappedLocation VisualLocation =>
         IsMainInventory ? InventoryContextState.GetVisualLocation(InventoryPage, Item.Slot)
-            : new InventoryMappedLocation((int)Item.Container.AgentItemContainerId, Item. Slot);
+            : new InventoryMappedLocation((int)Item.Container.AgentItemContainerId, Item.Slot);
 
 
     public int InventoryPage => Item.Container switch
@@ -87,7 +87,10 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
             if (!InventoryContextState.HasActiveContext)
                 return true;
 
-            return IsMainInventory && InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+            if (!IsMainInventory)
+                return true;
+
+            return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
         }
     }
 

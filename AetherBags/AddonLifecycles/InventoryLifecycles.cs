@@ -19,10 +19,28 @@ public class InventoryLifecycles : IDisposable
 
     public InventoryLifecycles()
     {
+        // PreRefresh Handlers
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], InventoryPreRefreshHandler);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"], InventoryBuddyPreRefreshHandler);
         //Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["RetainerGrid0"], InventoryRetainerPreRefreshHandler);
+
+        // PostRequestedUpdate
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, ["InventoryRetainer", "InventoryRetainerLarge"], OnRetainerInventoryUpdate);
+
+        // PreShow
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreOpen, "InventoryBuddy", OnSaddleBagOpen);
+
         Services.Logger.Verbose("InventoryLifecycles initialized");
+    }
+
+    private static bool IsInUnsafeState()
+    {
+        if (!Services.ClientState.IsLoggedIn)
+            return true;
+
+        return Services.Condition.Any(ConditionFlag.BetweenAreas, ConditionFlag.BetweenAreas51);
     }
 
     /*
@@ -41,10 +59,7 @@ public class InventoryLifecycles : IDisposable
         if (args is not AddonRefreshArgs refreshArgs)
             return;
 
-        if (!Services.ClientState.IsLoggedIn)
-            return;
-
-        if (Services.Condition[ConditionFlag.BetweenAreas] || Services.Condition[ConditionFlag.BetweenAreas51])
+        if (IsInUnsafeState())
             return;
 
         GeneralSettings config = System.Config.General;
@@ -88,6 +103,9 @@ public class InventoryLifecycles : IDisposable
         if (args is not AddonRefreshArgs refreshArgs)
             return;
 
+        if (IsInUnsafeState())
+            return;
+
         GeneralSettings config = System.Config.General;
 
         if (config.HideGameSaddleBags) refreshArgs.AtkValueCount = 0;
@@ -104,6 +122,9 @@ public class InventoryLifecycles : IDisposable
         if (args is not AddonRefreshArgs refreshArgs)
             return;
 
+        if (IsInUnsafeState())
+            return;
+
         GeneralSettings config = System.Config.General;
 
         if (config.HideGameRetainer) refreshArgs.AtkValueCount = 0;
@@ -113,10 +134,46 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
+    private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
+    {
+        if (IsInUnsafeState())
+            return;
+
+        System.AddonInventoryWindow?.RefreshFromLifecycle();
+    }
+
+    private void OnSaddleBagUpdate(AddonEvent type, AddonArgs args)
+    {
+        if (IsInUnsafeState())
+            return;
+
+        System.AddonSaddleBagWindow?.RefreshFromLifecycle();
+    }
+
+    private void OnRetainerInventoryUpdate(AddonEvent type, AddonArgs args)
+    {
+        if (IsInUnsafeState())
+            return;
+
+        System.AddonRetainerWindow?.RefreshFromLifecycle();
+    }
+
+    private void OnSaddleBagOpen(AddonEvent type, AddonArgs args)
+    {
+        if (args is not AddonShowArgs showArgs)
+            return;
+    }
+
     public void Dispose()
     {
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["RetainerGrid0"]);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryRetainer, InventoryRetainerLarge"]);
+
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, ["InventoryRetainer", "InventoryRetainerLarge"], OnRetainerInventoryUpdate);
+
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreShow, ["InventoryBuddy"], OnSaddleBagOpen);
     }
 }

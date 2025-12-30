@@ -38,6 +38,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
     private bool _isRefreshing;
+    protected bool _isSetupComplete;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -50,6 +51,8 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         if (!IsOpen) return;
         if (!Services.ClientState.IsLoggedIn) return;
         if (_isRefreshing) return;
+        if (!_isSetupComplete) return;
+
         try
         {
             _isRefreshing = true;
@@ -72,8 +75,29 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         }, delayTicks: 2);
     }
 
+    public void RefreshFromLifecycle()
+    {
+        if (!_isSetupComplete) return;
+        if (!IsOpen) return;
+        if (_isRefreshing) return;
+
+        try
+        {
+            _isRefreshing = true;
+            InventoryState.RefreshFromGame();
+            RefreshCategoriesCore(autosize: true);
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
+    }
+
     protected virtual void RefreshCategoriesCore(bool autosize)
     {
+        if (!_isSetupComplete)
+            return;
+
         if (HasFooter)
         {
             FooterNode.SlotAmountText = InventoryState.GetEmptySlotsString();
