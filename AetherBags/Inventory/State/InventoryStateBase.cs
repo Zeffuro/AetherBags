@@ -25,7 +25,7 @@ public abstract class InventoryStateBase
 
     public virtual unsafe void RefreshFromGame()
     {
-        InventoryManager* inventoryManager = InventoryManager.Instance();
+        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
         if (inventoryManager == null)
         {
             ClearAll();

@@ -2,6 +2,7 @@
 using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
 using System.Numerics;
+using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace AetherBags.Nodes.Configuration.Layout;
@@ -33,7 +34,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             OnValueUpdate = value =>
             {
                 config.CompactLookahead = value;
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         CompactLookahead.AttachNode(this);

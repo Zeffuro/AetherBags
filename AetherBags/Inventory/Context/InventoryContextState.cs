@@ -10,16 +10,20 @@ public static unsafe class InventoryContextState
 {
     private static readonly HashSet<(int page, int slot)> EligibleSlots = new();
     private static readonly HashSet<(InventoryType container, int slot)> BlockedSlots = new();
+    // map from real (containerId, slot) -> visual (containerId, slot)
     private static readonly Dictionary<InventoryMappedLocation, InventoryMappedLocation> VisualLocationMap = new();
+    private static readonly Dictionary<int, Dictionary<InventoryMappedLocation, InventoryMappedLocation>> GroupedLocationMaps = new();
+
     private static uint _lastContextId;
 
     public static void RefreshMaps()
     {
         EligibleSlots.Clear();
         VisualLocationMap.Clear();
+        GroupedLocationMaps.Clear();
 
-        var sorter = ItemOrderModule.Instance()->InventorySorter;
-        if (sorter == null) return;
+        var itemOrderModule = ItemOrderModule.Instance();
+        if (itemOrderModule == null) return;
 
         var agentInventory = AgentInventory.Instance();
         bool hasContext = agentInventory != null && agentInventory->OpenTitleId != 0;
@@ -27,33 +31,81 @@ public static unsafe class InventoryContextState
 
         var invArray = hasContext ? InventoryNumberArray.Instance() : null;
 
-        int itemsPerPage = sorter->ItemsPerPage;
-
-        for (int displayIdx = 0; displayIdx < 140; displayIdx++)
+        // Helper local to process any sorter
+        void ProcessSorter(ItemOrderModuleSorter* sorter)
         {
-            var entry = sorter->Items[displayIdx].Value;
-            if (entry == null) continue;
+            if (sorter == null) return;
 
-            int realPage = entry->Page;
-            int realSlot = entry->Slot;
+            // Determine actual page size.
+            // We prefer the physical container size over the sorter's 'ItemsPerPage'
+            var baseInventoryType = sorter->InventoryType;
+            var inventoryManager = InventoryManager.Instance();
+            var container = inventoryManager != null ? inventoryManager->GetInventoryContainer(baseInventoryType) : null;
 
-            int visualPage = displayIdx / itemsPerPage;
-            int visualSlot = displayIdx % itemsPerPage;
-            int visualContainerId = 48 + visualPage;
+            // Fallback to sorter value if container isn't loaded, but default to 35 for main/retainer
+            int itemsPerPage = baseInventoryType.UIPageSize;
+            if (itemsPerPage <= 0) itemsPerPage = 35;
 
-            VisualLocationMap[new InventoryMappedLocation(realPage, realSlot)] = new InventoryMappedLocation(visualContainerId, visualSlot);
+            var baseAgentId = (int)baseInventoryType.AgentItemContainerId;
+            if (baseAgentId == 0) return;
 
-            if (hasContext && invArray != null)
+            long count = sorter->Items.LongCount;
+            for (int displayIdx = 0; displayIdx < count; displayIdx++)
             {
-                var itemData = invArray->Items[displayIdx];
-                if (itemData.IconId == 0) continue;
+                var entry = sorter->Items[displayIdx].Value;
+                if (entry == null) continue;
 
-                bool eligible = itemData.ItemFlags.MirageFlag == 0;
-                if (eligible)
+                var realContainer = (InventoryType)((int)baseInventoryType + entry->Page);
+                int realSlot = entry->Slot;
+
+                int visualPage = displayIdx / itemsPerPage;
+                int visualSlot = displayIdx % itemsPerPage;
+                int visualContainerId = baseAgentId + visualPage;
+
+                var realKey = new InventoryMappedLocation((int)realContainer, realSlot);
+                var visualValue = new InventoryMappedLocation(visualContainerId, visualSlot);
+
+                VisualLocationMap[realKey] = visualValue;
+
+                if (hasContext && invArray != null && baseInventoryType.IsMainInventory)
                 {
-                    EligibleSlots.Add((realPage, realSlot));
+                    var itemData = invArray->Items[displayIdx];
+                    if (itemData.IconId != 0)
+                    {
+                        bool eligible = itemData.ItemFlags.MirageFlag == 0;
+                        if (eligible)
+                            EligibleSlots.Add(((int)realContainer - (int)InventoryType.Inventory1, realSlot));
+                    }
                 }
             }
+        }
+
+        ProcessSorter(itemOrderModule->InventorySorter);
+
+        ProcessSorter(itemOrderModule->ArmouryMainHandSorter);
+        ProcessSorter(itemOrderModule->ArmouryOffHandSorter);
+        ProcessSorter(itemOrderModule->ArmouryHeadSorter);
+        ProcessSorter(itemOrderModule->ArmouryBodySorter);
+        ProcessSorter(itemOrderModule->ArmouryHandsSorter);
+        ProcessSorter(itemOrderModule->ArmouryLegsSorter);
+        ProcessSorter(itemOrderModule->ArmouryFeetSorter);
+        ProcessSorter(itemOrderModule->ArmouryEarsSorter);
+        ProcessSorter(itemOrderModule->ArmouryNeckSorter);
+        ProcessSorter(itemOrderModule->ArmouryWristsSorter);
+        ProcessSorter(itemOrderModule->ArmouryRingsSorter);
+        ProcessSorter(itemOrderModule->ArmourySoulCrystalSorter);
+
+        ProcessSorter(itemOrderModule->SaddleBagSorter);
+        ProcessSorter(itemOrderModule->PremiumSaddleBagSorter);
+
+        try
+        {
+            var activeRetainerSorter = itemOrderModule->GetActiveRetainerSorter();
+            ProcessSorter(activeRetainerSorter);
+        }
+        catch
+        {
+            // GetActiveRetainerSorter is a member function — guard just in case
         }
     }
 
@@ -85,6 +137,20 @@ public static unsafe class InventoryContextState
     public static bool HasActiveContext
         => _lastContextId != 0;
 
-    public static InventoryMappedLocation GetVisualLocation(int page, int slot)
-        => VisualLocationMap.TryGetValue(new InventoryMappedLocation(page, slot), out var result) ? result : new InventoryMappedLocation(48 + page, slot);
+    public static InventoryMappedLocation GetVisualLocation(InventoryType realContainer, int slot)
+    {
+        var key = new InventoryMappedLocation((int)realContainer, slot);
+        if (VisualLocationMap.TryGetValue(key, out var result))
+            return result;
+
+        // default fallback: use the agent container id for the real container (works for Inventory1..4, RetainerPageN, etc.)
+        var defaultAgentId = (int)realContainer.AgentItemContainerId;
+        if (defaultAgentId == 0)
+        {
+            // final fallback: Inventory1 base at 48
+            defaultAgentId = 48;
+        }
+
+        return new InventoryMappedLocation(defaultAgentId, slot);
+    }
 }

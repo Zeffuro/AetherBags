@@ -59,7 +59,7 @@ public class CommandHandler : IDisposable
                 break;
 
             case "refresh":
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 PrintChat("Inventory refreshed.");
                 break;
 
@@ -69,7 +69,7 @@ public class CommandHandler : IDisposable
 
             case "import-sk":
                 ImportExportResetHelper.TryImportSortaKindaFromClipboard(true);
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "export":
@@ -78,12 +78,12 @@ public class CommandHandler : IDisposable
 
             case "import":
                 ImportExportResetHelper.TryImportConfigFromClipboard();
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "reset":
                 ImportExportResetHelper.TryResetConfig();
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
                 break;
 
             case "count":

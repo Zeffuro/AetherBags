@@ -169,6 +169,11 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
                 CategoryDefinition.Color = color;
                 NotifyChanged();
             },
+            OnColorPreviewed = color =>
+            {
+                CategoryDefinition.Color = color;
+                NotifyChanged();
+            }
         };
         AddNode(_colorInputNode);
 
@@ -342,7 +347,7 @@ public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
 
     private static void NotifyChanged()
     {
-        System.AddonInventoryWindow.ManualRefresh();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void NotifyCategoryPropertyChanged()

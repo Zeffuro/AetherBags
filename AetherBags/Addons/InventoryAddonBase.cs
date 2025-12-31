@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -63,16 +64,6 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         {
             _isRefreshing = false;
         }
-    }
-
-    protected static void RefreshAllInventoryWindows()
-    {
-        Services.Framework.RunOnTick(() =>
-        {
-            System.AddonInventoryWindow?.ManualRefresh();
-            System.AddonSaddleBagWindow?.ManualRefresh();
-            System.AddonRetainerWindow?.ManualRefresh();
-        }, delayTicks: 2);
     }
 
     public void RefreshFromLifecycle()
@@ -144,7 +135,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         {
             Size = ContentSize with { Y = 120 },
             OnRefreshRequested = ManualRefresh,
-            OnDragEnd = RefreshAllInventoryWindows,
+            OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true),
         };
     }
 

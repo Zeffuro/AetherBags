@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Inventory;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Layout;
@@ -32,7 +33,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.ShowCategoryItemCount = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(showCategoryItemAmountCheckboxNode);
@@ -49,7 +50,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 _preferLargestFitCheckboxNode.IsEnabled = isChecked;
                 _useStableInsertCheckboxNode.IsEnabled = isChecked;
                 _compactLookaheadNode.CompactLookahead.IsEnabled = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(compactPackingCheckboxNode);
@@ -65,7 +66,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.CompactPreferLargestFit = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(_preferLargestFitCheckboxNode);
@@ -80,7 +81,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.CompactStableInsert = isChecked;
-                System.AddonInventoryWindow.ManualRefresh();
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(_useStableInsertCheckboxNode);

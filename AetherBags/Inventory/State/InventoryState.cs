@@ -14,7 +14,7 @@ namespace AetherBags.Inventory.State;
 
 public static unsafe class InventoryState
 {
-    public static IReadOnlyList<InventoryType> StandardInventories => InventoryScanner.StandardInventories;
+    private static IReadOnlyList<InventoryType> StandardInventories => InventoryScanner.StandardInventories;
 
     private static readonly Dictionary<ulong, AggregatedItem> AggByKey = new(capacity: 512);
     private static readonly Dictionary<ulong, ItemInfo> ItemInfoByKey = new(capacity: 512);
@@ -34,7 +34,7 @@ public static unsafe class InventoryState
 
     public static void RefreshFromGame()
     {
-        InventoryManager* inventoryManager = InventoryManager.Instance();
+        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
         if (inventoryManager == null)
         {
             ClearAll();
@@ -114,7 +114,7 @@ public static unsafe class InventoryState
             totalQuantity += kvp.Value.ItemCount;
         }
 
-        uint emptySlots = InventoryManager.Instance()->GetEmptySlotsInBag();
+        uint emptySlots = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance()->GetEmptySlotsInBag();
         const int totalSlots = 140;
 
         var categories = GetInventoryItemCategories(string.Empty);

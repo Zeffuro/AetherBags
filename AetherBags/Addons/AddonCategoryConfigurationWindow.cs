@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Inventory;
 using AetherBags.Nodes.Configuration.Category;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
@@ -118,7 +119,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         listNode.AddOption(newWrapper);
 
         RefreshSelectionList();
-        System.AddonInventoryWindow.ManualRefresh();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
@@ -134,7 +135,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         {
             OnOptionChanged(null);
         }
-        System.AddonInventoryWindow.ManualRefresh();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void RefreshSelectionList()

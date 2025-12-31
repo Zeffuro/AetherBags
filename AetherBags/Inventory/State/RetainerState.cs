@@ -54,7 +54,7 @@ public class RetainerState :  InventoryStateBase
         {
             if (!IsRetainerActive) return false;
 
-            var inventoryManager = InventoryManager.Instance();
+            var inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
             if (inventoryManager == null) return false;
 
             var container = inventoryManager->GetInventoryContainer(InventoryType.RetainerPage1);

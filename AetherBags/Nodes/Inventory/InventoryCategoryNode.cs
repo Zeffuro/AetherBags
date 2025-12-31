@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using AetherBags.Helpers;
+using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
@@ -223,10 +224,19 @@ public class InventoryCategoryNode : SimpleComponentNode
         InventoryItem item = data.Item;
         InventoryMappedLocation visualLocation = data.VisualLocation;
 
-        int startIndex = item.Container.GetInventoryStartIndex;
-        int absoluteIndex = startIndex + visualLocation.Slot;
+        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
+        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
 
-        bool useVisualLocation = true;
+        DragDropPayload nodePayload = new DragDropPayload
+        {
+            // Int1 is always the container ID, for Item DragDrop Int2 is only used as a fallback
+            // ReferenceIndex is the absolute index that's actually used
+            Type = DragDropType.Item,
+            Int1 = visualLocation.Container,
+            Int2 = visualLocation.Slot,
+            ReferenceIndex = (short)absoluteIndex
+        };
+
         bool isSlotBlocked = item.Container.IsMainInventory && data.IsSlotBlocked;
         float alpha = !isSlotBlocked && data.IsEligibleForContext ? 1.0f : 0.4f;
 
@@ -238,17 +248,11 @@ public class InventoryCategoryNode : SimpleComponentNode
             IconId = item.IconId,
             AcceptedType = DragDropType.Item,
             IsDraggable = !data.IsSlotBlocked,
-            Payload = new DragDropPayload
-            {
-                Type = DragDropType.Item,
-                Int1 = useVisualLocation ? visualLocation.Container : (int)item.Container,
-                Int2 = useVisualLocation ? visualLocation.Slot : item.Slot,
-                ReferenceIndex = (short)absoluteIndex,
-            },
+            Payload = nodePayload,
             IsClickable = true,
             OnDiscard = node => OnDiscard(node, data),
             OnEnd = _ => OnDragEnd?.Invoke(),
-            OnPayloadAccepted = (node, payload) => OnPayloadAccepted(node, payload, data),
+            OnPayloadAccepted = (node, acceptedPayload) => OnPayloadAccepted(node, acceptedPayload, data),
             OnRollOver = node =>
             {
                 BeginHeaderHover();
@@ -271,56 +275,37 @@ public class InventoryCategoryNode : SimpleComponentNode
         AgentInventoryContext.Instance()->DiscardItem(item.Item.GetLinkedItem(), item.Item.Container, item.Item.Slot, addonId);
     }
 
-    private void OnPayloadAccepted(DragDropNode node, DragDropPayload payload, ItemInfo targetItemInfo)
+    private void OnPayloadAccepted(DragDropNode node, DragDropPayload acceptedPayload, ItemInfo targetItemInfo)
     {
-        InventoryItem item = targetItemInfo.Item;
-        if (!payload.IsValidInventoryPayload)
+        try
         {
-            Services.Logger.Warning($"[OnPayload] Invalid payload type: {payload.Type}");
-            return;
-        }
+            // KTK clears node.Payload before invoking this, so setting it manually again
+            var nodePayload = new DragDropPayload
+            {
+                Type = DragDropType.Item,
+                Int1 = targetItemInfo.VisualLocation.Container,
+                Int2 = targetItemInfo.VisualLocation.Slot,
+                ReferenceIndex = (short)(targetItemInfo.Item.Container.GetInventoryStartIndex + targetItemInfo.VisualLocation.Slot)
+            };
 
-        // Debug:log raw payload values
-        Services.Logger.Debug($"[OnPayload] Raw payload: Type={payload.Type} Int1={payload.Int1} Int2={payload.Int2} Ref={payload.ReferenceIndex}");
+            Services.Logger.Debug($"[OnPayload] ACCEPTED payload: Type={acceptedPayload.Type} Int1={acceptedPayload.Int1} Int2={acceptedPayload.Int2} Ref={acceptedPayload.ReferenceIndex}");
+            Services.Logger.Debug($"[OnPayload] NODE payload: Type={nodePayload.Type} Int1={nodePayload.Int1} Int2={nodePayload.Int2} Ref={nodePayload.ReferenceIndex}");
 
-        InventoryLocation sourceLocation = payload.InventoryLocation;
+            if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload)
+            {
+                Services.Logger.Warning($"[OnPayload] Invalid payload type: Accepted={acceptedPayload.Type} Node={nodePayload.Type}");
+                return;
+            }
 
-        if (!sourceLocation.IsValid)
-        {
-            Services.Logger. Warning($"[OnPayload] Could not resolve source from payload");
-            return;
-        }
+            var sourceCopy = acceptedPayload;
+            var targetCopy = nodePayload;
 
-        InventoryLocation targetLocation = new InventoryLocation(
-            item.Container,
-            (ushort)item.Slot
-        );
-
-        // Debug: log resolved locations
-        Services.Logger.Debug($"[OnPayload] Source: {sourceLocation. Container} @ {sourceLocation. Slot}");
-        Services.Logger.Debug($"[OnPayload] Target: {targetLocation.Container} @ {targetLocation.Slot}");
-
-        if (sourceLocation.Container.IsSameContainerGroup(targetLocation.Container))
-        {
-            Services.Logger.Debug($"[OnPayload] Source and target are in the same container group; no move performed");
-            node.Payload = payload;
-            node.IconId = item.IconId;
+            InventoryMoveHelper.HandleItemMovePayload(sourceCopy, targetCopy);
             OnRefreshRequested?.Invoke();
-            return;
-        };
-
-        if (!sourceLocation.Container.IsLoaded || !targetLocation.Container.IsLoaded)
-        {
-            Services.Logger.Debug($"[OnPayload] Source or target container is not loaded; cannot move");
-            return;
         }
-
-        Services.Logger.Debug($"[OnPayload] Moving {sourceLocation} -> {targetLocation}");
-
-        InventoryMoveHelper.MoveItem(
-            sourceLocation.Container, sourceLocation.Slot,
-            targetLocation.Container, targetLocation.Slot
-        );
-        OnRefreshRequested?.Invoke();
+        catch (Exception ex)
+        {
+            Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance");
+        }
     }
 }

@@ -1,15 +1,16 @@
-using System. Numerics;
+using System.Numerics;
+using AetherBags.Inventory;
 using AetherBags.Inventory.State;
-using AetherBags. Nodes. Input;
-using AetherBags. Nodes. Inventory;
-using AetherBags. Nodes.Layout;
-using Dalamud.Game. Addon.Lifecycle;
-using Dalamud.Game. Addon.Lifecycle.AddonArgTypes;
+using AetherBags.Nodes.Input;
+using AetherBags.Nodes.Inventory;
+using AetherBags.Nodes.Layout;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs. FFXIV. Component. GUI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
-using KamiToolKit. Nodes;
+using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
@@ -25,12 +26,14 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
     protected override bool HasFooter => false;
     protected override bool HasSlotCounter => true;
 
+    private readonly Vector3 _tintColor = new(8f / 255f, -8f / 255f, -4f / 255f);
+
     protected override float MinWindowWidth => 400;
     protected override float MaxWindowWidth => 700;
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
-        WindowNode?.AddColor = new Vector3(8f / 255f, -8f / 255f, -4f / 255f);
+        WindowNode?.AddColor = _tintColor;
 
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
@@ -43,7 +46,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         };
         CategoriesNode.AttachNode(this);
 
-        var size = new Vector2(addon->Size. X / 2.0f, 28.0f);
+        var size = new Vector2(addon->Size.X / 2.0f, 28.0f);
 
         var header = addon->WindowHeaderCollisionNode;
 
@@ -61,7 +64,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             Size = size,
             OnInputReceived = _ => RefreshCategoriesCore(autosize: false),
         };
-        SearchInputNode. AttachNode(this);
+        SearchInputNode.AttachNode(this);
 
         SettingsButtonNode = new CircleButtonNode
         {
@@ -70,9 +73,8 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             Icon = ButtonIcon.GearCog,
             OnClick = System.AddonConfigurationWindow.Toggle
         };
-        SettingsButtonNode. AttachNode(this);
+        SettingsButtonNode.AttachNode(this);
 
-        // Retainer name display
         _retainerNameNode = new TextNode
         {
             Position = new Vector2(8f, 0),
@@ -88,6 +90,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         _entrustDuplicatesButton = new TextButtonNode
         {
             Size = new Vector2(120, 28),
+            AddColor = _tintColor,
             String = "Entrust Duplicates",
             OnClick = OnEntrustDuplicates,
         };
@@ -137,7 +140,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         float footerY = contentPos.Y + contentSize.Y - FooterHeight + 4f;
 
-        _retainerNameNode. Position = new Vector2(contentPos.X + 8f, footerY);
+        _retainerNameNode.Position = new Vector2(contentPos.X + 8f, footerY);
 
         float buttonWidth = _entrustDuplicatesButton.Width;
         float buttonX = contentPos.X + (contentSize.X - buttonWidth) / 2f;
@@ -158,7 +161,14 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             RefreshCategoriesCore(doAutosize);
         }
 
-        base. OnUpdate(addon);
+        base.OnUpdate(addon);
+    }
+
+    protected override void OnShow(AtkUnitBase* addon)
+    {
+        base.OnShow(addon);
+
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void OnEntrustDuplicates()

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Inventory;
 using AetherBags.Nodes.Input;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
@@ -82,7 +83,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
                 if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
                 {
                     config.StackMode = parsed;
-                    System.AddonInventoryWindow.ManualRefresh();
+                    InventoryOrchestrator.RefreshAll(updateMaps: true);
                 }
             }
         };

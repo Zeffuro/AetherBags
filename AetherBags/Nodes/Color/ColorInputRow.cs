@@ -94,4 +94,5 @@ public class ColorInputRow : HorizontalListNode
     public Action<Vector4>? OnColorConfirmed { get; set; }
     public Action<Vector4>? OnColorCanceled { get; set; }
     public Action<Vector4>? OnColorChange { get; set; }
+    public Action<Vector4>? OnColorPreviewed { get; set; }
 }

@@ -49,13 +49,13 @@ public static unsafe class InventoryScanner
 
     // Backwards compatible TODO: Remove
     public static void ScanBags(
-        InventoryManager* inventoryManager,
+        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
         Dictionary<ulong, AggregatedItem> aggByKey)
         => ScanInventories(inventoryManager, stackMode, aggByKey, InventorySourceType.MainBags);
 
     public static void ScanInventories(
-        InventoryManager* inventoryManager,
+        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
         Dictionary<ulong, AggregatedItem> aggByKey,
         InventorySourceType source)
@@ -173,7 +173,7 @@ public static unsafe class InventoryScanner
     }
 
     public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
-        => InventoryManager.Instance()->GetInventoryContainer(inventoryType);
+        => FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance()->GetInventoryContainer(inventoryType);
 
     // Backwards compability TODO: Remove
     public static string GetEmptyItemSlotsString()
@@ -184,7 +184,7 @@ public static unsafe class InventoryScanner
         int total = InventorySourceDefinitions.GetTotalSlots(source);
         uint empty = source switch
         {
-            InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
+            InventorySourceType.MainBags => FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance()->GetEmptySlotsInBag(),
             InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
             InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
             InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
@@ -198,7 +198,7 @@ public static unsafe class InventoryScanner
     private static uint GetEmptySlotsInContainer(InventoryType[] inventories)
     {
         uint empty = 0;
-        var inventoryManager = InventoryManager.Instance();
+        var inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
         foreach (var inv in inventories)
         {
             var container = inventoryManager->GetInventoryContainer(inv);

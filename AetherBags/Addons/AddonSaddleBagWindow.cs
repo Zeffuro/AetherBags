@@ -19,12 +19,14 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     protected override bool HasFooter => false;
     protected override bool HasSlotCounter => true;
 
+    private readonly Vector3 _tintColor = new (-16f / 255f, -4f / 255f, 8f / 255f);
+
     protected override float MinWindowWidth => 400;
     protected override float MaxWindowWidth => 600;
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
-        WindowNode?.AddColor = new Vector3(-16f / 255f, -4f / 255f, 8f / 255f);
+        WindowNode?.AddColor = _tintColor;
 
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
@@ -61,6 +63,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         {
             Position = new Vector2(headerW - 48f, y),
             Size = new Vector2(28f),
+            AddColor = _tintColor,
             Icon = ButtonIcon.GearCog,
             OnClick = System.AddonConfigurationWindow.Toggle
         };
