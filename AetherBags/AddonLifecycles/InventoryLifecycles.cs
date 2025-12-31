@@ -8,6 +8,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.NativeWrapper;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text.ReadOnly;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
@@ -19,10 +20,18 @@ public class InventoryLifecycles : IDisposable
 
     public InventoryLifecycles()
     {
+        var bags = new[] { "Inventory", "InventoryLarge", "InventoryExpansion" };
+        var saddle = new[] { "InventoryBuddy" };
+        var retainer = new[] { "InventoryRetainer", "InventoryRetainerLarge" };
+
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, saddle, OnPostSetup);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, retainer, OnPostSetup);
+
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
+
         // PreRefresh Handlers
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], InventoryPreRefreshHandler);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"], InventoryBuddyPreRefreshHandler);
-        //Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["RetainerGrid0"], InventoryRetainerPreRefreshHandler);
 
         // PostRequestedUpdate
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
@@ -33,6 +42,58 @@ public class InventoryLifecycles : IDisposable
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreOpen, "InventoryBuddy", OnSaddleBagOpen);
 
         Services.Logger.Verbose("InventoryLifecycles initialized");
+    }
+
+    private void OnPreFinalize(AddonEvent type, AddonArgs args)
+    {
+        CloseInventories(args.AddonName);
+    }
+
+    private void OnPostSetup(AddonEvent type, AddonArgs args)
+    {
+        OpenInventories(args.AddonName);
+    }
+
+    private unsafe void OpenInventories(string name)
+    {
+        GeneralSettings config = System.Config.General;
+        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory)
+        {
+            System.AddonRetainerWindow.Open();
+            if (config.HideGameRetainer)
+            {
+                var addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainer");
+                if (addon != null)
+                {
+                    addon->IsVisible = false;
+                }
+
+                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainerLarge");
+                if (addon != null)
+                {
+                    addon->IsVisible = false;
+                }
+            }
+        }
+
+        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory)
+        {
+            System.AddonSaddleBagWindow.Open();
+            if (config.HideGameSaddleBags)
+            {
+                var addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryBuddy");
+                if (addon != null)
+                {
+                    addon->IsVisible = false;
+                }
+            }
+        }
+    }
+
+    private void CloseInventories(string name)
+    {
+        if (name.Contains("Retainer")) System.AddonRetainerWindow.Close();
+        if (name.Contains("InventoryBuddy")) System.AddonSaddleBagWindow.Close();
     }
 
     private static bool IsInUnsafeState()
@@ -115,24 +176,6 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
-    // TODO: Inventory/Retainers are not perma open, need some way to close it too.
-    // TODO: Don't have the right retainer prerefresh handler yet.
-    private void InventoryRetainerPreRefreshHandler(AddonEvent type, AddonArgs args)
-    {
-        if (args is not AddonRefreshArgs refreshArgs)
-            return;
-
-        if (IsInUnsafeState())
-            return;
-
-        GeneralSettings config = System.Config.General;
-
-        if (config.HideGameRetainer) refreshArgs.AtkValueCount = 0;
-        if (config.OpenRetainerWithGameInventory)
-        {
-            System.AddonRetainerWindow.Toggle();
-        }
-    }
 
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
     {
@@ -166,6 +209,12 @@ public class InventoryLifecycles : IDisposable
 
     public void Dispose()
     {
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "InventoryBuddy", OnPostSetup);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "InventoryRetainer, InventoryRetainerLarge", OnPostSetup);
+
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "InventoryBuddy", OnPreFinalize);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "InventoryRetainer, InventoryRetainerLarge", OnPreFinalize);
+
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryRetainer, InventoryRetainerLarge"]);

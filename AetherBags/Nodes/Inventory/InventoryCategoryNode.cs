@@ -297,6 +297,14 @@ public class InventoryCategoryNode : SimpleComponentNode
                 return;
             }
 
+            if (acceptedPayload.IsSameBaseContainer(nodePayload))
+            {
+                Services.Logger.Information("[OnPayload] Source and target are in the same base container, skipping move.");
+                node.IconId = targetItemInfo.IconId;
+                node.Payload = nodePayload;
+                return;
+            }
+
             var sourceCopy = acceptedPayload;
             var targetCopy = nodePayload;
 

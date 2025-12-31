@@ -3,6 +3,7 @@ using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -139,6 +140,17 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         _isSetupComplete = false;
+
+        if (System.Config.General.HideGameSaddleBags)
+        {
+            var saddleAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryBuddy");
+            if (saddleAddon != null)
+            {
+                saddleAddon->IsVisible = true;
+                saddleAddon->Close(true);
+            }
+        }
+
         base.OnFinalize(addon);
     }
 }

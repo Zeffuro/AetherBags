@@ -200,6 +200,24 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         _isSetupComplete = false;
+
+        if (System.Config.General.HideGameRetainer)
+        {
+            var retainerAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainer");
+            if (retainerAddon != null)
+            {
+                retainerAddon->IsVisible = true;
+                retainerAddon->Close(true);
+            }
+
+            retainerAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainerLarge");
+            if (retainerAddon != null)
+            {
+                retainerAddon->IsVisible = true;
+                retainerAddon->Close(true);
+            }
+        }
+
         base.OnFinalize(addon);
     }
 }

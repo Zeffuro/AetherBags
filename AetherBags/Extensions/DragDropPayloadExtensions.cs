@@ -18,6 +18,15 @@ public static unsafe class DragDropPayloadExtensions
                 or DragDropType.RemoteInventory_Item
                 or DragDropType.Item;
 
+        public bool IsSameBaseContainer(DragDropPayload otherPayload) {
+            if (payload.InventoryLocation.Container.IsSameContainerGroup(otherPayload.InventoryLocation.Container))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public InventoryLocation InventoryLocation
         {
             get
