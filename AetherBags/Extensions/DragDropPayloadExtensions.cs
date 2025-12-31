@@ -1,4 +1,4 @@
-using AetherBags.Interop;
+
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -8,55 +8,8 @@ using Lumina.Text;
 
 namespace AetherBags.Extensions;
 
-// TODO: Remove FixedInterface when CS is merged into Dalamud.
 public static unsafe class DragDropPayloadExtensions
 {
-    public static DragDropPayload FromFixedInterface(AtkDragDropInterface* dragDropInterface)
-    {
-        // Cast to our manual fixed struct
-        var fixedInterface = (AtkDragDropInterfaceFixed*)dragDropInterface;
-
-        // Calls Index 12
-        var payloadContainer = fixedInterface->GetPayloadContainer();
-
-        return new DragDropPayload
-        {
-            Type = fixedInterface->DragDropType,
-            ReferenceIndex = fixedInterface->DragDropReferenceIndex,
-            Int1 = payloadContainer->Int1,
-            Int2 = payloadContainer->Int2,
-            Text = new ReadOnlySeString(payloadContainer->Text),
-        };
-    }
-
-    public static void ToFixedInterface(this DragDropPayload payload, AtkDragDropInterface* dragDropInterface, bool writeToPayloadContainer = true)
-    {
-        var fixedInterface = (AtkDragDropInterfaceFixed*)dragDropInterface;
-
-        fixedInterface->DragDropType = payload.Type;
-        fixedInterface->DragDropReferenceIndex = payload.ReferenceIndex;
-
-        if (writeToPayloadContainer)
-        {
-            // Calls Index 12
-            var payloadContainer = fixedInterface->GetPayloadContainer();
-
-            payloadContainer->Clear();
-            payloadContainer->Int1 = payload.Int1;
-            payloadContainer->Int2 = payload.Int2;
-
-            if (payload.Text.IsEmpty)
-            {
-                payloadContainer->Text.Clear();
-            }
-            else
-            {
-                var stringBuilder = new SeStringBuilder().Append(payload.Text);
-                payloadContainer->Text.SetString(stringBuilder.GetViewAsSpan());
-            }
-        }
-    }
-
     extension(DragDropPayload payload)
     {
         public bool IsValidInventoryPayload =>
@@ -84,7 +37,7 @@ public static unsafe class DragDropPayloadExtensions
                 if (sourceContainer == 0)
                     return new InventoryLocation(0, 0);
 
-                // Retainers have special handling:  UI has 5 tabs × 35 slots, data has 7 pages × 25 slots
+                // Retainers have special handling: UI has 5 tabs × 35 slots, data has 7 pages × 25 slots
                 if (sourceContainer.IsRetainer)
                 {
                     // Container IDs 52-56 = UI tabs 0-4

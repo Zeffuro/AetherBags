@@ -14,14 +14,13 @@ using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 // TODO: Switch back to CS version when Dalamud Updated
-using DragDropFixedNode = AetherBags.Nodes.DragDropNode;
 
 namespace AetherBags.Nodes.Inventory;
 
 public class InventoryCategoryNode : SimpleComponentNode
 {
     private readonly TextNode _categoryNameTextNode;
-    private readonly HybridDirectionalFlexNode<DragDropFixedNode> _itemGridNode;
+    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
     private const float FallbackItemSize = 46;
     private const float HeaderHeight = 16;
@@ -55,7 +54,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         _categoryNameTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
-        _itemGridNode = new HybridDirectionalFlexNode<DragDropFixedNode>
+        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
         {
             Position = new Vector2(0, HeaderHeight),
             Size = new Vector2(240, 92),
