@@ -51,7 +51,7 @@ public class CurrencyNode : SimpleComponentNode
 
             _countNode.TextColor =
                 isLimited ? config.LimitColor :
-                isCapped  ? config.CappedColor :
+                isCapped ? config.CappedColor :
                 config.DefaultColor;
         }
     }

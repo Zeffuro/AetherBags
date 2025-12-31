@@ -33,6 +33,8 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
+        InitializeBackgroundDropTarget();
+
         WindowNode?.AddColor = _tintColor;
 
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>

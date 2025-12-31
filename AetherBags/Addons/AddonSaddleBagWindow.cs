@@ -26,6 +26,8 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
+        InitializeBackgroundDropTarget();
+
         WindowNode?.AddColor = _tintColor;
 
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>

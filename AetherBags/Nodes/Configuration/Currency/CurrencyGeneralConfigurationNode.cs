@@ -51,8 +51,6 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         };
         AddNode(defaultCurrencyColorNode);
 
-        AddNode();
-
         CheckboxNode cappedEnabledCheckbox = new CheckboxNode
         {
             Size = Size with { Y = 18 },
@@ -89,7 +87,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         {
             Size = Size with { Y = 18 },
             IsVisible = true,
-            String = "Color Weekly Limit",
+            String = "Limited Currency Color",
             IsChecked = config.ColorWhenLimited,
             OnClick = isChecked =>
             {
@@ -103,7 +101,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         ColorInputRow limitCurrencyColorNode = new ColorInputRow
         {
-            Label = "Limit Currency Color",
+            Label = "Color Weekly Limit",
             Size = new Vector2(300, 24),
             CurrentColor = config.LimitColor,
             DefaultColor = new CurrencySettings().LimitColor,

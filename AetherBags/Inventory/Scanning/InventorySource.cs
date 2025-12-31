@@ -60,13 +60,23 @@ public static class InventorySourceDefinitions
         _ => MainBags,
     };
 
+    public static InventoryType[] GetContainersForSource(InventorySourceType source) => source switch
+    {
+        InventorySourceType.MainBags => MainBags,
+        InventorySourceType.SaddleBag => SaddleBag,
+        InventorySourceType.PremiumSaddleBag => PremiumSaddleBag,
+        InventorySourceType.AllSaddleBags => AllSaddleBags,
+        InventorySourceType.Retainer => Retainer,
+        _ => MainBags,
+    };
+
     public static int GetTotalSlots(InventorySourceType source) => source switch
     {
-        InventorySourceType.MainBags => 140,        // 4 * 35
-        InventorySourceType.SaddleBag => 70,        // 2 * 35
-        InventorySourceType.PremiumSaddleBag => 70, // 2 * 35
-        InventorySourceType.AllSaddleBags => 140,   // 2 * 35
-        InventorySourceType.Retainer => 175,        // 7 * 25
+        InventorySourceType.MainBags => 140,                    // 4 * 35
+        InventorySourceType.SaddleBag => 70,                    // 2 * 35
+        InventorySourceType.PremiumSaddleBag => 70,             // 2 * 35
+        InventorySourceType.AllSaddleBags => 140,               // 2 * 35
+        InventorySourceType.Retainer => Retainer.Length * 35,   // 7 * 25
         _ => 140,
     };
 }

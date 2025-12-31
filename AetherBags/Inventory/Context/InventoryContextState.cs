@@ -10,11 +10,15 @@ public static unsafe class InventoryContextState
 {
     private static readonly HashSet<(int page, int slot)> EligibleSlots = new();
     private static readonly HashSet<(InventoryType container, int slot)> BlockedSlots = new();
-    // map from real (containerId, slot) -> visual (containerId, slot)
+
     private static readonly Dictionary<InventoryMappedLocation, InventoryMappedLocation> VisualLocationMap = new();
     private static readonly Dictionary<int, Dictionary<InventoryMappedLocation, InventoryMappedLocation>> GroupedLocationMaps = new();
 
     private static uint _lastContextId;
+
+    public static uint ActiveContextId => _lastContextId;
+
+    public static bool HasActiveContext => _lastContextId != 0;
 
     public static void RefreshMaps()
     {
@@ -133,9 +137,6 @@ public static unsafe class InventoryContextState
 
     public static bool IsSlotBlocked(InventoryType container, int slot)
         => BlockedSlots.Contains((container, slot));
-
-    public static bool HasActiveContext
-        => _lastContextId != 0;
 
     public static InventoryMappedLocation GetVisualLocation(InventoryType realContainer, int slot)
     {

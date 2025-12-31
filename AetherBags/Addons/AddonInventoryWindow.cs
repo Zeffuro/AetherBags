@@ -22,6 +22,8 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
+        InitializeBackgroundDropTarget();
+
         CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
         {
             Position = ContentStartPosition,

@@ -1,14 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
+using AetherBags.Inventory.Context;
+using AetherBags.Inventory.Scanning;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -19,6 +24,7 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected readonly InventoryCategoryPinCoordinator PinCoordinator = new();
     protected readonly HashSet<InventoryCategoryNode> HoverSubscribed = new();
 
+    protected DragDropNode BackgroundDropTarget = null!;
     protected WrappingGridNode<InventoryCategoryNode> CategoriesNode = null!;
     protected TextInputWithHintNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
@@ -129,6 +135,26 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
         }
     }
 
+    protected void InitializeBackgroundDropTarget()
+    {
+        BackgroundDropTarget = new DragDropNode
+        {
+            Position = ContentStartPosition,
+            Size = ContentSize,
+            IconId = 0,
+            IsDraggable = false,
+            IsClickable = false,
+            AcceptedType = DragDropType.Item,
+        };
+
+        BackgroundDropTarget.DragDropBackgroundNode.IsVisible = false;
+        BackgroundDropTarget.IconNode.IsVisible = false;
+
+        BackgroundDropTarget.OnPayloadAccepted = OnBackgroundPayloadAccepted;
+
+        BackgroundDropTarget.AttachNode(this);
+    }
+
     protected virtual InventoryCategoryNode CreateCategoryNode()
     {
         return new InventoryCategoryNode
@@ -137,6 +163,38 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
             OnRefreshRequested = ManualRefresh,
             OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true),
         };
+    }
+
+    private void OnBackgroundPayloadAccepted(DragDropNode node, DragDropPayload acceptedPayload)
+    {
+        if (!acceptedPayload.IsValidInventoryPayload) return;
+
+        InventoryLocation emptyLocation = InventoryScanner.GetFirstEmptySlot(InventoryState.SourceType);
+
+        if (!emptyLocation.IsValid)
+        {
+            Services.Logger.Error("No empty slots available to receive drop.");
+            return;
+        }
+
+        InventoryMappedLocation visualLocation = InventoryContextState.GetVisualLocation(emptyLocation.Container, emptyLocation.Slot);
+
+        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
+        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
+
+        var targetPayload = new DragDropPayload
+        {
+            Type = DragDropType.Item,
+            Int1 = visualLocation.Container,
+            Int2 = visualLocation.Slot,
+            ReferenceIndex = (short)absoluteIndex
+        };
+
+        Services.Logger.Debug($"[BackgroundDrop] Target: {emptyLocation} -> Visual: {visualLocation} (Ref: {absoluteIndex})");
+
+        InventoryMoveHelper.HandleItemMovePayload(acceptedPayload, targetPayload);
+
+        ManualRefresh();
     }
 
     protected void WireHoverHandlers()
@@ -233,6 +291,12 @@ public abstract unsafe class InventoryAddonBase :  NativeAddon
     protected void ResizeWindow(float width, float height, bool recalcLayout)
     {
         SetWindowSize(width, height);
+
+        if (BackgroundDropTarget != null)
+        {
+            BackgroundDropTarget.Size = ContentSize;
+        }
+
         LayoutContent();
 
         if (recalcLayout)

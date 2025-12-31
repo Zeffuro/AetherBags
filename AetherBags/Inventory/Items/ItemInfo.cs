@@ -82,13 +82,35 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     {
         get
         {
-            if (!InventoryContextState.HasActiveContext)
-                return true;
+            uint contextId = InventoryContextState.ActiveContextId;
+            if (contextId == 0) return true;
 
-            if (!IsMainInventory)
-                return true;
+            bool isRetainerContext = contextId == 4;
+            bool isSaddlebagContext = contextId == 29;
+            bool isMainContext = !isRetainerContext && isSaddlebagContext == false;
 
-            return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+            if (IsMainInventory)
+            {
+                if (!isMainContext) return true;
+
+                return InventoryContextState.IsEligible(InventoryPage, Item.Slot);
+            }
+
+            if (Item.Container.IsRetainer)
+            {
+                // ...but the context isn't for Retainers, don't dim it.
+                if (!isRetainerContext)
+                    return true;
+            }
+
+            // 3. If we are looking at a Saddlebag item...
+            if (Item.Container.IsSaddleBag)
+            {
+                if (!isSaddlebagContext)
+                    return true;
+            }
+
+            return true;
         }
     }
 
