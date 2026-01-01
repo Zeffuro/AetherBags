@@ -6,11 +6,11 @@ using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
+using AetherBags.IPC;
 using Dalamud.Game.Gui;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiToolKit;
-using NotImplementedException = System.NotImplementedException;
 
 namespace AetherBags;
 
@@ -30,6 +30,8 @@ public unsafe class Plugin : IDalamudPlugin
 
         KamiToolKitLibrary.Initialize(pluginInterface);
         System.Config = Util.LoadConfigOrDefault();
+
+        System.IPC = new IPCService();
 
         System.AddonInventoryWindow = new AddonInventoryWindow
         {
@@ -79,6 +81,7 @@ public unsafe class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        System.IPC.Dispose();
         Util.SaveConfig(System.Config);
         Services.ClientState.Login -= OnLogin;
         Services.ClientState.Logout -= OnLogout;

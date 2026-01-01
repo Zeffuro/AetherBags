@@ -3,7 +3,6 @@ using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Currency;
 using AetherBags.Inventory.Categories;
-using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
 using Dalamud.Game.Inventory;
@@ -31,68 +30,6 @@ public static unsafe class InventoryState
 
     public static bool Contains(this IReadOnlyCollection<InventoryType> inventoryTypes, GameInventoryType type)
         => inventoryTypes.Contains((InventoryType)type);
-
-    public static void RefreshFromGame()
-    {
-        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
-        if (inventoryManager == null)
-        {
-            ClearAll();
-            return;
-        }
-
-        var config = System.Config;
-        InventoryStackMode stackMode = config.General.StackMode;
-        bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled;
-        bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled;
-        List<UserCategoryDefinition> userCategories = config.Categories.UserCategories.Where(category => category.Enabled).ToList();
-
-        Services.Logger.DebugOnly($"RefreshFromGame StackMode={stackMode}");
-
-        AggByKey.Clear();
-        ItemInfoByKey.Clear();
-        SortedCategoryKeys.Clear();
-        AllCategories.Clear();
-        FilteredCategories.Clear();
-        ClaimedKeys.Clear();
-
-        InventoryScanner.ScanBags(inventoryManager, stackMode, AggByKey);
-        CategoryBucketManager.ResetBuckets(BucketsByKey);
-        InventoryScanner.BuildItemInfos(AggByKey, ItemInfoByKey);
-        InventoryContextState.RefreshMaps();
-        InventoryContextState.RefreshBlockedSlots();
-
-        if (userCategoriesEnabled && userCategories.Count > 0)
-        {
-            CategoryBucketManager.BucketByUserCategories(
-                ItemInfoByKey,
-                userCategories,
-                BucketsByKey,
-                ClaimedKeys,
-                UserCategoriesSortedScratch);
-        }
-
-        if (gameCategoriesEnabled)
-        {
-            CategoryBucketManager.BucketByGameCategories(
-                ItemInfoByKey,
-                BucketsByKey,
-                ClaimedKeys,
-                userCategoriesEnabled);
-        }
-        else
-        {
-            CategoryBucketManager.BucketUnclaimedToMisc(
-                ItemInfoByKey,
-                BucketsByKey,
-                ClaimedKeys,
-                userCategoriesEnabled);
-        }
-
-        InventoryScanner.PruneStaleItemInfos(AggByKey, ItemInfoByKey, RemoveKeysScratch);
-        CategoryBucketManager.SortBucketsAndBuildKeyList(BucketsByKey, SortedCategoryKeys);
-        CategoryBucketManager.BuildCategorizedList(BucketsByKey, SortedCategoryKeys, AllCategories);
-    }
 
     public static IReadOnlyList<CategorizedInventory> GetInventoryItemCategories(string filterString = "", bool invert = false)
     {

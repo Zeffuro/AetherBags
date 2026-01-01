@@ -55,8 +55,9 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         {
             Size = Size with { Y = 18 },
             IsVisible = true,
-            String = "Color When Capped",
+            String = "Color Weekly Cap",
             IsChecked = config.ColorWhenCapped,
+            TextTooltip = "Changes the color of the currency display when you have reached the maximum amount earnable for the current week (e.g., 450/450).",
             OnClick = isChecked =>
             {
                 config.ColorWhenCapped = isChecked;
@@ -69,7 +70,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         ColorInputRow cappedCurrencyColorNode = new ColorInputRow
         {
-            Label = "Capped Currency Color",
+            Label = "Weekly Cap Color",
             Size = new Vector2(300, 24),
             CurrentColor = config.CappedColor,
             DefaultColor = new CurrencySettings().CappedColor,
@@ -87,8 +88,9 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         {
             Size = Size with { Y = 18 },
             IsVisible = true,
-            String = "Limited Currency Color",
+            String = "Color Max Capacity",
             IsChecked = config.ColorWhenLimited,
+            TextTooltip = "Changes the color of the currency display when your total held amount has reached its maximum capacity (e.g., 2000/2000).",
             OnClick = isChecked =>
             {
                 config.ColorWhenLimited = isChecked;
@@ -101,7 +103,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         ColorInputRow limitCurrencyColorNode = new ColorInputRow
         {
-            Label = "Color Weekly Limit",
+            Label = "Max Capacity Color",
             Size = new Vector2(300, 24),
             CurrentColor = config.LimitColor,
             DefaultColor = new CurrencySettings().LimitColor,

@@ -25,14 +25,14 @@ public abstract class InventoryStateBase
 
     public virtual unsafe void RefreshFromGame()
     {
-        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager = FFXIVClientStructs.FFXIV.Client.Game.InventoryManager.Instance();
+        InventoryManager* inventoryManager = InventoryManager.Instance();
         if (inventoryManager == null)
         {
             ClearAll();
             return;
         }
 
-        var config = AetherBags.System.Config;
+        var config = System.Config;
         InventoryStackMode stackMode = config.General.StackMode;
 
         AggByKey.Clear();
@@ -61,14 +61,22 @@ public abstract class InventoryStateBase
 
     protected virtual void ApplyCategories(SystemConfiguration config)
     {
-        bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled;
-        bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled;
+        bool categoriesEnabled = config.Categories.CategoriesEnabled;
+        bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled && categoriesEnabled;
+        bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled && categoriesEnabled;
+        bool allaganCategoriesEnabled = config.Categories.AllaganToolsCategoriesEnabled && categoriesEnabled;
         var userCategories = config.Categories.UserCategories.Where(c => c.Enabled).ToList();
 
         if (userCategoriesEnabled && userCategories.Count > 0)
         {
             CategoryBucketManager.BucketByUserCategories(
                 ItemInfoByKey, userCategories, BucketsByKey, ClaimedKeys, UserCategoriesSortedScratch);
+        }
+
+        if (allaganCategoriesEnabled)
+        {
+            CategoryBucketManager.BucketByAllaganFilters(
+                ItemInfoByKey, BucketsByKey, ClaimedKeys, allaganCategoriesEnabled);
         }
 
         if (gameCategoriesEnabled)

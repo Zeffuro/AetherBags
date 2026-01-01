@@ -1,5 +1,6 @@
 using AetherBags.Addons;
 using AetherBags.Configuration;
+using AetherBags.IPC;
 
 namespace AetherBags;
 
@@ -9,5 +10,6 @@ public static class System
     public static AddonSaddleBagWindow AddonSaddleBagWindow { get; set; } = null!;
     public static AddonRetainerWindow AddonRetainerWindow { get; set; } = null!;
     public static AddonConfigurationWindow AddonConfigurationWindow { get; set; } = null!;
+    public static IPCService IPC { get; set; } = null!;
     public static SystemConfiguration Config { get; set; } = null!;
 }

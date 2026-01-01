@@ -8,8 +8,10 @@ namespace AetherBags.Configuration;
 
 public class CategorySettings
 {
+    public bool CategoriesEnabled { get; set; } = true;
     public bool GameCategoriesEnabled { get; set; } = true;
     public bool UserCategoriesEnabled { get; set; } = true;
+    public bool AllaganToolsCategoriesEnabled { get; set; } = false;
 
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
 }

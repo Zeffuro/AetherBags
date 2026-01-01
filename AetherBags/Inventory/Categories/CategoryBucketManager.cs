@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
+using KamiToolKit.Classes;
 
 namespace AetherBags.Inventory.Categories;
 
@@ -17,6 +18,15 @@ public static class CategoryBucketManager
 
     public static bool IsUserCategoryKey(uint key)
         => (key & UserCategoryKeyFlag) != 0;
+
+    private const uint AllaganFilterKeyFlag = 0x4000_0000;
+
+    public static uint MakeAllaganFilterKey(int index)
+        => AllaganFilterKeyFlag | (uint)(index & 0x3FFF_FFFF);
+
+    public static bool IsAllaganFilterKey(uint key)
+        => (key & AllaganFilterKeyFlag) != 0 && (key & UserCategoryKeyFlag) == 0;
+
 
     /// <summary>
     /// Resets all buckets for a new refresh cycle.
@@ -148,6 +158,74 @@ public static class CategoryBucketManager
         }
     }
 
+    public static void BucketByAllaganFilters(
+        Dictionary<ulong, ItemInfo> itemInfoByKey,
+        Dictionary<uint, CategoryBucket> bucketsByKey,
+        HashSet<ulong> claimedKeys,
+        bool allaganCategoriesEnabled)
+    {
+        if (!allaganCategoriesEnabled) return;
+        if (! System.IPC.AllaganTools.IsReady) return;
+
+        var filters = System.IPC.AllaganTools.CachedSearchFilters;
+        var filterItems = System.IPC.AllaganTools.CachedFilterItems;
+
+        int index = 0;
+        foreach (var (filterKey, filterName) in filters)
+        {
+            if (!filterItems. TryGetValue(filterKey, out var itemIds))
+            {
+                index++;
+                continue;
+            }
+
+            uint bucketKey = MakeAllaganFilterKey(index);
+
+            if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket?  bucket))
+            {
+                bucket = new CategoryBucket
+                {
+                    Key = bucketKey,
+                    Category = new CategoryInfo
+                    {
+                        Name = $"[AT] {filterName}",
+                        Description = $"Allagan Tools filter:  {filterName}",
+                        Color = ColorHelper.GetColor(32),
+                    },
+                    Items = new List<ItemInfo>(capacity: 16),
+                    FilteredItems = new List<ItemInfo>(capacity: 16),
+                    Used = true,
+                };
+                bucketsByKey. Add(bucketKey, bucket);
+            }
+            else
+            {
+                bucket.Used = true;
+                bucket.Category.Name = $"[AT] {filterName}";
+            }
+
+            foreach (var itemKvp in itemInfoByKey)
+            {
+                ulong itemKey = itemKvp.Key;
+                ItemInfo item = itemKvp.Value;
+
+                if (claimedKeys.Contains(itemKey))
+                    continue;
+
+                if (itemIds.ContainsKey(item.Item.ItemId))
+                {
+                    bucket.Items.Add(item);
+                    claimedKeys.Add(itemKey);
+                }
+            }
+
+            if (bucket.Items. Count == 0)
+                bucket.Used = false;
+
+            index++;
+        }
+    }
+
     public static void BucketUnclaimedToMisc(
         Dictionary<ulong, ItemInfo> itemInfoByKey,
         Dictionary<uint, CategoryBucket> bucketsByKey,
@@ -215,9 +293,13 @@ public static class CategoryBucketManager
 
         sortedCategoryKeys.Sort((left, right) =>
         {
-            bool leftCategory = IsUserCategoryKey(left);
-            bool rightCategory = IsUserCategoryKey(right);
-            if (leftCategory != rightCategory) return leftCategory ? -1 : 1;
+            bool leftUser = IsUserCategoryKey(left);
+            bool rightUser = IsUserCategoryKey(right);
+            bool leftAllagan = IsAllaganFilterKey(left);
+            bool rightAllagan = IsAllaganFilterKey(right);
+            if (leftUser != rightUser) return leftUser ? -1 : 1;
+            if (leftAllagan != rightAllagan) return leftAllagan ? -1 : 1;
+
             return left.CompareTo(right);
         });
     }
