@@ -67,9 +67,6 @@ public static unsafe class InventoryState
         };
     }
 
-    public static string GetEmptyItemSlotsString()
-        => InventoryScanner.GetEmptyItemSlotsString();
-
     public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
         => CurrencyState.GetCurrencyInfoList(currencyIds);
 

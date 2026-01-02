@@ -7,14 +7,6 @@ namespace AetherBags.Inventory.Scanning;
 
 public static unsafe class InventoryScanner
 {
-    private static readonly InventoryType[] BagInventories =
-    [
-        InventoryType.Inventory1,
-        InventoryType.Inventory2,
-        InventoryType.Inventory3,
-        InventoryType.Inventory4,
-    ];
-
     public static readonly InventoryType[] StandardInventories =
     [
         InventoryType.Inventory1,
@@ -47,15 +39,8 @@ public static unsafe class InventoryScanner
     public static ulong MakeNaturalSlotKey(InventoryType container, int slot)
         => ((ulong)(uint)container << 32) | (uint)slot;
 
-    // Backwards compatible TODO: Remove
-    public static void ScanBags(
-        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager,
-        InventoryStackMode stackMode,
-        Dictionary<ulong, AggregatedItem> aggByKey)
-        => ScanInventories(inventoryManager, stackMode, aggByKey, InventorySourceType.MainBags);
-
     public static void ScanInventories(
-        FFXIVClientStructs.FFXIV.Client.Game.InventoryManager* inventoryManager,
+        InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
         Dictionary<ulong, AggregatedItem> aggByKey,
         InventorySourceType source)
@@ -194,10 +179,6 @@ public static unsafe class InventoryScanner
 
         return InventoryLocation.Invalid;
     }
-
-    // Backwards compability TODO: Remove
-    public static string GetEmptyItemSlotsString()
-        => GetEmptySlotsString(InventorySourceType. MainBags);
 
     public static string GetEmptySlotsString(InventorySourceType source)
     {
