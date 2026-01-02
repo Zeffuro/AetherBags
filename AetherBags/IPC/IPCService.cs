@@ -14,5 +14,6 @@ public class IPCService : IDisposable
     {
         AllaganTools.Dispose();
         WotsIt.Dispose();
+        BisBuddy.Dispose();
     }
 }

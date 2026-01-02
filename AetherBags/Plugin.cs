@@ -5,6 +5,7 @@ using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Context;
 using AetherBags.Inventory.State;
 using AetherBags.IPC;
 using Dalamud.Game.Gui;
@@ -42,14 +43,14 @@ public unsafe class Plugin : IDalamudPlugin
         System.AddonSaddleBagWindow = new AddonSaddleBagWindow
         {
             InternalName = "AetherBags_SaddleBag",
-            Title = "AetherBags",
+            Title = "AetherSaddlebag",
             Size = new Vector2(750, 750),
         };
 
         System.AddonRetainerWindow = new AddonRetainerWindow
         {
             InternalName = "AetherBags_Retainer",
-            Title = "AetherBags",
+            Title = "AetherRetainerbag",
             Size = new Vector2(750, 750),
         };
 
@@ -78,22 +79,20 @@ public unsafe class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
-        System.IPC.Dispose();
-        Util.SaveConfig(System.Config);
-        Services.ClientState.Login -= OnLogin;
-        Services.ClientState.Logout -= OnLogout;
+        InventoryAddonContextMenu.Close();
+        _inventoryHooks.Dispose();
+        _inventoryLifecycles.Dispose();
 
-        _commandHandler.Dispose();
+        System.IPC.Dispose();
+        HighlightState.ClearAll();
 
         System.AddonInventoryWindow.Dispose();
         System.AddonSaddleBagWindow.Dispose();
         System.AddonRetainerWindow.Dispose();
         System.AddonConfigurationWindow.Dispose();
 
+        Util.SaveConfig(System.Config);
         KamiToolKitLibrary.Dispose();
-
-        _inventoryHooks.Dispose();
-        _inventoryLifecycles.Dispose();
     }
 
     private void OnLogin()

@@ -217,7 +217,7 @@ public class InventoryLifecycles : IDisposable
 
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryRetainer, InventoryRetainerLarge"]);
+        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryRetainer", "InventoryRetainerLarge"]);
 
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);

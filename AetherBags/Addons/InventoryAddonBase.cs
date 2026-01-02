@@ -145,9 +145,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         if (SearchInputNode != null)
         {
             bool atActive = !string.IsNullOrEmpty(HighlightState.SelectedAllaganToolsFilterKey);
-            bool filterModeActive = System.Config.General.SearchMode == SearchMode.Filter;
 
-            SearchInputNode.HintAddColor = (atActive || filterModeActive)
+            SearchInputNode.HintAddColor = (atActive)
                 ? new Vector3(0.0f, 0.3f, 0.3f)
                 : Vector3.Zero;
         }
