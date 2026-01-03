@@ -88,7 +88,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         {
             if (IsOpen) SearchInputNode.SearchString = searchText;
             RefreshCategoriesCore(autosize: true);
-        }, delayTicks: 1);
+        }, delayTicks: 3);
     }
 
     public void RefreshFromLifecycle()

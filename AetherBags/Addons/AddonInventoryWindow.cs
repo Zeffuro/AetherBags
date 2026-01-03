@@ -90,7 +90,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         Services.Framework.RunOnTick(() =>
         {
             if (IsOpen) _notificationNode.NotificationInfo = info;
-        }, delayTicks: 1);
+        }, delayTicks: 3);
     }
 
     protected override void OnFinalize(AtkUnitBase* addon)

@@ -203,8 +203,10 @@ public static unsafe class InventoryScanner
         foreach (var inv in inventories)
         {
             var container = inventoryManager->GetInventoryContainer(inv);
+            var containerSize = container->Size;
+
             if (container == null) continue;
-            for (int i = 0; i < container->Size; i++)
+            for (int i = 0; i < containerSize; i++)
             {
                 if (container->Items[i]. ItemId == 0)
                     empty++;

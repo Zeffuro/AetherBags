@@ -19,6 +19,8 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
     {
         CategorySettings config = System.Config.Categories;
 
+        ItemVerticalSpacing = 2;
+
         LabelTextNode titleNode = new LabelTextNode
         {
             Size = Size with { Y = 18 },

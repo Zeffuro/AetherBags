@@ -20,6 +20,8 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
     {
         GeneralSettings config = System.Config.General;
 
+        ItemVerticalSpacing = 2;
+
         var titleNode = new CategoryTextNode
         {
             Height = 18,
@@ -131,6 +133,11 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
             }
         };
         AddNode(linkItemCheckBox);
+
+        AddNode(new ResNode
+        {
+            Height = 6
+        });
 
         var searchModeDropDown = new LabeledDropdownNode
         {

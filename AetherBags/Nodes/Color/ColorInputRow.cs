@@ -58,8 +58,8 @@ public class ColorInputRow : HorizontalListNode
         if (_colorPickerAddon is not null) return;
 
         _colorPickerAddon = new ColorPickerAddon {
-            InternalName = "ColorPicker",
-            Title = "ColorPicker_AetherBags",
+            InternalName = "ColorPicker_AetherBags",
+            Title = "Pick a color",
         };
     }
 

@@ -12,6 +12,8 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
     {
         CurrencySettings config = System.Config.Currency;
 
+        ItemVerticalSpacing = 2;
+
         LabelTextNode titleNode = new LabelTextNode
         {
             Size = Size with { Y = 18 },
@@ -67,6 +69,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         AddNode(cappedEnabledCheckbox);
 
         AddTab(1);
+
 
         ColorInputRow cappedCurrencyColorNode = new ColorInputRow
         {

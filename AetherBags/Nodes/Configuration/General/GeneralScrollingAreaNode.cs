@@ -13,7 +13,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingListNode
 
         new ImportExportResetNode().AttachNode(this);
 
-        ItemSpacing = 32;
+        ItemSpacing = 10;
 
         AddNode(new FunctionalConfigurationNode());
 

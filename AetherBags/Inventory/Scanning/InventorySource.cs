@@ -76,7 +76,7 @@ public static class InventorySourceDefinitions
         InventorySourceType.SaddleBag => 70,                    // 2 * 35
         InventorySourceType.PremiumSaddleBag => 70,             // 2 * 35
         InventorySourceType.AllSaddleBags => 140,               // 2 * 35
-        InventorySourceType.Retainer => Retainer.Length * 35,   // 7 * 25
+        InventorySourceType.Retainer => Retainer.Length * 25,   // 7 * 25
         _ => 140,
     };
 }

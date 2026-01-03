@@ -47,8 +47,8 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         IReadOnlyList<CurrencyInfo> currencyInfoList = InventoryState.GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
         _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
             dataList: currencyInfoList,
-            getKeyFromData: c => c.ItemId,
-            getKeyFromNode: n => n.Currency.ItemId,
+            getKeyFromData: currencyInfo => currencyInfo.ItemId,
+            getKeyFromNode: node => node.Currency.ItemId,
             updateNode: (node, data) =>
             {
                 node.Currency = data;
