@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
@@ -15,520 +16,500 @@ using Action = System.Action;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public sealed class CategoryDefinitionConfigurationNode : VerticalListNode
+public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 {
-    private readonly CheckboxNode _enabledCheckbox;
-    private readonly CheckboxNode _pinnedCheckbox;
-    private readonly TextInputNode _nameInputNode;
-    private readonly TextInputNode _descriptionInputNode;
-    private readonly ColorInputRow _colorInputNode;
-    private readonly NumericInputNode _priorityInputNode;
-    private readonly NumericInputNode _orderInputNode;
+    private static ExcelSheet<Item>? ItemSheet => Services.DataManager.GetExcelSheet<Item>();
+    private static ExcelSheet<ItemUICategory>? UICategorySheet => Services.DataManager.GetExcelSheet<ItemUICategory>();
 
-    private readonly CheckboxNode _levelEnabledCheckbox;
-    private readonly NumericInputNode _levelMinNode;
-    private readonly NumericInputNode _levelMaxNode;
+    public Action? OnLayoutChanged { get; init; }
+    public Action? OnCategoryPropertyChanged { get; init; }
 
-    private readonly CheckboxNode _itemLevelEnabledCheckbox;
-    private readonly NumericInputNode _itemLevelMinNode;
-    private readonly NumericInputNode _itemLevelMaxNode;
+    private UserCategoryDefinition _categoryDefinition = new();
 
-    private readonly CheckboxNode _vendorPriceEnabledCheckbox;
-    private readonly NumericInputNode _vendorPriceMinNode;
-    private readonly NumericInputNode _vendorPriceMaxNode;
+    private readonly ScrollingAreaNode<TreeListNode> _scrollingArea;
+    private readonly BasicSettingsSection _basicSettings;
+    private readonly RangeFiltersSection _rangeFilters;
+    private readonly StateFiltersSection _stateFilters;
+    private readonly ListFiltersSection _listFilters;
 
-    private readonly StateFilterRowNode _untradableFilter;
-    private readonly StateFilterRowNode _uniqueFilter;
-    private readonly StateFilterRowNode _collectableFilter;
-    private readonly StateFilterRowNode _dyeableFilter;
-    private readonly StateFilterRowNode _repairableFilter;
-    private readonly StateFilterRowNode _hqFilter;
-    private readonly StateFilterRowNode _desynthFilter;
-    private readonly StateFilterRowNode _glamourFilter;
-    private readonly StateFilterRowNode _spiritbondFilter;
-
-    private readonly UintListEditorNode _allowedItemIdsEditor;
-    private readonly StringListEditorNode _allowedNamePatternsEditor;
-    private readonly UintListEditorNode _allowedUiCategoriesEditor;
-    private readonly RarityEditorNode _allowedRaritiesEditor;
-
-    private bool _isInitialized;
-
-    private static ExcelSheet<Item>? _sItemSheet;
-    private static ExcelSheet<ItemUICategory>? _sUICategorySheet;
-
-    public Action? OnLayoutChanged { get; set; }
-
-    public Action? OnCategoryPropertyChanged { get; set; }
-
-    private UserCategoryDefinition CategoryDefinition { get; set; }
-
-    public CategoryDefinitionConfigurationNode(UserCategoryDefinition categoryDefinition)
+    public CategoryDefinitionConfigurationNode()
     {
-        CategoryDefinition = categoryDefinition;
-
-        _sItemSheet ??= Services.DataManager.GetExcelSheet<Item>();
-        _sUICategorySheet ??= Services.DataManager.GetExcelSheet<ItemUICategory>();
-
-        FitContents = true;
-        ItemSpacing = 4.0f;
-
-        var catchAllWarningNode = new TextNode
+        _scrollingArea = new ScrollingAreaNode<TreeListNode>
         {
-            Size = new Vector2(300, 40),
-            TextFlags = TextFlags.MultiLine | TextFlags.AutoAdjustNodeSize,
-            SeString = new SeStringBuilder().Append(" Warning: No rules configured\nThis category won't match anything!").ToReadOnlySeString(),
-            TextColor = ColorHelper.GetColor(17),
-            LineSpacing = 20,
-            IsVisible = UserCategoryMatcher.IsCatchAll(CategoryDefinition),
+            ContentHeight = 100.0f,
+            AutoHideScrollBar = true,
         };
-        AddNode(catchAllWarningNode);
+        _scrollingArea.AttachNode(this);
 
-        AddNode(CreateSectionHeader("Basic Settings"));
+        _scrollingArea.ContentNode.OnLayoutUpdate = newHeight =>
+        {
+            _scrollingArea.ContentHeight = newHeight;
+        };
+
+        _scrollingArea.ContentNode.CategoryVerticalSpacing = 4.0f;
+
+        var treeListNode = _scrollingArea.ContentAreaNode;
+
+        _basicSettings = new BasicSettingsSection(() => _categoryDefinition)
+        {
+            String = "Basic Settings",
+            IsCollapsed = false,
+            OnPropertyChanged = () =>
+            {
+                NotifyChanged();
+                NotifyCategoryPropertyChanged();
+            },
+            OnValueChanged = NotifyChanged,
+        };
+        _basicSettings.OnToggle = _ => HandleLayoutChange();
+        treeListNode.AddCategoryNode(_basicSettings);
+
+        _rangeFilters = new RangeFiltersSection(() => _categoryDefinition)
+        {
+            String = "Range Filters",
+            IsCollapsed = true,
+            OnValueChanged = NotifyChanged,
+        };
+        _rangeFilters.OnToggle = _ => HandleLayoutChange();
+        treeListNode.AddCategoryNode(_rangeFilters);
+
+        _stateFilters = new StateFiltersSection(() => _categoryDefinition)
+        {
+            String = "State Filters",
+            IsCollapsed = true,
+            OnValueChanged = NotifyChanged,
+        };
+        _stateFilters.OnToggle = _ => HandleLayoutChange();
+        treeListNode.AddCategoryNode(_stateFilters);
+
+        _listFilters = new ListFiltersSection(() => _categoryDefinition)
+        {
+            String = "List Filters",
+            IsCollapsed = true,
+            OnValueChanged = NotifyChanged,
+            OnListChanged = HandleListChanged,
+        };
+        _listFilters.OnToggle = _ => HandleLayoutChange();
+        treeListNode.AddCategoryNode(_listFilters);
+    }
+
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        _scrollingArea.Size = Size;
+
+        foreach (var categoryNode in _scrollingArea.ContentNode.CategoryNodes)
+        {
+            categoryNode.Width = Width - 16.0f;
+        }
+
+        _scrollingArea.ContentNode.RefreshLayout();
+    }
+
+    public void SetCategory(UserCategoryDefinition newCategory)
+    {
+        _categoryDefinition = newCategory;
+        RefreshAllValues();
+    }
+
+    private void RefreshAllValues()
+    {
+        _basicSettings.Refresh();
+        _rangeFilters.Refresh();
+        _stateFilters.Refresh();
+        _listFilters.Refresh();
+
+        HandleLayoutChange();
+    }
+
+    private void HandleListChanged()
+    {
+        NotifyChanged();
+        HandleLayoutChange();
+    }
+
+    private void HandleLayoutChange()
+    {
+        _scrollingArea.ContentNode.RefreshLayout();
+        OnLayoutChanged?.Invoke();
+    }
+
+    private static void NotifyChanged() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+
+    private void NotifyCategoryPropertyChanged() => OnCategoryPropertyChanged?.Invoke();
+
+    public static string ResolveItemName(uint itemId) => ItemSheet?.GetRow(itemId).Name.ToString() ?? "Unknown";
+
+    public static string ResolveUiCategoryName(uint categoryId) => UICategorySheet?.GetRow(categoryId).Name.ToString() ?? "Unknown";
+}
+
+public abstract class ConfigurationSection : TreeListCategoryNode
+{
+    private readonly Func<UserCategoryDefinition> _getCategoryDefinition;
+
+    public Action? OnValueChanged { get; init; }
+
+    protected UserCategoryDefinition CategoryDefinition => _getCategoryDefinition();
+
+    protected ConfigurationSection(Func<UserCategoryDefinition> getCategoryDefinition)
+    {
+        _getCategoryDefinition = getCategoryDefinition;
+        VerticalPadding = 4.0f;
+    }
+
+    protected static LabelTextNode CreateLabel(string text) => new()
+    {
+        TextFlags = TextFlags.AutoAdjustNodeSize,
+        Size = new Vector2(80, 20),
+        String = text,
+    };
+}
+
+public sealed class BasicSettingsSection : ConfigurationSection
+{
+    public Action? OnPropertyChanged { get; init; }
+
+    private CheckboxNode? _enabledCheckbox;
+    private CheckboxNode? _pinnedCheckbox;
+    private TextInputNode? _nameInput;
+    private TextInputNode? _descriptionInput;
+    private ColorInputRow? _colorInput;
+    private NumericInputNode? _priorityInput;
+    private NumericInputNode? _orderInput;
+
+    private bool _initialized;
+
+    public BasicSettingsSection(Func<UserCategoryDefinition> getCategoryDefinition)
+        : base(getCategoryDefinition)
+    {
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
 
         _enabledCheckbox = new CheckboxNode
         {
-            Size = new Vector2(200, 20),
+            Size = new Vector2(Width, 20),
             String = "Enabled",
-            IsChecked = CategoryDefinition.Enabled,
             OnClick = isChecked =>
             {
                 CategoryDefinition.Enabled = isChecked;
-                NotifyChanged();
-                NotifyCategoryPropertyChanged();
+                OnPropertyChanged?.Invoke();
             },
         };
         AddNode(_enabledCheckbox);
 
         _pinnedCheckbox = new CheckboxNode
         {
-            Size = new Vector2(200, 20),
+            Size = new Vector2(Width, 20),
             String = "Pinned",
-            IsChecked = CategoryDefinition.Pinned,
             OnClick = isChecked =>
             {
                 CategoryDefinition.Pinned = isChecked;
-                NotifyChanged();
-                NotifyCategoryPropertyChanged();
+                OnPropertyChanged?.Invoke();
             },
         };
         AddNode(_pinnedCheckbox);
 
-        AddNode(new LabelTextNode
-        {
-            TextFlags = TextFlags.AutoAdjustNodeSize,
-            Size = new Vector2(80, 20),
-            String = "Name:"
-        });
-        _nameInputNode = new TextInputNode
+        AddNode(CreateLabel("Name: "));
+        _nameInput = new TextInputNode
         {
             Size = new Vector2(250, 28),
-            String = CategoryDefinition.Name,
-            PlaceholderString = CategoryDefinition.Name.IsNullOrWhitespace() ? "Category Name" : "",
-            OnInputReceived = name =>
+            PlaceholderString = "Category Name",
+            OnInputReceived = input =>
             {
-                CategoryDefinition.Name = name.ExtractText();
-                NotifyChanged();
-                NotifyCategoryPropertyChanged();
+                CategoryDefinition.Name = input.ExtractText();
+                OnPropertyChanged?.Invoke();
             },
         };
-        AddNode(_nameInputNode);
+        AddNode(_nameInput);
 
-        AddNode(new LabelTextNode
-        {
-            TextFlags = TextFlags.AutoAdjustNodeSize,
-            Size = new Vector2(80, 20),
-            String = "Description:"
-        });
-        _descriptionInputNode = new TextInputNode
+        AddNode(CreateLabel("Description:"));
+        _descriptionInput = new TextInputNode
         {
             Size = new Vector2(250, 28),
-            String = CategoryDefinition.Description,
-            PlaceholderString = CategoryDefinition.Description.IsNullOrWhitespace() ? "Optional description" : "",
-            OnInputReceived = desc =>
+            PlaceholderString = "Optional description",
+            OnInputReceived = input =>
             {
-                CategoryDefinition.Description = desc.ExtractText();
-                NotifyChanged();
+                CategoryDefinition.Description = input.ExtractText();
+                OnValueChanged?.Invoke();
             },
         };
-        AddNode(_descriptionInputNode);
+        AddNode(_descriptionInput);
 
-        _colorInputNode = new ColorInputRow
+        _colorInput = new ColorInputRow
         {
             Label = "Color",
             Size = new Vector2(300, 28),
-            CurrentColor = CategoryDefinition.Color,
+            CurrentColor = new UserCategoryDefinition().Color,
             DefaultColor = new UserCategoryDefinition().Color,
-            OnColorConfirmed = color =>
-            {
-                CategoryDefinition.Color = color;
-                NotifyChanged();
-            },
-            OnColorCanceled = color =>
-            {
-                CategoryDefinition.Color = color;
-                NotifyChanged();
-            },
-            OnColorPreviewed = color =>
-            {
-                CategoryDefinition.Color = color;
-                NotifyChanged();
-            }
+            OnColorConfirmed = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
+            OnColorCanceled = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
+            OnColorPreviewed = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
         };
-        AddNode(_colorInputNode);
+        AddNode(_colorInput);
 
-        AddNode(new LabelTextNode
-        {
-            TextFlags = TextFlags.AutoAdjustNodeSize,
-            Size = new Vector2(80, 20),
-            String = "Priority:"
-        });
-        _priorityInputNode = new NumericInputNode
+        AddNode(CreateLabel("Priority:"));
+        _priorityInput = new NumericInputNode
         {
             Size = new Vector2(120, 28),
             Min = 0,
             Max = 1000,
             Step = 1,
-            Value = CategoryDefinition.Priority,
             OnValueUpdate = val =>
             {
                 CategoryDefinition.Priority = val;
-                NotifyChanged();
+                OnValueChanged?.Invoke();
             },
         };
-        AddNode(_priorityInputNode);
+        AddNode(_priorityInput);
 
-        AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(80, 20), String = "Order:" });
-        _orderInputNode = new NumericInputNode
+        AddNode(CreateLabel("Order: "));
+        _orderInput = new NumericInputNode
         {
             Size = new Vector2(120, 28),
             Min = 0,
             Max = 9999,
             Step = 1,
-            Value = CategoryDefinition.Order,
             OnValueUpdate = val =>
             {
                 CategoryDefinition.Order = val;
-                NotifyChanged();
-                NotifyCategoryPropertyChanged();
+                OnPropertyChanged?.Invoke();
             },
         };
-        AddNode(_orderInputNode);
+        AddNode(_orderInput);
 
-        AddNode(CreateSectionHeader("Range Filters"));
+        RecalculateLayout();
+    }
 
-        (_levelEnabledCheckbox, _levelMinNode, _levelMaxNode) = CreateRangeFilter(
-            "Level",
-            CategoryDefinition.Rules.Level,
-            0, 200,
-            (enabled, min, max) =>
+    public void Refresh()
+    {
+        EnsureInitialized();
+
+        _enabledCheckbox!.IsChecked = CategoryDefinition.Enabled;
+        _pinnedCheckbox!.IsChecked = CategoryDefinition.Pinned;
+        _nameInput!.String = CategoryDefinition.Name;
+        _nameInput.PlaceholderString = CategoryDefinition.Name.IsNullOrWhitespace() ? "Category Name" : "";
+        _descriptionInput!.String = CategoryDefinition.Description;
+        _descriptionInput.PlaceholderString = CategoryDefinition.Description.IsNullOrWhitespace() ? "Optional description" : "";
+        _colorInput!.CurrentColor = CategoryDefinition.Color;
+        _priorityInput!.Value = CategoryDefinition.Priority;
+        _orderInput!.Value = CategoryDefinition.Order;
+
+        RecalculateLayout();
+        ParentTreeListNode?.RefreshLayout();
+    }
+}
+
+public sealed class RangeFiltersSection : ConfigurationSection
+{
+    private RangeFilterRow? _levelFilter;
+    private RangeFilterRow? _itemLevelFilter;
+    private RangeFilterRowUint? _vendorPriceFilter;
+
+    private bool _initialized;
+
+    public RangeFiltersSection(Func<UserCategoryDefinition> getCategoryDefinition)
+        : base(getCategoryDefinition)
+    {
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        _levelFilter = new RangeFilterRow
+        {
+            Label = "Level",
+            MinBound = 0,
+            MaxBound = 200,
+            OnFilterChanged = (enabled, min, max) =>
             {
                 CategoryDefinition.Rules.Level.Enabled = enabled;
                 CategoryDefinition.Rules.Level.Min = min;
                 CategoryDefinition.Rules.Level.Max = max;
-                NotifyChanged();
-            }
-        );
+                OnValueChanged?.Invoke();
+            },
+        };
+        AddNode(_levelFilter);
 
-        (_itemLevelEnabledCheckbox, _itemLevelMinNode, _itemLevelMaxNode) = CreateRangeFilter(
-            "Item Level",
-            CategoryDefinition.Rules.ItemLevel,
-            0, 2000,
-            (enabled, min, max) =>
+        _itemLevelFilter = new RangeFilterRow
+        {
+            Label = "Item Level",
+            MinBound = 0,
+            MaxBound = 2000,
+            OnFilterChanged = (enabled, min, max) =>
             {
                 CategoryDefinition.Rules.ItemLevel.Enabled = enabled;
                 CategoryDefinition.Rules.ItemLevel.Min = min;
                 CategoryDefinition.Rules.ItemLevel.Max = max;
-                NotifyChanged();
-            }
-        );
-
-        (_vendorPriceEnabledCheckbox, _vendorPriceMinNode, _vendorPriceMaxNode) = CreateRangeFilterUint(
-            "Vendor Price",
-            CategoryDefinition.Rules.VendorPrice,
-            0, 9_999_999
-        );
-
-        AddNode(CreateSectionHeader("State Filters"));
-
-        _untradableFilter = new StateFilterRowNode("Untradable", CategoryDefinition.Rules.Untradable, NotifyChanged);
-        AddNode(_untradableFilter);
-
-        _uniqueFilter = new StateFilterRowNode("Unique", CategoryDefinition.Rules.Unique, NotifyChanged);
-        AddNode(_uniqueFilter);
-
-        _collectableFilter = new StateFilterRowNode("Collectable", CategoryDefinition.Rules.Collectable, NotifyChanged);
-        AddNode(_collectableFilter);
-
-        _dyeableFilter = new StateFilterRowNode("Dyeable", CategoryDefinition.Rules.Dyeable, NotifyChanged);
-        AddNode(_dyeableFilter);
-
-        _repairableFilter = new StateFilterRowNode("Repairable", CategoryDefinition.Rules.Repairable, NotifyChanged);
-        AddNode(_repairableFilter);
-
-        _hqFilter = new StateFilterRowNode("High Quality", CategoryDefinition.Rules.HighQuality, NotifyChanged);
-        AddNode(_hqFilter);
-
-        _desynthFilter = new StateFilterRowNode("Desynthesizable", CategoryDefinition.Rules.Desynthesizable, NotifyChanged);
-        AddNode(_desynthFilter);
-
-        _glamourFilter = new StateFilterRowNode("Glamourable", CategoryDefinition.Rules.Glamourable, NotifyChanged);
-        AddNode(_glamourFilter);
-
-        _spiritbondFilter = new StateFilterRowNode("Spiritbonded", CategoryDefinition.Rules.FullySpiritbonded, NotifyChanged);
-        AddNode(_spiritbondFilter);
-
-        AddNode(CreateSectionHeader("List Filters"));
-
-        _allowedItemIdsEditor = new UintListEditorNode(
-            "Allowed Item IDs:",
-            CategoryDefinition.Rules.AllowedItemIds,
-            OnListChanged,
-            ResolveItemName
-        );
-        AddNode(_allowedItemIdsEditor);
-
-        _allowedNamePatternsEditor = new StringListEditorNode(
-            "Name Patterns (Regex):",
-            CategoryDefinition.Rules.AllowedItemNamePatterns,
-            OnListChanged
-        );
-        AddNode(_allowedNamePatternsEditor);
-
-        _allowedUiCategoriesEditor = new UintListEditorNode(
-            "UI Categories:",
-            CategoryDefinition.Rules.AllowedUiCategoryIds,
-            OnListChanged,
-            ResolveUiCategoryName
-        );
-        AddNode(_allowedUiCategoriesEditor);
-
-        _allowedRaritiesEditor = new RarityEditorNode(
-            CategoryDefinition.Rules.AllowedRarities,
-            NotifyChanged
-        );
-        AddNode(_allowedRaritiesEditor);
-
-        _isInitialized = true;
-    }
-
-    private void OnListChanged()
-    {
-        NotifyChanged();
-        RecalculateLayout();
-        OnLayoutChanged?.Invoke();
-    }
-
-    private static string ResolveItemName(uint itemId)
-    {
-        try
-        {
-            var item = _sItemSheet?.GetRow(itemId);
-            return item?.Name.ToString() ?? "Unknown";
-        }
-        catch
-        {
-            return "Unknown";
-        }
-    }
-
-    private static string ResolveUiCategoryName(uint categoryId)
-    {
-        try
-        {
-            var category = _sUICategorySheet?.GetRow(categoryId);
-            return category?.Name.ToString() ?? "Unknown";
-        }
-        catch
-        {
-            return "Unknown";
-        }
-    }
-
-    private static void NotifyChanged()
-    {
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
-    }
-
-    private void NotifyCategoryPropertyChanged()
-    {
-        OnCategoryPropertyChanged?.Invoke();
-    }
-
-    private static LabelTextNode CreateSectionHeader(string text)
-    {
-        return new LabelTextNode
-        {
-            Size = new Vector2(300, 22),
-            String = text,
-            TextColor = ColorHelper.GetColor(2),
-            TextOutlineColor = ColorHelper.GetColor(0),
+                OnValueChanged?.Invoke();
+            },
         };
-    }
+        AddNode(_itemLevelFilter);
 
-    private (CheckboxNode enabled, NumericInputNode min, NumericInputNode max) CreateRangeFilter(
-        string label,
-        RangeFilter<int> filter,
-        int minBound,
-        int maxBound,
-        Action<bool, int, int> onUpdate)
-    {
-        var enabledCheckbox = new CheckboxNode
+        _vendorPriceFilter = new RangeFilterRowUint
         {
-            Size = new Vector2(200, 20),
-            String = $"{label} Filter",
-            IsChecked = filter.Enabled,
+            Label = "Vendor Price",
+            MinBound = 0,
+            MaxBound = 9_999_999,
+            OnFilterChanged = (enabled, min, max) =>
+            {
+                CategoryDefinition.Rules.VendorPrice.Enabled = enabled;
+                CategoryDefinition.Rules.VendorPrice.Min = min;
+                CategoryDefinition.Rules.VendorPrice.Max = max;
+                OnValueChanged?.Invoke();
+            },
         };
-        AddNode(enabledCheckbox);
-
-        var minNode = new NumericInputNode
-        {
-            Size = new Vector2(120, 28),
-            Min = minBound,
-            Max = maxBound,
-            Value = filter.Min,
-            IsEnabled = filter.Enabled,
-        };
-
-        var maxNode = new NumericInputNode
-        {
-            Size = new Vector2(120, 28),
-            Min = minBound,
-            Max = maxBound,
-            Value = filter.Max,
-            IsEnabled = filter.Enabled,
-        };
-
-        var rangeRow = new HorizontalListNode { Size = new Vector2(300, 28), ItemSpacing = 8.0f };
-        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Min:" });
-        rangeRow.AddNode(minNode);
-        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Max:" });
-        rangeRow.AddNode(maxNode);
-        AddNode(rangeRow);
-
-        enabledCheckbox.OnClick = isChecked =>
-        {
-            minNode.IsEnabled = isChecked;
-            maxNode.IsEnabled = isChecked;
-            onUpdate(isChecked, minNode.Value, maxNode.Value);
-        };
-
-        minNode.OnValueUpdate = val => onUpdate(enabledCheckbox.IsChecked, val, maxNode.Value);
-        maxNode.OnValueUpdate = val => onUpdate(enabledCheckbox.IsChecked, minNode.Value, val);
-
-        return (enabledCheckbox, minNode, maxNode);
-    }
-
-    private (CheckboxNode enabled, NumericInputNode min, NumericInputNode max) CreateRangeFilterUint(
-        string label,
-        RangeFilter<uint> filter,
-        int minBound,
-        int maxBound)
-    {
-        var enabledCheckbox = new CheckboxNode
-        {
-            Size = new Vector2(200, 20),
-            String = $"{label} Filter",
-            IsChecked = filter.Enabled,
-        };
-        AddNode(enabledCheckbox);
-
-        var minNode = new NumericInputNode
-        {
-            Size = new Vector2(120, 28),
-            Min = minBound,
-            Max = maxBound,
-            Value = (int)filter.Min,
-            IsEnabled = filter.Enabled,
-        };
-
-        var maxNode = new NumericInputNode
-        {
-            Size = new Vector2(120, 28),
-            Min = minBound,
-            Max = maxBound,
-            Value = (int)Math.Min(filter.Max, maxBound),
-            IsEnabled = filter.Enabled,
-        };
-
-        var rangeRow = new HorizontalListNode { Size = new Vector2(300, 28), ItemSpacing = 8.0f };
-        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Min:" });
-        rangeRow.AddNode(minNode);
-        rangeRow.AddNode(new LabelTextNode { TextFlags = TextFlags.AutoAdjustNodeSize, Size = new Vector2(30, 28), String = "Max:" });
-        rangeRow.AddNode(maxNode);
-        AddNode(rangeRow);
-
-        enabledCheckbox.OnClick = isChecked =>
-        {
-            minNode.IsEnabled = isChecked;
-            maxNode.IsEnabled = isChecked;
-            CategoryDefinition.Rules.VendorPrice.Enabled = isChecked;
-            NotifyChanged();
-        };
-
-        minNode.OnValueUpdate = value =>
-        {
-            CategoryDefinition.Rules.VendorPrice.Min = (uint)value;
-            NotifyChanged();
-        };
-
-        maxNode.OnValueUpdate = value =>
-        {
-            CategoryDefinition.Rules.VendorPrice.Max = (uint)value;
-            NotifyChanged();
-        };
-
-        return (enabledCheckbox, minNode, maxNode);
-    }
-
-    public void SetCategory(UserCategoryDefinition newCategory)
-    {
-        CategoryDefinition = newCategory;
-        RefreshValues();
-    }
-
-    private void RefreshValues()
-    {
-        if (! _isInitialized) return;
-
-        _enabledCheckbox.IsChecked = CategoryDefinition.Enabled;
-        _pinnedCheckbox.IsChecked = CategoryDefinition.Pinned;
-        _colorInputNode.CurrentColor = CategoryDefinition.Color;
-        _nameInputNode.String = CategoryDefinition.Name;
-        _descriptionInputNode.String = CategoryDefinition.Description;
-        _priorityInputNode.Value = CategoryDefinition.Priority;
-        _orderInputNode.Value = CategoryDefinition.Order;
-
-        RefreshRangeFilter(_levelEnabledCheckbox, _levelMinNode, _levelMaxNode, CategoryDefinition.Rules.Level);
-        RefreshRangeFilter(_itemLevelEnabledCheckbox, _itemLevelMinNode, _itemLevelMaxNode, CategoryDefinition.Rules.ItemLevel);
-
-        _vendorPriceEnabledCheckbox.IsChecked = CategoryDefinition.Rules.VendorPrice.Enabled;
-        _vendorPriceMinNode.Value = (int)CategoryDefinition.Rules.VendorPrice.Min;
-        _vendorPriceMaxNode.Value = (int)Math.Min(CategoryDefinition.Rules.VendorPrice.Max, int.MaxValue);
-        _vendorPriceMinNode.IsEnabled = CategoryDefinition.Rules.VendorPrice.Enabled;
-        _vendorPriceMaxNode.IsEnabled = CategoryDefinition.Rules.VendorPrice.Enabled;
-
-        _untradableFilter.SetState(CategoryDefinition.Rules.Untradable);
-        _uniqueFilter.SetState(CategoryDefinition.Rules.Unique);
-        _collectableFilter.SetState(CategoryDefinition.Rules.Collectable);
-        _dyeableFilter.SetState(CategoryDefinition.Rules.Dyeable);
-        _repairableFilter.SetState(CategoryDefinition.Rules.Repairable);
-
-        _allowedItemIdsEditor.SetList(CategoryDefinition.Rules.AllowedItemIds);
-        _allowedNamePatternsEditor.SetList(CategoryDefinition.Rules.AllowedItemNamePatterns);
-        _allowedUiCategoriesEditor.SetList(CategoryDefinition.Rules.AllowedUiCategoryIds);
-        _allowedRaritiesEditor.SetList(CategoryDefinition.Rules.AllowedRarities);
+        AddNode(_vendorPriceFilter);
 
         RecalculateLayout();
-        OnLayoutChanged?.Invoke();
     }
 
-    private static void RefreshRangeFilter(CheckboxNode enabled, NumericInputNode min, NumericInputNode max, RangeFilter<int> filter)
+    public void Refresh()
     {
-        enabled.IsChecked = filter.Enabled;
-        min.Value = filter.Min;
-        max.Value = filter.Max;
-        min.IsEnabled = filter.Enabled;
-        max.IsEnabled = filter.Enabled;
+        EnsureInitialized();
+
+        _levelFilter!.SetFilter(CategoryDefinition.Rules.Level);
+        _itemLevelFilter!.SetFilter(CategoryDefinition.Rules.ItemLevel);
+        _vendorPriceFilter!.SetFilter(CategoryDefinition.Rules.VendorPrice);
+
+        RecalculateLayout();
+        ParentTreeListNode?.RefreshLayout();
+    }
+}
+
+public sealed class StateFiltersSection : ConfigurationSection
+{
+    private readonly List<(StateFilterRowNode Node, Func<UserCategoryDefinition, StateFilter> GetFilter)> _filters = [];
+    private bool _initialized;
+
+    public StateFiltersSection(Func<UserCategoryDefinition> getCategoryDefinition)
+        : base(getCategoryDefinition)
+    {
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        AddFilter("Untradable", def => def.Rules.Untradable);
+        AddFilter("Unique", def => def.Rules.Unique);
+        AddFilter("Collectable", def => def.Rules.Collectable);
+        AddFilter("Dyeable", def => def.Rules.Dyeable);
+        AddFilter("Repairable", def => def.Rules.Repairable);
+        AddFilter("High Quality", def => def.Rules.HighQuality);
+        AddFilter("Desynthesizable", def => def.Rules.Desynthesizable);
+        AddFilter("Glamourable", def => def.Rules.Glamourable);
+        AddFilter("Spiritbonded", def => def.Rules.FullySpiritbonded);
+
+        RecalculateLayout();
+    }
+
+    private void AddFilter(string label, Func<UserCategoryDefinition, StateFilter> getFilter)
+    {
+        var node = new StateFilterRowNode(label, new StateFilter(), () => OnValueChanged?.Invoke());
+        _filters.Add((node, getFilter));
+        AddNode(node);
+    }
+
+    public void Refresh()
+    {
+        EnsureInitialized();
+
+        foreach (var (node, getFilter) in _filters)
+        {
+            node.SetState(getFilter(CategoryDefinition));
+        }
+
+        RecalculateLayout();
+        ParentTreeListNode?.RefreshLayout();
+    }
+}
+
+public sealed class ListFiltersSection : ConfigurationSection
+{
+    public Action? OnListChanged { get; init; }
+
+    private UintListEditorNode? _itemIdsEditor;
+    private StringListEditorNode? _namePatternsEditor;
+    private UintListEditorNode? _uiCategoriesEditor;
+    private RarityEditorNode? _raritiesEditor;
+
+    private bool _initialized;
+
+    public ListFiltersSection(Func<UserCategoryDefinition> getCategoryDefinition)
+        : base(getCategoryDefinition)
+    {
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        _itemIdsEditor = new UintListEditorNode
+        {
+            Label = "Allowed Item IDs:",
+            LabelResolver = CategoryDefinitionConfigurationNode.ResolveItemName,
+            OnChanged = () =>
+            {
+                OnListChanged?.Invoke();
+                RecalculateLayout();
+                ParentTreeListNode?.RefreshLayout();
+            },
+        };
+        AddNode(_itemIdsEditor);
+
+        _namePatternsEditor = new StringListEditorNode
+        {
+            Label = "Name Patterns (Regex):",
+            OnChanged = () =>
+            {
+                OnListChanged?.Invoke();
+                RecalculateLayout();
+                ParentTreeListNode?.RefreshLayout();
+            },
+        };
+        AddNode(_namePatternsEditor);
+
+        _uiCategoriesEditor = new UintListEditorNode
+        {
+            Label = "UI Categories:",
+            LabelResolver = CategoryDefinitionConfigurationNode.ResolveUiCategoryName,
+            OnChanged = () =>
+            {
+                OnListChanged?.Invoke();
+                RecalculateLayout();
+                ParentTreeListNode?.RefreshLayout();
+            },
+        };
+        AddNode(_uiCategoriesEditor);
+
+        _raritiesEditor = new RarityEditorNode
+        {
+            OnChanged = () => OnValueChanged?.Invoke(),
+        };
+        AddNode(_raritiesEditor);
+
+        RecalculateLayout();
+    }
+
+    public void Refresh()
+    {
+        EnsureInitialized();
+
+        _itemIdsEditor!.SetList(CategoryDefinition.Rules.AllowedItemIds);
+        _namePatternsEditor!.SetList(CategoryDefinition.Rules.AllowedItemNamePatterns);
+        _uiCategoriesEditor!.SetList(CategoryDefinition.Rules.AllowedUiCategoryIds);
+        _raritiesEditor!.SetList(CategoryDefinition.Rules.AllowedRarities);
+
+        RecalculateLayout();
+        ParentTreeListNode?.RefreshLayout();
     }
 }

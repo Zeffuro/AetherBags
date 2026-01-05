@@ -1,25 +1,33 @@
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public sealed class RarityEditorNode : VerticalListNode
+public sealed class RarityEditorNode :VerticalListNode
 {
-    private static readonly string[] RarityNames = { "Common (White)", "Uncommon (Green)", "Rare (Blue)", "Relic (Purple)", "Aetherial (Pink)" };
+    private const float LabelWidth = 120f;
+    private const float CheckboxWidth = 150f;
 
-    private List<int> _list;
-    private readonly List<CheckboxNode> _checkboxes = new();
-    private readonly Action? _onChanged;
+    private static readonly string[] RarityNames =
+    [
+        "Common (White)",
+        "Uncommon (Green)",
+        "Rare (Blue)",
+        "Relic (Purple)",
+        "Aetherial (Pink)"
+    ];
 
-    public RarityEditorNode(List<int> list, Action? onChanged = null)
+    public Action? OnChanged { get; set; }
+
+    private List<int> _list = [];
+    private readonly List<CheckboxNode> _checkboxes = [];
+
+    public RarityEditorNode()
     {
-        _list = list;
-        _onChanged = onChanged;
-
         FitContents = true;
         ItemSpacing = 2.0f;
 
@@ -32,31 +40,33 @@ public sealed class RarityEditorNode : VerticalListNode
         };
         AddNode(headerLabel);
 
-        for (int i = 0; i < RarityNames.Length; i++)
+        for (var i = 0; i < RarityNames.Length; i++)
         {
             var rarity = i;
             var checkbox = new CheckboxNode
             {
-                Size = new Vector2(200, 20),
+                Size = new Vector2(LabelWidth + CheckboxWidth, 22),
                 String = RarityNames[i],
-                IsChecked = _list.Contains(i),
-                OnClick = isChecked =>
-                {
-                    if (isChecked && !_list.Contains(rarity))
-                    {
-                        _list.Add(rarity);
-                        _list.Sort();
-                    }
-                    else if (!isChecked && _list.Contains(rarity))
-                    {
-                        _list.Remove(rarity);
-                    }
-                    _onChanged?.Invoke();
-                },
+                OnClick = isChecked => ToggleRarity(rarity, isChecked),
             };
             _checkboxes.Add(checkbox);
             AddNode(checkbox);
         }
+    }
+
+    private void ToggleRarity(int rarity, bool isChecked)
+    {
+        if (isChecked && !_list.Contains(rarity))
+        {
+            _list.Add(rarity);
+            _list.Sort();
+        }
+        else if (!isChecked && _list.Contains(rarity))
+        {
+            _list.Remove(rarity);
+        }
+
+        OnChanged?.Invoke();
     }
 
     public void SetList(List<int> newList)
@@ -67,7 +77,7 @@ public sealed class RarityEditorNode : VerticalListNode
 
     public void Refresh()
     {
-        for (int i = 0; i < _checkboxes.Count; i++)
+        for (var i = 0; i < _checkboxes.Count; i++)
         {
             _checkboxes[i].IsChecked = _list.Contains(i);
         }

@@ -1,84 +1,77 @@
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
 public sealed class StringListEditorNode : VerticalListNode
 {
-    private List<string> _list;
-    private readonly TextInputNode _addInput;
+    private const float LabelWidth = 300f;
+    private const float RowHeight = 28f;
+
+    private List<string> _list = [];
+
+    private readonly LabelTextNode _headerLabel;
     private readonly VerticalListNode _itemsContainer;
-    private readonly Action? _onChanged;
+    private readonly HorizontalListNode _addRow;
+    private readonly TextInputNode _addInput;
 
-    public StringListEditorNode(string label, List<string> list, Action? onChanged = null)
+    public Action? OnChanged { get; set; }
+
+    public required string Label
     {
-        _list = list;
-        _onChanged = onChanged;
+        get => _headerLabel.String;
+        init => _headerLabel.String = value;
+    }
 
+    public StringListEditorNode()
+    {
         FitContents = true;
         ItemSpacing = 4.0f;
 
-        var headerLabel = new LabelTextNode
+        _headerLabel = new LabelTextNode
         {
             TextFlags = TextFlags.AutoAdjustNodeSize,
             Size = new Vector2(280, 18),
-            String = label,
             TextColor = ColorHelper.GetColor(8),
         };
-        AddNode(headerLabel);
+        AddNode(_headerLabel);
 
         _itemsContainer = new VerticalListNode
         {
-            FitContents = true,
+            Size = new Vector2(LabelWidth + 40f, 0),
             ItemSpacing = 2.0f,
+            FitContents = true,
+            FirstItemSpacing = 2,
         };
         AddNode(_itemsContainer);
 
-        var addRow = new HorizontalListNode { Size = new Vector2(300, 28), ItemSpacing = 4.0f };
+        _addRow = new HorizontalListNode
+        {
+            Size = new Vector2(LabelWidth + 40f, RowHeight),
+            ItemSpacing = 4.0f,
+        };
 
         _addInput = new TextInputNode
         {
-            Size = new Vector2(200, 28),
+            Size = new Vector2(200, RowHeight),
             PlaceholderString = "Add new...",
-            OnInputComplete = text =>
-            {
-                var value = text.ExtractText();
-                if (!string.IsNullOrWhiteSpace(value) && ! _list.Contains(value))
-                {
-                    _list.Add(value);
-                    _addInput?.String = "";
-                    RefreshItems();
-                    _onChanged?.Invoke();
-                }
-            },
+            OnInputComplete = _ => AddCurrentValue(),
         };
-        addRow.AddNode(_addInput);
+        _addRow.AddNode(_addInput);
 
         var addButton = new TextButtonNode
         {
-            Size = new Vector2(60, 28),
+            Size = new Vector2(60, RowHeight),
             String = "Add",
-            OnClick = () =>
-            {
-                var value = _addInput.String;
-                if (!string.IsNullOrWhiteSpace(value) && !_list.Contains(value))
-                {
-                    _list.Add(value);
-                    _addInput.String = "";
-                    RefreshItems();
-                    _onChanged?.Invoke();
-                }
-            },
+            OnClick = AddCurrentValue,
         };
-        addRow.AddNode(addButton);
+        _addRow.AddNode(addButton);
 
-        AddNode(addRow);
-
-        RefreshItems();
+        AddNode(_addRow);
     }
 
     public void SetList(List<string> newList)
@@ -87,35 +80,54 @@ public sealed class StringListEditorNode : VerticalListNode
         RefreshItems();
     }
 
+    private void AddCurrentValue()
+    {
+        var value = _addInput.String;
+        if (!string.IsNullOrWhiteSpace(value) && !_list.Contains(value))
+        {
+            _list.Add(value);
+            _addInput.String = "";
+            RefreshItems();
+            OnChanged?.Invoke();
+        }
+    }
+
     private void RefreshItems()
     {
-        _itemsContainer.SyncWithListData(
-            _list,
-            node => node.Value,
-            value => new StringListItemNode(value)
-            {
-                Size = new Vector2(280, 22),
-                OnRemove = () =>
-                {
-                    _list.Remove(value);
-                    RefreshItems();
-                    _onChanged?.Invoke();
-                },
-            }
-        );
+        _itemsContainer.Clear();
+
+        foreach (var value in _list)
+        {
+            _itemsContainer.AddNode(CreateItemNode(value));
+        }
+
+        if (_list.Count == 0)
+        {
+            _itemsContainer.Height = 0;
+        }
 
         _itemsContainer.RecalculateLayout();
         RecalculateLayout();
     }
 
-    public void Refresh()
+    private StringListItemNode CreateItemNode(string value) => new(value)
     {
+        Size = new Vector2(LabelWidth + 40f, RowHeight),
+        OnRemove = () => RemoveValue(value),
+    };
+
+    private void RemoveValue(string value)
+    {
+        _list.Remove(value);
         RefreshItems();
+        OnChanged?.Invoke();
     }
 }
 
 public sealed class StringListItemNode : HorizontalListNode
 {
+    private const float LabelWidth = 300f;
+
     public string Value { get; }
     public Action? OnRemove { get; init; }
 
@@ -124,20 +136,18 @@ public sealed class StringListItemNode : HorizontalListNode
         Value = value;
         ItemSpacing = 4.0f;
 
-        var itemLabel = new LabelTextNode
+        AddNode(new LabelTextNode
         {
-            Size = new Vector2(220, 22),
+            Size = new Vector2(LabelWidth, 24),
             String = value,
             TextColor = ColorHelper.GetColor(3),
-        };
-        AddNode(itemLabel);
+        });
 
-        var removeButton = new TextButtonNode
+        AddNode(new CircleButtonNode
         {
-            Size = new Vector2(50, 22),
-            String = "X",
+            Size = new Vector2(28, 28),
+            Icon = ButtonIcon.Cross,
             OnClick = () => OnRemove?.Invoke(),
-        };
-        AddNode(removeButton);
+        });
     }
 }

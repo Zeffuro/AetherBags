@@ -5,68 +5,54 @@ using KamiToolKit.Premade.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public class CategoryConfigurationNode :  ConfigNode<CategoryWrapper>
+public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
 {
-    private readonly ScrollingListNode _categoryList;
     private CategoryDefinitionConfigurationNode? _activeNode;
 
     public Action? OnCategoryChanged { get; set; }
 
     public CategoryConfigurationNode()
     {
-        _categoryList = new ScrollingListNode
-        {
-            AutoHideScrollBar = true,
-        };
-        _categoryList.FitContents = true;
-        _categoryList.AttachNode(this);
     }
 
     protected override void OptionChanged(CategoryWrapper? option)
     {
         if (option?.CategoryDefinition is null)
         {
-            _categoryList.IsVisible = false;
+            if (_activeNode is not null)
+            {
+                _activeNode.IsVisible = false;
+            }
             return;
         }
 
-        _categoryList.IsVisible = true;
-
         if (_activeNode is null)
         {
-            _activeNode = new CategoryDefinitionConfigurationNode(option.CategoryDefinition)
+            _activeNode = new CategoryDefinitionConfigurationNode
             {
-                Size = _categoryList.Size,
-                OnLayoutChanged = UpdateScrollHeight,
+                OnLayoutChanged = RecalculateLayout,
                 OnCategoryPropertyChanged = OnCategoryChanged,
             };
-            _categoryList.AddNode(_activeNode);
-        }
-        else
-        {
-            _activeNode.SetCategory(option.CategoryDefinition);
+            _activeNode.AttachNode(this);
         }
 
-        UpdateScrollHeight();
+        _activeNode.IsVisible = true;
+        _activeNode.Size = Size;
+        _activeNode.SetCategory(option.CategoryDefinition);
     }
 
-    private void UpdateScrollHeight()
+    private void RecalculateLayout()
     {
-        _categoryList.RecalculateLayout();
-        //_categoryList.ContentHeight = _categoryList.Height;
+        // Trigger parent layout update if needed
     }
 
     protected override void OnSizeChanged()
     {
         base.OnSizeChanged();
-        _categoryList.Size = Size;
-        _categoryList.Width = Width;
 
-        foreach (var node in _categoryList.GetNodes<CategoryDefinitionConfigurationNode>())
+        if (_activeNode is not null)
         {
-            node.Width = Width;
+            _activeNode.Size = Size;
         }
-
-        UpdateScrollHeight();
     }
 }
