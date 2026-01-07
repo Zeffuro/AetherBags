@@ -21,8 +21,18 @@ public static class CategoryBucketManager
 
     private const uint AllaganFilterKeyFlag = 0x4000_0000;
 
+    private const uint BisBuddyKeyFlag = 0x2000_0000;
+
     public static uint MakeAllaganFilterKey(int index)
         => AllaganFilterKeyFlag | (uint)(index & 0x3FFF_FFFF);
+
+    public static uint MakeBisBuddyKey()
+        => BisBuddyKeyFlag;
+
+    public static bool IsBisBuddyKey(uint key)
+        => (key & BisBuddyKeyFlag) != 0
+           && (key & AllaganFilterKeyFlag) == 0
+           && (key & UserCategoryKeyFlag) == 0;
 
     public static bool IsAllaganFilterKey(uint key)
         => (key & AllaganFilterKeyFlag) != 0 && (key & UserCategoryKeyFlag) == 0;
@@ -219,11 +229,66 @@ public static class CategoryBucketManager
                 }
             }
 
-            if (bucket.Items. Count == 0)
+            if (bucket.Items.Count == 0)
                 bucket.Used = false;
 
             index++;
         }
+    }
+
+    public static void BucketByBisBuddyItems(
+        Dictionary<ulong, ItemInfo> itemInfoByKey,
+        Dictionary<uint, CategoryBucket> bucketsByKey,
+        HashSet<ulong> claimedKeys,
+        bool bisCategoriesEnabled)
+    {
+        if (!bisCategoriesEnabled) return;
+        if (!System.IPC.BisBuddy.IsReady) return;
+
+        var bisItems = System.IPC.BisBuddy.ItemLookup;
+        if (bisItems. Count == 0) return;
+
+        uint bucketKey = MakeBisBuddyKey();
+
+        if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket? bucket))
+        {
+            bucket = new CategoryBucket
+            {
+                Key = bucketKey,
+                Category = new CategoryInfo
+                {
+                    Name = "[BiS] Best in Slot",
+                    Description = "Items needed for your BiS gearsets",
+                    Color = ColorHelper.GetColor(50),
+                },
+                Items = new List<ItemInfo>(capacity: 16),
+                FilteredItems = new List<ItemInfo>(capacity: 16),
+                Used = true,
+            };
+            bucketsByKey. Add(bucketKey, bucket);
+        }
+        else
+        {
+            bucket.Used = true;
+        }
+
+        foreach (var itemKvp in itemInfoByKey)
+        {
+            ulong itemKey = itemKvp.Key;
+            ItemInfo item = itemKvp.Value;
+
+            if (claimedKeys.Contains(itemKey))
+                continue;
+
+            if (bisItems.ContainsKey(item.Item.ItemId))
+            {
+                bucket.Items. Add(item);
+                claimedKeys.Add(itemKey);
+            }
+        }
+
+        if (bucket.Items.Count == 0)
+            bucket.Used = false;
     }
 
     public static void BucketUnclaimedToMisc(
