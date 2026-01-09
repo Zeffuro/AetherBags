@@ -66,6 +66,7 @@ public abstract class InventoryStateBase
         bool userCategoriesEnabled = config.Categories.UserCategoriesEnabled && categoriesEnabled;
         bool gameCategoriesEnabled = config.Categories.GameCategoriesEnabled && categoriesEnabled;
         bool allaganCategoriesEnabled = config.Categories.AllaganToolsCategoriesEnabled && categoriesEnabled;
+        bool bisCategoriesEnabled = config.Categories.BisBuddyEnabled && categoriesEnabled;
         // TODO: Cache this when config changes
         var userCategories = config.Categories.UserCategories.Where(c => c.Enabled).ToList();
 
@@ -77,7 +78,7 @@ public abstract class InventoryStateBase
 
         if (allaganCategoriesEnabled)
         {
-            if (config.Categories.AllaganToolsMode == AllaganToolsFilterMode.Categorize)
+            if (config.Categories.AllaganToolsFilterMode == PluginFilterMode.Categorize)
             {
                 CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
                 HighlightState.ClearFilter(HighlightSource.AllaganTools);
@@ -90,6 +91,23 @@ public abstract class InventoryStateBase
         else
         {
             HighlightState.ClearFilter(HighlightSource.AllaganTools);
+        }
+
+        if (bisCategoriesEnabled)
+        {
+            if (config.Categories.BisBuddyMode == PluginFilterMode.Categorize)
+            {
+                CategoryBucketManager.BucketByBisBuddyItems(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                HighlightState.ClearFilter(HighlightSource.BiSBuddy);
+            }
+            else
+            {
+                UpdateAllaganHighlight(HighlightState.SelectedBisBuddyFilterKey);
+            }
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
         }
 
         if (gameCategoriesEnabled)
@@ -120,6 +138,25 @@ public abstract class InventoryStateBase
         else
         {
             HighlightState.ClearFilter(HighlightSource.AllaganTools);
+        }
+    }
+
+    private void UpdateBisBuddyHighlight(string? filterKey)
+    {
+        if (string.IsNullOrEmpty(filterKey) || !System.IPC.BisBuddy.IsReady)
+        {
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
+            return;
+        }
+
+        var filterItems = System.IPC.AllaganTools.GetFilterItems(filterKey);
+        if (filterItems != null)
+        {
+            HighlightState.SetFilter(HighlightSource.BiSBuddy, filterItems.Keys);
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
         }
     }
 

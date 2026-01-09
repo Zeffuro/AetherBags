@@ -209,20 +209,6 @@ public class InventoryLifecycles : IDisposable
 
     public void Dispose()
     {
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "InventoryBuddy", OnPostSetup);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "InventoryRetainer, InventoryRetainerLarge", OnPostSetup);
-
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "InventoryBuddy", OnPreFinalize);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "InventoryRetainer, InventoryRetainerLarge", OnPreFinalize);
-
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"]);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryBuddy"]);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreRefresh, ["InventoryRetainer", "InventoryRetainerLarge"]);
-
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, ["InventoryRetainer", "InventoryRetainerLarge"], OnRetainerInventoryUpdate);
-
-        Services.AddonLifecycle.UnregisterListener(AddonEvent.PreShow, ["InventoryBuddy"], OnSaddleBagOpen);
+        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnSaddleBagOpen);
     }
 }

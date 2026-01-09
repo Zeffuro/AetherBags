@@ -151,7 +151,7 @@ public class CommandHandler : IDisposable
 
     private static void PrintChat(string message)
     {
-        Services.ChatGui.Print($"[AetherBags] {message}");
+        Services.ChatGui.Print(message, "AetherBags");
     }
 
     public void Dispose()

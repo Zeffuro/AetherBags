@@ -80,6 +80,27 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
+        LabeledDropdownNode? bbModeDropdown = new LabeledDropdownNode
+        {
+            Size = new Vector2(300, 20),
+            LabelText = "Filter Display Mode",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
+            IsEnabled = config.BisBuddyEnabled && bisBuddyReady,
+            Options = Enum.GetNames(typeof(PluginFilterMode)).ToList(),
+            SelectedOption = config.BisBuddyMode.ToString(),
+            OnOptionSelected = selected =>
+            {
+                if (Enum.TryParse<PluginFilterMode>(selected, out var parsed))
+                {
+                    config.BisBuddyMode = parsed;
+                    if (parsed == PluginFilterMode.Categorize)
+                        HighlightState.ClearFilter(HighlightSource.AllaganTools);
+
+                    RefreshInventory();
+                }
+            }
+        };
+
         CheckboxNode bisBuddyEnabled = new CheckboxNode
         {
             Size = Size with { Y = 18 },
@@ -90,11 +111,13 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.BisBuddyEnabled = isChecked;
-                System.IPC.BisBuddy?.RequestUpdate();
+                if (bbModeDropdown != null) bbModeDropdown.IsEnabled = isChecked;
+                if (isChecked) System.IPC.BisBuddy?.RefreshItems();
                 RefreshInventory();
             }
         };
         AddNode(bisBuddyEnabled);
+        AddNode(1, bbModeDropdown);
 
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
 
@@ -104,14 +127,14 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             LabelText = "Filter Display Mode",
             LabelTextFlags = TextFlags.AutoAdjustNodeSize,
             IsEnabled = config.AllaganToolsCategoriesEnabled && allaganReady,
-            Options = Enum.GetNames(typeof(AllaganToolsFilterMode)).ToList(),
-            SelectedOption = config.AllaganToolsMode.ToString(),
+            Options = Enum.GetNames(typeof(PluginFilterMode)).ToList(),
+            SelectedOption = config.AllaganToolsFilterMode.ToString(),
             OnOptionSelected = selected =>
             {
-                if (Enum.TryParse<AllaganToolsFilterMode>(selected, out var parsed))
+                if (Enum.TryParse<PluginFilterMode>(selected, out var parsed))
                 {
-                    config.AllaganToolsMode = parsed;
-                    if (parsed == AllaganToolsFilterMode.Categorize)
+                    config.AllaganToolsFilterMode = parsed;
+                    if (parsed == PluginFilterMode.Categorize)
                         HighlightState.ClearFilter(HighlightSource.AllaganTools);
 
                     RefreshInventory();
@@ -139,8 +162,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
         };
         AddNode(_allaganToolsCheckbox);
 
-        AddTab(1);
-        AddNode(atModeDropdown);
+        AddNode(1, atModeDropdown);
         SubtractTab(1);
     }
 
