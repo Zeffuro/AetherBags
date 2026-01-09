@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
+using AetherBags.Addons;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
-using AetherBags.Inventory.State;
+using AetherBags.Inventory.Items;
 using Dalamud.Game.Command;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AetherBags.Commands;
 
@@ -30,7 +31,7 @@ public class CommandHandler : IDisposable
         });
     }
 
-    private unsafe void OnCommand(string command, string args)
+    private void OnCommand(string command, string args)
     {
         var argsParts = args.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var subCommand = argsParts.Length > 0 ? argsParts[0].ToLowerInvariant() : string.Empty;
@@ -88,8 +89,7 @@ public class CommandHandler : IDisposable
 
             case "count":
             case "stats":
-                var stats = InventoryState.GetInventoryStats();
-                PrintChat($"{stats.UsedSlots}/{stats.TotalSlots} slots used ({stats.UsagePercent:F0}%) | {stats.TotalItems} unique items | {stats.CategoryCount} categories");
+                PrintInventoryStats();
                 break;
 
             case "saddle":
@@ -108,6 +108,40 @@ public class CommandHandler : IDisposable
             default:
                 PrintChat($"Unknown command: {subCommand}. Use '/ab help' for available commands.");
                 break;
+        }
+    }
+
+    private void PrintInventoryStats()
+    {
+        var openWindows = new List<(string Name, IInventoryWindow Window)>();
+
+        if (System.AddonInventoryWindow.IsOpen)
+            openWindows.Add(("Main", System.AddonInventoryWindow));
+        if (System.AddonSaddleBagWindow.IsOpen)
+            openWindows.Add(("Saddle", System.AddonSaddleBagWindow));
+        if (System.AddonRetainerWindow.IsOpen)
+            openWindows.Add(("Retainer", System.AddonRetainerWindow));
+
+        if (openWindows.Count == 0)
+        {
+            PrintChat("No inventory windows are open. Open an inventory to see stats.");
+            return;
+        }
+
+        foreach (var (name, window) in openWindows)
+        {
+            var stats = window.GetStats();
+            PrintChat($"[{name}] {stats.UsedSlots}/{stats.TotalSlots} slots ({stats.UsagePercent:F0}%) | {stats.TotalItems} items | {stats.CategoryCount} categories");
+        }
+
+        if (openWindows.Count > 1)
+        {
+            var combined = new InventoryStats();
+            foreach (var (_, window) in openWindows)
+            {
+                combined += window.GetStats();
+            }
+            PrintChat($"[Total] {combined.UsedSlots}/{combined.TotalSlots} slots ({combined.UsagePercent:F0}%) | {combined.TotalItems} items | {combined.CategoryCount} categories");
         }
     }
 

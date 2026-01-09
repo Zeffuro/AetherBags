@@ -1,6 +1,5 @@
 using System. Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Inventory;

@@ -87,11 +87,17 @@ public static class Util
     private static SystemConfiguration LoadConfig()
     {
         FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
-        return JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName);
+        var config = JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName);
+        config?.EnsureInitialized();
+        return config;
     }
 
     public static SystemConfiguration LoadConfigOrDefault()
-        => LoadConfig() ?? new SystemConfiguration();
+    {
+        var config = LoadConfig() ?? new SystemConfiguration();
+        config.EnsureInitialized();
+        return config;
+    }
 
     public static SystemConfiguration ResetConfig()
         => new SystemConfiguration();

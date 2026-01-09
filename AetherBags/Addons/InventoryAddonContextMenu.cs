@@ -1,4 +1,3 @@
-using System;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;

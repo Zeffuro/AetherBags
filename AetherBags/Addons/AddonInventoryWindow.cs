@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Inventory.Context;
+using AetherBags.Inventory.Items;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
@@ -15,6 +17,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 {
     private readonly MainBagState _inventoryState = new();
     private InventoryNotificationNode _notificationNode = null!;
+    private LootedItemsCategoryNode _lootedCategoryNode = null!;
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
@@ -22,7 +25,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         InitializeBackgroundDropTarget();
 
-        CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
+        CategoriesNode = new WrappingGridNode<InventoryCategoryNodeBase>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
@@ -32,6 +35,13 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             BottomPadding = 4.0f,
         };
         CategoriesNode.AttachNode(this);
+
+        _lootedCategoryNode = new LootedItemsCategoryNode
+        {
+            ItemsPerLine = 10,
+            OnDismissItem = OnDismissLootedItem,
+            OnClearAll = OnClearAllLootedItems,
+        };
 
         var header = CalculateHeaderLayout(addon);
 
@@ -71,12 +81,67 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
-        _isSetupComplete = true;
+        System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
+
+        IsSetupComplete = true;
 
         _inventoryState.RefreshFromGame();
+
+        var existingLoot = System.LootedItemsTracker.LootedItems;
+        if (existingLoot.Count > 0)
+        {
+            UpdateLootedCategory(existingLoot);
+        }
+
         RefreshCategoriesCore(autosize: true);
 
         base.OnSetup(addon);
+    }
+
+    private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
+    {
+        if (!IsOpen || !IsSetupComplete) return;
+
+        Services.Framework.RunOnTick(() =>
+        {
+            if (!IsOpen) return;
+            UpdateLootedCategory(lootedItems);
+        }, delayTicks: 1);
+    }
+
+    private void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItems)
+    {
+        _lootedCategoryNode.UpdateLootedItems(lootedItems);
+
+        if (lootedItems.Count > 0)
+        {
+            if (CategoriesNode.HoistedNode != _lootedCategoryNode)
+            {
+                CategoriesNode.SetHoistedNode(_lootedCategoryNode);
+            }
+        }
+        else
+        {
+            using (CategoriesNode.DeferRecalculateLayout())
+            {
+                if (CategoriesNode.HoistedNode == _lootedCategoryNode)
+                {
+                    CategoriesNode.SetHoistedNode(null);
+                }
+
+                CategoriesNode.RemoveNode(_lootedCategoryNode);
+            }
+        }
+    }
+
+    private void OnDismissLootedItem(int index)
+    {
+        System.LootedItemsTracker.RemoveByIndex(index);
+    }
+
+    private void OnClearAllLootedItems()
+    {
+        System.LootedItemsTracker.Clear();
     }
 
     public void ManualCurrencyRefresh()
@@ -95,6 +160,8 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
+        System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
+
         ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
         if (blockingAddonId != 0)
         {
@@ -103,7 +170,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
-        _isSetupComplete = false;
+        IsSetupComplete = false;
         base.OnFinalize(addon);
     }
 }

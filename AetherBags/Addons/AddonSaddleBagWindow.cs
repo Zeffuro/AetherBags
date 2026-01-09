@@ -31,7 +31,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         WindowNode?.AddColor = _tintColor;
 
-        CategoriesNode = new WrappingGridNode<InventoryCategoryNode>
+        CategoriesNode = new WrappingGridNode<InventoryCategoryNodeBase>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
@@ -80,7 +80,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         _inventoryState.RefreshFromGame();
 
-        _isSetupComplete = true;
+        IsSetupComplete = true;
 
         RefreshCategoriesCore(autosize: true);
 
@@ -89,7 +89,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     protected override void RefreshCategoriesCore(bool autosize)
     {
-        if (!_isSetupComplete)
+        if (!IsSetupComplete)
             return;
 
         _slotCounterNode.String = _inventoryState.GetEmptySlotsString();
@@ -99,7 +99,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
-        _isSetupComplete = false;
+        IsSetupComplete = false;
 
         if (System.Config.General.HideGameSaddleBags)
         {

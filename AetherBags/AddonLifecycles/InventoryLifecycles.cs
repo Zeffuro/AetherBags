@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using AetherBags.Configuration;
-using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;

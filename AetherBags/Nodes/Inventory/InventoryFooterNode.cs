@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Currency;
-using AetherBags.Inventory;
-using AetherBags.Inventory.State;
 using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+
+using static AetherBags.Inventory.State.InventoryStateBase;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -44,7 +44,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
     {
         _currencyListNode.IsVisible = System.Config.Currency.Enabled;
 
-        IReadOnlyList<CurrencyInfo> currencyInfoList = InventoryState.GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
+        IReadOnlyList<CurrencyInfo> currencyInfoList = GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
         _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
             dataList: currencyInfoList,
             getKeyFromData: currencyInfo => currencyInfo.ItemId,

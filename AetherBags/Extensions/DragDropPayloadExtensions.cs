@@ -1,14 +1,11 @@
-
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
-using Lumina.Text.ReadOnly;
-using Lumina.Text;
 
 namespace AetherBags.Extensions;
 
-public static unsafe class DragDropPayloadExtensions
+public static class DragDropPayloadExtensions
 {
     extension(DragDropPayload payload)
     {

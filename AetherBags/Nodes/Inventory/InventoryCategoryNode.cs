@@ -1,7 +1,6 @@
 using System;
 using System.Numerics;
 using AetherBags.Helpers;
-using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
@@ -9,15 +8,17 @@ using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Inventory;
 
-public class InventoryCategoryNode : SimpleComponentNode
+public class InventoryCategoryNode : InventoryCategoryNodeBase
 {
+    private const uint CategoryNodeKeyBase = 0x10000000;
+
+    public override uint Key => CategoryNodeKeyBase | CategorizedInventory.Key;
     private readonly TextNode _categoryNameTextNode;
     private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
@@ -109,7 +110,7 @@ public class InventoryCategoryNode : SimpleComponentNode
         }
     }
 
-    public bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
+    public override bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
 
     public void BeginHeaderHover()
     {

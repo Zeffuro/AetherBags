@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
+using AetherBags.Currency;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
@@ -164,6 +165,38 @@ public abstract class InventoryStateBase
         => InventoryFilter.FilterCategories(AllCategories, BucketsByKey, FilteredCategories, filter, invert);
 
     public string GetEmptySlotsString() => InventoryScanner.GetEmptySlotsString(SourceType);
+
+    public InventoryStats GetStats()
+    {
+        int totalItems = ItemInfoByKey.Count;
+        int totalQuantity = 0;
+
+        foreach (var kvp in ItemInfoByKey)
+        {
+            totalQuantity += kvp.Value.ItemCount;
+        }
+
+        int totalSlots = InventorySourceDefinitions.GetTotalSlots(SourceType);
+        int emptySlots = InventoryScanner.GetEmptySlots(SourceType);
+
+        var categories = GetCategories(string.Empty);
+        int categoryCount = categories.Count;
+
+        return new InventoryStats
+        {
+            TotalItems = totalItems,
+            TotalQuantity = totalQuantity,
+            EmptySlots = emptySlots,
+            TotalSlots = totalSlots,
+            CategoryCount = categoryCount,
+        };
+    }
+
+    public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
+        => CurrencyState.GetCurrencyInfoList(currencyIds);
+
+    public static void InvalidateCurrencyCaches()
+        => CurrencyState.InvalidateCaches();
 
     protected virtual void ClearAll()
     {

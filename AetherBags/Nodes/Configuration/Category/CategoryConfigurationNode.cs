@@ -1,6 +1,5 @@
 using System;
 using AetherBags.Addons;
-using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;

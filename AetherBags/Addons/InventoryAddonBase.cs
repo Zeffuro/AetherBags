@@ -6,6 +6,7 @@ using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Context;
+using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -27,7 +28,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected readonly HashSet<InventoryCategoryNode> HoverSubscribed = new();
 
     protected DragDropNode BackgroundDropTarget = null!;
-    protected WrappingGridNode<InventoryCategoryNode> CategoriesNode = null!;
+    protected WrappingGridNode<InventoryCategoryNodeBase> CategoriesNode = null!;
     protected TextInputWithButtonNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
     protected TextNode? SlotCounterNode { get; set; }
@@ -49,8 +50,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
-    private bool _isRefreshing;
-    protected bool _isSetupComplete;
+    protected bool IsSetupComplete;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -59,13 +59,14 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected virtual bool HasSlotCounter => false;
 
     private readonly HashSet<uint> _searchMatchScratch = new();
+    private bool _isRefreshing;
 
     public void ManualRefresh()
     {
         if (!IsOpen) return;
         if (!Services.ClientState.IsLoggedIn) return;
         if (_isRefreshing) return;
-        if (!_isSetupComplete) return;
+        if (!IsSetupComplete) return;
 
         try
         {
@@ -82,6 +83,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     public string GetSearchText() => SearchInputNode?.SearchString.ExtractText() ?? string.Empty;
 
+    public InventoryStats GetStats() => InventoryState.GetStats();
+
     public virtual void SetSearchText(string searchText)
     {
         Services.Framework.RunOnTick(() =>
@@ -93,7 +96,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     public void RefreshFromLifecycle()
     {
-        if (!_isSetupComplete) return;
+        if (!IsSetupComplete) return;
         if (!IsOpen) return;
         if (_isRefreshing) return;
 
@@ -111,7 +114,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected virtual void RefreshCategoriesCore(bool autosize)
     {
-        if (!_isSetupComplete)
+        if (!IsSetupComplete)
             return;
 
         var config = System.Config.General;
@@ -166,7 +169,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
             dataList: categories,
             getKeyFromData: categorizedInventory => categorizedInventory.Key,
-            getKeyFromNode: node => node.CategorizedInventory.Key,
+            getKeyFromNode: node => node.Key,
             updateNode: (node, data) =>
             {
                 node.CategorizedInventory = data;
@@ -394,7 +397,13 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected void ResizeWindow(float width, float height)
         => ResizeWindow(width, height, recalcLayout: true);
 
-    public void ItemRefresh() => RefreshCategoriesCore(false);
+    public void ItemRefresh()
+    {
+        if (!IsOpen) return;
+        if (!IsSetupComplete) return;
+
+        RefreshCategoriesCore(false);
+    }
 
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {

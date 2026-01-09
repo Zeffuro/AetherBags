@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
-using AetherBags.Inventory.Categories;
 using AetherBags.Nodes.Color;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
-using Lumina.Text;
 using Action = System.Action;
 
 namespace AetherBags.Nodes.Configuration.Category;

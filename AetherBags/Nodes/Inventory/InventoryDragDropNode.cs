@@ -1,5 +1,4 @@
 using System.Numerics;
-using AetherBags.Inventory;
 using AetherBags.Inventory.Items;
 using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Client.Game;

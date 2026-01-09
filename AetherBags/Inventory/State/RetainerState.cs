@@ -1,6 +1,5 @@
 using AetherBags. Inventory.Scanning;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AetherBags. Inventory.State;
 

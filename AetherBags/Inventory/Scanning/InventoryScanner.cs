@@ -180,19 +180,21 @@ public static unsafe class InventoryScanner
         return InventoryLocation.Invalid;
     }
 
+    public static int GetEmptySlots(InventorySourceType source) => (int)(source switch
+    {
+        InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
+        InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
+        InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
+        InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
+        InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
+        _ => 0u,
+    });
+
     public static string GetEmptySlotsString(InventorySourceType source)
     {
         int total = InventorySourceDefinitions.GetTotalSlots(source);
-        uint empty = source switch
-        {
-            InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
-            InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
-            InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
-            InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
-            InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
-            _ => 0,
-        };
-        uint used = (uint)total - empty;
+        int empty = GetEmptySlots(source);
+        int used = total - empty;
         return $"{used}/{total}";
     }
 

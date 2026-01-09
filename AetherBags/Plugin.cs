@@ -6,16 +6,13 @@ using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
-using AetherBags.Inventory.State;
 using AetherBags.IPC;
-using Dalamud.Game.Gui;
 using Dalamud.Plugin;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiToolKit;
 
 namespace AetherBags;
 
-public unsafe class Plugin : IDalamudPlugin
+public class Plugin : IDalamudPlugin
 {
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
@@ -32,6 +29,7 @@ public unsafe class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Initialize(pluginInterface);
 
         System.IPC = new IPCService();
+        System.LootedItemsTracker = new LootedItemsTracker();
 
         System.AddonInventoryWindow = new AddonInventoryWindow
         {
@@ -83,6 +81,7 @@ public unsafe class Plugin : IDalamudPlugin
         _inventoryHooks.Dispose();
         _inventoryLifecycles.Dispose();
 
+        System.LootedItemsTracker.Dispose();
         System.IPC.Dispose();
         HighlightState.ClearAll();
 
@@ -98,7 +97,7 @@ public unsafe class Plugin : IDalamudPlugin
     private void OnLogin()
     {
         System.Config = Util.LoadConfigOrDefault();
-        InventoryState.TrackLootedItems = true;
+        System.LootedItemsTracker.Enable();
 
 #if DEBUG
         System.AddonInventoryWindow.Toggle();
@@ -109,7 +108,7 @@ public unsafe class Plugin : IDalamudPlugin
     private void OnLogout(int type, int code)
     {
         Util.SaveConfig(System.Config);
-        InventoryState.TrackLootedItems = false;
+        System.LootedItemsTracker.Disable();
         System.AddonInventoryWindow.Close();
         System.AddonSaddleBagWindow.Close();
         System.AddonRetainerWindow.Close();

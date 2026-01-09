@@ -4,13 +4,13 @@ namespace AetherBags.Nodes.Inventory;
 
 public sealed class InventoryCategoryPinCoordinator
 {
-    public bool ApplyPinnedStates(WrappingGridNode<InventoryCategoryNode> grid)
+    public bool ApplyPinnedStates(WrappingGridNode<InventoryCategoryNodeBase> grid)
     {
         bool changed = false;
 
         using (grid.DeferRecalculateLayout())
         {
-            foreach (var node in grid.GetNodes<InventoryCategoryNode>())
+            foreach (var node in grid.GetNodes<InventoryCategoryNodeBase>())
             {
                 bool shouldBePinned = node.IsPinnedInConfig;
 
@@ -38,7 +38,7 @@ public sealed class InventoryCategoryPinCoordinator
         return changed;
     }
 
-    public bool PrunePinnedNotInGrid(WrappingGridNode<InventoryCategoryNode> grid)
+    public bool PrunePinnedNotInGrid(WrappingGridNode<InventoryCategoryNodeBase> grid)
     {
         return false;
     }

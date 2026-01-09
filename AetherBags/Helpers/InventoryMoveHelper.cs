@@ -1,7 +1,5 @@
-using System;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;

@@ -1,6 +1,4 @@
 using System;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Ipc;
 
 namespace AetherBags.IPC;
 

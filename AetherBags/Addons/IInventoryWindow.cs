@@ -1,3 +1,5 @@
+using AetherBags.Inventory.Items;
+
 namespace AetherBags.Addons;
 
 public interface IInventoryWindow
@@ -8,4 +10,5 @@ public interface IInventoryWindow
     void ManualRefresh();
     void ItemRefresh();
     void SetSearchText(string searchText);
+    InventoryStats GetStats();
 }

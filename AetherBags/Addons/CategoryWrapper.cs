@@ -1,5 +1,4 @@
 using AetherBags.Configuration;
-using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using KamiToolKit.Premade;
 

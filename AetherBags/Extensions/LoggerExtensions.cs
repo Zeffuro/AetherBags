@@ -8,10 +8,16 @@ public static class LoggerExtensions
         {
             if (System.Config?.General?.DebugEnabled == true)
             {
-                Services.Logger.DebugOnly(message);
+                Services.Logger.Debug(message);
             }
         }
 
-        public void DebugOnly(string message, params object[] args) => DebugOnly(logger, string.Format(message, args));
+        public void DebugOnly(string message, params object[] args)
+        {
+            if (System.Config?.General?.DebugEnabled == true)
+            {
+                Services.Logger.Debug(message, args);
+            }
+        }
     }
 }
