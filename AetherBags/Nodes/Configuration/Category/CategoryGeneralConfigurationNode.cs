@@ -117,7 +117,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             }
         };
         AddNode(bisBuddyEnabled);
-        AddNode(bbModeDropdown);
+        AddNode(1, bbModeDropdown);
 
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
 
@@ -162,8 +162,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
         };
         AddNode(_allaganToolsCheckbox);
 
-        AddTab(1);
-        AddNode(atModeDropdown);
+        AddNode(1, atModeDropdown);
         SubtractTab(1);
     }
 

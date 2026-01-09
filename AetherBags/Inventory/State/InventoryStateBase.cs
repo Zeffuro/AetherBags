@@ -97,8 +97,8 @@ public abstract class InventoryStateBase
         {
             if (config.Categories.BisBuddyMode == PluginFilterMode.Categorize)
             {
-                CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
-                HighlightState.ClearFilter(HighlightSource.AllaganTools);
+                CategoryBucketManager.BucketByBisBuddyItems(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                HighlightState.ClearFilter(HighlightSource.BiSBuddy);
             }
             else
             {
@@ -138,6 +138,25 @@ public abstract class InventoryStateBase
         else
         {
             HighlightState.ClearFilter(HighlightSource.AllaganTools);
+        }
+    }
+
+    private void UpdateBisBuddyHighlight(string? filterKey)
+    {
+        if (string.IsNullOrEmpty(filterKey) || !System.IPC.BisBuddy.IsReady)
+        {
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
+            return;
+        }
+
+        var filterItems = System.IPC.AllaganTools.GetFilterItems(filterKey);
+        if (filterItems != null)
+        {
+            HighlightState.SetFilter(HighlightSource.BiSBuddy, filterItems.Keys);
+        }
+        else
+        {
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
         }
     }
 

@@ -246,7 +246,7 @@ public static class CategoryBucketManager
         if (!System.IPC.BisBuddy.IsReady) return;
 
         var bisItems = System.IPC.BisBuddy.ItemLookup;
-        if (bisItems. Count == 0) return;
+        if (bisItems.Count == 0) return;
 
         uint bucketKey = MakeBisBuddyKey();
 
@@ -265,7 +265,7 @@ public static class CategoryBucketManager
                 FilteredItems = new List<ItemInfo>(capacity: 16),
                 Used = true,
             };
-            bucketsByKey. Add(bucketKey, bucket);
+            bucketsByKey.Add(bucketKey, bucket);
         }
         else
         {
@@ -282,7 +282,7 @@ public static class CategoryBucketManager
 
             if (bisItems.ContainsKey(item.Item.ItemId))
             {
-                bucket.Items. Add(item);
+                bucket.Items.Add(item);
                 claimedKeys.Add(itemKey);
             }
         }
@@ -352,20 +352,27 @@ public static class CategoryBucketManager
             if (!bucket.Used)
                 continue;
 
+            // TODO: Make configurable
             bucket.Items.Sort(ItemCountDescComparer.Instance);
             sortedCategoryKeys.Add(bucket.Key);
         }
 
+        // TODO: Make sortable by user
         sortedCategoryKeys.Sort((left, right) =>
         {
-            bool leftUser = IsUserCategoryKey(left);
-            bool rightUser = IsUserCategoryKey(right);
-            bool leftAllagan = IsAllaganFilterKey(left);
-            bool rightAllagan = IsAllaganFilterKey(right);
-            if (leftUser != rightUser) return leftUser ? -1 : 1;
-            if (leftAllagan != rightAllagan) return leftAllagan ? -1 : 1;
+            int GetPriority(uint key)
+            {
+                if (IsUserCategoryKey(key)) return 1;
+                if (IsBisBuddyKey(key)) return 2;
+                if (IsAllaganFilterKey(key)) return 3;
+                if (key == 0) return 99;
+                return 10;
+            }
 
-            return left.CompareTo(right);
+            int leftPrio = GetPriority(left);
+            int rightPrio = GetPriority(right);
+
+            return leftPrio != rightPrio ? leftPrio.CompareTo(rightPrio) : left.CompareTo(right);
         });
     }
 
