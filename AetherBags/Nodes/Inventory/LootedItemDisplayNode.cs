@@ -1,7 +1,7 @@
 using System;
-using System.Numerics;
 using AetherBags.Inventory.Items;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Common.Math;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -11,11 +11,10 @@ namespace AetherBags.Nodes.Inventory;
 /// <summary>
 /// A display-only item node for looted items. Not draggable, but shows tooltip and can be dismissed.
 /// </summary>
-public unsafe class LootedItemDisplayNode : SimpleComponentNode
+public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
 {
     private readonly IconNode _iconNode;
     private readonly TextNode _quantityTextNode;
-    private readonly ResNode _collisionNode;
 
     public Action<LootedItemDisplayNode>? OnDismiss { get; set; }
 
@@ -27,54 +26,42 @@ public unsafe class LootedItemDisplayNode : SimpleComponentNode
         {
             Position = new Vector2(0, 0),
             Size = new Vector2(42, 46),
-            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled,
         };
+        _iconNode.AddEvent(AtkEventType.MouseClick, OnMouseClick);
         _iconNode.AttachNode(this);
 
         _quantityTextNode = new TextNode
         {
             Size = new Vector2(40.0f, 12.0f),
             Position = new Vector2(4.0f, 34.0f),
-            NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
             Color = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(51),
             TextFlags = TextFlags.Edge,
             AlignmentType = AlignmentType.Right,
         };
         _quantityTextNode.AttachNode(this);
+    }
 
-        _collisionNode = new ResNode
+    public LootedItemInfo LootedItem
+    {
+        get;
+        set
         {
-            Size = new Vector2(42, 46),
-            NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents | NodeFlags.HasCollision,
-        };
-        _collisionNode.AddEvent(AtkEventType.MouseOver, OnMouseOver);
-        _collisionNode.AddEvent(AtkEventType.MouseOut, OnMouseOut);
-        _collisionNode.AddEvent(AtkEventType.MouseClick, OnMouseClick);
-        _collisionNode.AttachNode(this);
-    }
+            bool needsCollisionUpdate = field is null && value is not null;
+            field = value;
+            var item = value.Item;
+            _iconNode.IconId = item.IconId;
+            _iconNode.ItemTooltip = item.ItemId;
+            _quantityTextNode.String = value.Quantity > 1 ? value.Quantity.ToString() : string.Empty;
 
-    public LootedItemInfo LootedItem { get; private set; } = null!;
-
-    public void SetLootedItem(LootedItemInfo lootedItem)
-    {
-        LootedItem = lootedItem;
-        var item = lootedItem.Item;
-        _iconNode.IconId = item.IconId;
-        _quantityTextNode.String = lootedItem.Quantity > 1 ? lootedItem.Quantity.ToString() : string.Empty;
-    }
-
-    private void OnMouseOver(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
-    {
-        var item = LootedItem.Item;
-        _collisionNode.ShowInventoryItemTooltip(item.Container, item.Slot);
-    }
-
-    private void OnMouseOut(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
-    {
-        ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(_collisionNode)->Id;
-        AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
-    }
+            if (needsCollisionUpdate)
+            {
+                var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
+                if (addon is not null)
+                    addon->UpdateCollisionNodeList(false);
+            }
+        }
+    } = null!;
 
     private void OnMouseClick(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {

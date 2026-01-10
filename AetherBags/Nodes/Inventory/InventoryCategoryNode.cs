@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
@@ -32,6 +35,11 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private bool _headerExpanded;
     private float _baseHeaderWidth = 96f;
     private string _fullHeaderText = string.Empty;
+
+    private uint _lastCategoryKey;
+    private int _lastItemCount;
+    private ulong _lastItemsHash;
+    private int _lastItemsPerLine;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
     public Action? OnRefreshRequested { get; set; }
@@ -68,24 +76,66 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _itemGridNode.AttachNode(this);
     }
 
+    private CategorizedInventory _categorizedInventory;
+
     public CategorizedInventory CategorizedInventory
     {
-        get;
-        set
+        get => _categorizedInventory;
+        set => SetCategoryData(value, _itemGridNode.ItemsPerLine);
+    }
+
+    public void SetCategoryData(CategorizedInventory data, int itemsPerLine)
+    {
+        bool categoryChanged = data.Key != _lastCategoryKey;
+        bool itemsPerLineChanged = itemsPerLine != _lastItemsPerLine;
+
+        ulong itemsHash = ComputeItemsHash(CollectionsMarshal.AsSpan(data.Items));
+        bool itemsChanged = data.Items.Count != _lastItemCount || itemsHash != _lastItemsHash;
+
+        _lastCategoryKey = data.Key;
+        _lastItemCount = data.Items.Count;
+        _lastItemsHash = itemsHash;
+        _lastItemsPerLine = itemsPerLine;
+
+        _categorizedInventory = data;
+
+        _fullHeaderText = System.Config.General.ShowCategoryItemCount
+            ? $"{data.Category.Name} ({data.Items.Count})"
+            : data.Category.Name;
+
+        _categoryNameTextNode.String = _fullHeaderText;
+        _categoryNameTextNode.TextColor = data.Category.Color;
+        _categoryNameTextNode.TextTooltip = data.Category.Description;
+
+        if (itemsChanged || categoryChanged)
         {
-            field = value;
+            using (_itemGridNode.DeferRecalculateLayout())
+            {
+                _itemGridNode.ItemsPerLine = itemsPerLine;
+                UpdateItemGrid();
+            }
+        }
+        else if (itemsPerLineChanged)
+        {
+            _itemGridNode.ItemsPerLine = itemsPerLine;
+        }
 
-            _fullHeaderText = System.Config.General.ShowCategoryItemCount
-                ? $"{value.Category.Name} ({value.Items.Count})"
-                : value.Category.Name;
-
-            _categoryNameTextNode.String = _fullHeaderText;
-            _categoryNameTextNode.TextColor = value.Category.Color;
-            _categoryNameTextNode.TextTooltip = value.Category.Description;
-
-            UpdateItemGrid();
+        if (categoryChanged || itemsChanged || itemsPerLineChanged)
+        {
             RecalculateSize();
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong ComputeItemsHash(ReadOnlySpan<ItemInfo> items)
+    {
+        ulong hash = 14695981039346656037UL;  // FNV-1a offset basis
+        foreach (var item in items)
+        {
+            hash ^= item.Key;
+            hash *= 1099511628211UL; // FNV-1a prime
+        }
+        return hash;
     }
 
     public int ItemsPerLine
@@ -212,10 +262,43 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     private void UpdateItemGrid()
     {
-        _itemGridNode.SyncWithListData(
-            CategorizedInventory.Items,
-            node => node.ItemInfo,
-            CreateInventoryDragDropNode);
+        _itemGridNode.SyncWithListDataByKey<ItemInfo, InventoryDragDropNode, ulong>(
+            dataList: CategorizedInventory.Items,
+            getKeyFromData: item => item.Key,
+            getKeyFromNode: node => node.ItemInfo?.Key ?? 0,
+            updateNode: UpdateInventoryDragDropNode,
+            createNodeMethod: CreateInventoryDragDropNode);
+    }
+
+    private void UpdateInventoryDragDropNode(InventoryDragDropNode node, ItemInfo data)
+    {
+        if (node.ItemInfo?.Key == data.Key)
+        {
+            node.ItemInfo = data;
+            node.Alpha = data.VisualAlpha;
+            node.AddColor = data.HighlightOverlayColor;
+            node.IsDraggable = !data.IsSlotBlocked;
+            return;
+        }
+
+        InventoryItem item = data.Item;
+        InventoryMappedLocation visualLocation = data.VisualLocation;
+
+        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
+        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
+
+        node.ItemInfo = data;
+        node.IconId = item.IconId;
+        node.Alpha = data.VisualAlpha;
+        node.AddColor = data.HighlightOverlayColor;
+        node.IsDraggable = !data.IsSlotBlocked;
+        node.Payload = new DragDropPayload
+        {
+            Type = DragDropType.Item,
+            Int1 = visualLocation.Container,
+            Int2 = visualLocation.Slot,
+            ReferenceIndex = (short)absoluteIndex
+        };
     }
 
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
@@ -268,15 +351,30 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     public void RefreshNodeVisuals()
     {
-        foreach (var node in _itemGridNode.Nodes)
+        var nodes = _itemGridNode.Nodes;
+        for (int i = 0; i < nodes.Count; i++)
         {
-            if (node is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null) continue;
+            if (nodes[i] is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null)
+                continue;
 
-            itemNode.Alpha = itemNode.ItemInfo.VisualAlpha;
-            itemNode.AddColor = itemNode.ItemInfo.HighlightOverlayColor;
-            itemNode.IsDraggable = !itemNode.ItemInfo.IsSlotBlocked;
+            var info = itemNode.ItemInfo;
+            float newAlpha = info.VisualAlpha;
+            Vector3 newColor = info.HighlightOverlayColor;
+            bool newDraggable = !info.IsSlotBlocked;
+
+            if (!NearlyEqual(itemNode.Alpha, newAlpha))
+                itemNode.Alpha = newAlpha;
+
+            if (itemNode.AddColor != newColor)
+                itemNode.AddColor = newColor;
+
+            if (itemNode.IsDraggable != newDraggable)
+                itemNode.IsDraggable = newDraggable;
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool NearlyEqual(float a, float b) => MathF.Abs(a - b) < 0.001f;
 
     private unsafe void OnDiscard(DragDropNode node, ItemInfo item)
     {

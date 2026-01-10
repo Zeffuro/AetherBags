@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.AddonLifecycles;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -169,11 +170,10 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
             dataList: categories,
             getKeyFromData: categorizedInventory => categorizedInventory.Key,
-            getKeyFromNode: node => node.Key,
+            getKeyFromNode: node => node.CategorizedInventory.Key,
             updateNode: (node, data) =>
             {
-                node.CategorizedInventory = data;
-                node.ItemsPerLine = Math.Min(data.Items.Count, maxItemsPerLine);
+                node.SetCategoryData(data, Math.Min(data.Items.Count, maxItemsPerLine));
                 node.RefreshNodeVisuals();
             },
             createNodeMethod: _ => CreateCategoryNode());
@@ -408,6 +408,9 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
+
+        if (DragDropState.IsDragging)
+            return;
 
         InventoryState.RefreshFromGame();
         RefreshCategoriesCore(autosize: true);

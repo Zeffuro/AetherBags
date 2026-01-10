@@ -101,12 +101,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
     {
         if (!IsOpen || !IsSetupComplete) return;
-
-        Services.Framework.RunOnTick(() =>
-        {
-            if (!IsOpen) return;
-            UpdateLootedCategory(lootedItems);
-        }, delayTicks: 1);
+        UpdateLootedCategory(lootedItems);
     }
 
     private void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItems)
@@ -119,6 +114,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             {
                 CategoriesNode.SetHoistedNode(_lootedCategoryNode);
             }
+            AutoSizeWindow();
         }
         else
         {
@@ -131,6 +127,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
                 CategoriesNode.RemoveNode(_lootedCategoryNode);
             }
+            AutoSizeWindow();
         }
     }
 
@@ -157,6 +154,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             if (IsOpen) _notificationNode.NotificationInfo = info;
         }, delayTicks: 3);
     }
+
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {

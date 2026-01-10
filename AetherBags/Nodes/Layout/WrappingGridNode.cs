@@ -1,5 +1,4 @@
 using KamiToolKit;
-using KamiToolKit.Nodes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace AetherBags.Nodes.Layout;
 
-public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
+public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : NodeBase
 {
     public float HorizontalSpacing { get; set; } = 10f;
     public float VerticalSpacing { get; set; } = 10f;
@@ -35,9 +34,6 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
     private bool _lastpreferLargestFit;
     private bool _lastuseStableInsert;
     private int _lastCompactLookahead;
-
-    private int _deferRecalcDepth;
-    private bool _pendingRecalc;
 
     private int[] _orderScratch = Array.Empty<int>();
 
@@ -80,7 +76,7 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
     {
         if (_pinned.Add(node))
         {
-            RequestRecalculateLayout();
+            RecalculateLayout();
             return true;
         }
         return false;
@@ -90,7 +86,7 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
     {
         if (_pinned.Remove(node))
         {
-            RequestRecalculateLayout();
+            RecalculateLayout();
             return true;
         }
         return false;
@@ -100,7 +96,7 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
     {
         if (_pinned.Count == 0) return;
         _pinned.Clear();
-        RequestRecalculateLayout();
+        RecalculateLayout();
     }
 
     public bool IsPinned(T node) => _pinned.Contains(node);
@@ -1013,34 +1009,6 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
         _orderScratch = new int[newSize];
     }
 
-    public IDisposable DeferRecalculateLayout()
-    {
-        _deferRecalcDepth++;
-        return new RecalcDeferToken<T>(this);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RequestRecalculateLayout()
-    {
-        if (_deferRecalcDepth > 0)
-        {
-            _pendingRecalc = true;
-            return;
-        }
-
-        RecalculateLayout();
-    }
-
-    private void EndDefer()
-    {
-        _deferRecalcDepth--;
-        if (_deferRecalcDepth == 0 && _pendingRecalc)
-        {
-            _pendingRecalc = false;
-            RecalculateLayout();
-        }
-    }
-
     private sealed class RowsReadOnlyView : IReadOnlyList<IReadOnlyList<NodeBase>>
     {
         private readonly List<List<NodeBase>> _rows;
@@ -1067,12 +1035,5 @@ public sealed class WrappingGridNode<T> : LayoutListNode where T : NodeBase
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetHashCode(TRef obj) => RuntimeHelpers.GetHashCode(obj);
-    }
-
-
-    private readonly struct RecalcDeferToken<TRef>(WrappingGridNode<TRef> owner) : IDisposable
-        where TRef : NodeBase
-    {
-        public void Dispose() => owner.EndDefer();
     }
 }

@@ -14,6 +14,14 @@ using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags.AddonLifecycles;
 
+public static unsafe class DragDropState
+{
+    /// <summary>
+    /// Returns true if the game's drag-drop manager is currently dragging.
+    /// </summary>
+    public static bool IsDragging => AtkStage.Instance()->DragDropManager.IsDragging;
+}
+
 public class InventoryLifecycles : IDisposable
 {
 
@@ -30,12 +38,12 @@ public class InventoryLifecycles : IDisposable
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
 
         // PreRefresh Handlers
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, ["Inventory", "InventoryLarge", "InventoryExpansion"], InventoryPreRefreshHandler);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
 
         // PostRequestedUpdate
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, ["InventoryRetainer", "InventoryRetainerLarge"], OnRetainerInventoryUpdate);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, retainer, OnRetainerInventoryUpdate);
 
         // PreShow
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreOpen, "InventoryBuddy", OnSaddleBagOpen);
@@ -181,6 +189,10 @@ public class InventoryLifecycles : IDisposable
         if (IsInUnsafeState())
             return;
 
+        if (DragDropState.IsDragging)
+            return;
+
+        System.LootedItemsTracker.FlushPendingChanges();
         System.AddonInventoryWindow?.RefreshFromLifecycle();
     }
 
@@ -189,12 +201,18 @@ public class InventoryLifecycles : IDisposable
         if (IsInUnsafeState())
             return;
 
+        if (DragDropState.IsDragging)
+            return;
+
         System.AddonSaddleBagWindow?.RefreshFromLifecycle();
     }
 
     private void OnRetainerInventoryUpdate(AddonEvent type, AddonArgs args)
     {
         if (IsInUnsafeState())
+            return;
+
+        if (DragDropState.IsDragging)
             return;
 
         System.AddonRetainerWindow?.RefreshFromLifecycle();

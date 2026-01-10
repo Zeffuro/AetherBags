@@ -1,11 +1,10 @@
 using KamiToolKit;
-using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Layout;
 
 public class HybridDirectionalFlexNode : HybridDirectionalFlexNode<NodeBase> { }
 
-public class HybridDirectionalFlexNode<T> : LayoutListNode where T : NodeBase
+public class HybridDirectionalFlexNode<T> : DeferrableLayoutListNode where T : NodeBase
 {
     public FlexGrowDirection GrowDirection
     {

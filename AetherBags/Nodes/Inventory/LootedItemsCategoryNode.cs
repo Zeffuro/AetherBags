@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using AetherBags.Inventory.Items;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -26,6 +27,9 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
     private const float MinWidth = 100;
 
     private IReadOnlyList<LootedItemInfo> _lootedItems = Array.Empty<LootedItemInfo>();
+
+    private int _lastItemCount;
+    private long _lastItemsHash;
 
     private int _hoverRefs;
     private bool _headerExpanded;
@@ -95,10 +99,40 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     public void UpdateLootedItems(IReadOnlyList<LootedItemInfo> lootedItems)
     {
+        long newHash = ComputeItemsHash(lootedItems);
+        bool itemsChanged = lootedItems.Count != _lastItemCount || newHash != _lastItemsHash;
+
+        _lastItemCount = lootedItems.Count;
+        _lastItemsHash = newHash;
         _lootedItems = lootedItems;
+
         UpdateHeaderText();
-        SyncItemGrid();
-        RecalculateSize();
+
+        if (itemsChanged)
+        {
+            using (_itemGridNode.DeferRecalculateLayout())
+            {
+                SyncItemGrid();
+            }
+            RecalculateSize();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long ComputeItemsHash(IReadOnlyList<LootedItemInfo> items)
+    {
+        unchecked
+        {
+            long hash = unchecked((long)14695981039346656037UL);
+            for (int i = 0; i < items.Count; i++)
+            {
+                hash ^= items[i].Index;
+                hash *= 1099511628211L;
+                hash ^= items[i].Item.ItemId;
+                hash *= 1099511628211L;
+            }
+            return hash;
+        }
     }
 
     private void UpdateHeaderText()
@@ -163,20 +197,26 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     private void SyncItemGrid()
     {
-        _itemGridNode.SyncWithListData(
-            _lootedItems,
-            node => node.LootedItem,
-            CreateLootedItemNode);
+        _itemGridNode.SyncWithListDataByKey<LootedItemInfo, LootedItemDisplayNode, int>(
+            dataList: _lootedItems,
+            getKeyFromData: item => item.Index,
+            getKeyFromNode: node => node.LootedItem?.Index ?? -1,
+            updateNode: UpdateLootedItemNode,
+            createNodeMethod: CreateLootedItemNode);
+    }
+
+    private static void UpdateLootedItemNode(LootedItemDisplayNode node, LootedItemInfo data)
+    {
+        node.LootedItem = data;
     }
 
     private LootedItemDisplayNode CreateLootedItemNode(LootedItemInfo lootedItem)
     {
-        var node = new LootedItemDisplayNode
+        return new LootedItemDisplayNode
         {
             OnDismiss = OnItemDismissed,
+            LootedItem = lootedItem,
         };
-        node.SetLootedItem(lootedItem);
-        return node;
     }
 
     private void OnItemDismissed(LootedItemDisplayNode node)
