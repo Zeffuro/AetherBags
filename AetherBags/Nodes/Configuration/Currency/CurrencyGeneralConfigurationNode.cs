@@ -42,7 +42,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
-        var defaultColorHandler = CreateColorHandler(color => config.LimitColor = color);
+        var defaultColorHandler = CreateColorHandler(color => config.DefaultColor = color);
         ColorInputRow defaultCurrencyColorNode = new ColorInputRow
         {
             Label = "Default Currency Color",
@@ -73,7 +73,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
-        var cappedColorHandler = CreateColorHandler(color => config.LimitColor = color);
+        var cappedColorHandler = CreateColorHandler(color => config.CappedColor = color);
         ColorInputRow cappedCurrencyColorNode = new ColorInputRow
         {
             Label = "Weekly Cap Color",
@@ -119,8 +119,6 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
             OnColorPreviewed = limitColorHandler,
         };
         AddNode(limitCurrencyColorNode);
-
-        return;
     }
 
     private Action<Vector4> CreateColorHandler(Action<Vector4> setter) => newColor =>
