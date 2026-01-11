@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using AetherBags.AddonLifecycles;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -43,8 +42,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected virtual float MaxWindowHeight => 1000;
 
     protected const float CategorySpacing = 12;
-    protected const float ItemSize = 40;
-    protected const float ItemPadding = 4;
+    protected const float ItemSize = 42;
+    protected const float ItemPadding = 5;
     protected const float FooterHeight = 28f;
     protected const float FooterTopSpacing = 4f;
     protected const float SettingsButtonOffset = 48f;
@@ -172,7 +171,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         string dataFilter = config.SearchMode == SearchMode.Filter ? searchText : string.Empty;
         var categories = InventoryState.GetCategories(dataFilter);
 
-        float maxContentWidth = MaxWindowWidth - (ContentStartPosition.X * 2);
+        float maxContentWidth = CategoriesNode.Width > 0 ? CategoriesNode.Width : ContentSize.X;
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
 
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
@@ -181,10 +180,11 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             getKeyFromNode: node => node.CategorizedInventory.Key,
             updateNode: (node, data) =>
             {
+                node.MaxWidth = maxContentWidth;
                 node.SetCategoryData(data, Math.Min(data.Items.Count, maxItemsPerLine));
                 node.RefreshNodeVisuals();
             },
-            createNodeMethod: _ => CreateCategoryNode());
+            createNodeMethod: _ => CreateCategoryNode(maxContentWidth));
 
         if (HasPinning)
         {
@@ -254,11 +254,12 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         BackgroundDropTarget.AttachNode(this);
     }
 
-    protected virtual InventoryCategoryNode CreateCategoryNode()
+    protected virtual InventoryCategoryNode CreateCategoryNode(float? maxWidth = null)
     {
         return new InventoryCategoryNode
         {
             Size = ContentSize with { Y = 120 },
+            MaxWidth = maxWidth,
             OnRefreshRequested = ManualRefresh,
             OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true),
         };
@@ -340,6 +341,20 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         CategoriesNode.Position = contentPos;
         CategoriesNode.Size = new Vector2(contentSize.X, gridH);
+
+        UpdateCategoryMaxWidths(contentSize.X);
+    }
+
+    private void UpdateCategoryMaxWidths(float maxWidth)
+    {
+        foreach (var node in CategoriesNode.Nodes)
+        {
+            if (node is InventoryCategoryNode categoryNode && categoryNode.MaxWidth != maxWidth)
+            {
+                categoryNode.MaxWidth = maxWidth;
+                categoryNode.RecalculateSize();
+            }
+        }
     }
 
     protected virtual void AutoSizeWindow()
@@ -375,6 +390,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         CategoriesNode.Position = ContentStartPosition;
         CategoriesNode.Size = new Vector2(contentWidth, gridBudget);
+
+        UpdateCategoryMaxWidths(contentWidth);
 
         CategoriesNode.RecalculateLayout();
 
