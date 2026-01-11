@@ -1,6 +1,6 @@
 using System;
-using System.Text.RegularExpressions;
 using AetherBags.Configuration;
+using AetherBags.Helpers;
 using AetherBags.Inventory.Items;
 
 namespace AetherBags.Inventory.Categories;
@@ -30,17 +30,11 @@ internal static class UserCategoryMatcher
                     if (string.IsNullOrWhiteSpace(pattern))
                         continue;
 
-                    try
+                    var regex = RegexCache.GetOrCreate(pattern);
+                    if (regex != null && regex.IsMatch(item.Name))
                     {
-                        if (Regex.IsMatch(item.Name, pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase))
-                        {
-                            matchesAnyIdentification = true;
-                            break;
-                        }
-                    }
-                    catch
-                    {
-                        // Invalid regex:  ignore it.
+                        matchesAnyIdentification = true;
+                        break;
                     }
                 }
             }

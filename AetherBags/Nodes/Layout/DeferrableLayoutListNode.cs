@@ -78,7 +78,6 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         }
     }
 
-    [Obsolete]
     protected virtual void AdjustNode(NodeBase node) { }
 
     protected abstract void InternalRecalculateLayout();

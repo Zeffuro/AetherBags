@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using AetherBags.Helpers;
 using AetherBags.Inventory.Items;
 
 namespace AetherBags.Inventory.Categories;
@@ -17,17 +18,8 @@ public static class InventoryFilter
         if (string.IsNullOrEmpty(filterString))
             return allCategories;
 
-        Regex? re = null;
-        bool regexValid = true;
-
-        try
-        {
-            re = new Regex(filterString, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-        }
-        catch
-        {
-            regexValid = false;
-        }
+        Regex? re = RegexCache.GetOrCreate(filterString);
+        bool regexValid = re != null;
 
         filteredCategories.Clear();
 

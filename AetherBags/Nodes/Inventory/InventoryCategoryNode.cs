@@ -30,6 +30,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private const float MinWidth = 40;
 
     private float? _fixedWidth;
+    private float? _maxWidth;
     private int _hoverRefs;
     private bool _headerSuppressed;
     private bool _headerExpanded;
@@ -40,6 +41,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private int _lastItemCount;
     private ulong _lastItemsHash;
     private int _lastItemsPerLine;
+    private float? _lastMaxWidth;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
     public Action? OnRefreshRequested { get; set; }
@@ -88,6 +90,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         bool categoryChanged = data.Key != _lastCategoryKey;
         bool itemsPerLineChanged = itemsPerLine != _lastItemsPerLine;
+        bool maxWidthChanged = _maxWidth != _lastMaxWidth;
 
         ulong itemsHash = ComputeItemsHash(CollectionsMarshal.AsSpan(data.Items));
         bool itemsChanged = data.Items.Count != _lastItemCount || itemsHash != _lastItemsHash;
@@ -96,6 +99,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _lastItemCount = data.Items.Count;
         _lastItemsHash = itemsHash;
         _lastItemsPerLine = itemsPerLine;
+        _lastMaxWidth = _maxWidth;
 
         _categorizedInventory = data;
 
@@ -120,7 +124,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             _itemGridNode.ItemsPerLine = itemsPerLine;
         }
 
-        if (categoryChanged || itemsChanged || itemsPerLineChanged)
+        if (categoryChanged || itemsChanged || itemsPerLineChanged || maxWidthChanged)
         {
             RecalculateSize();
         }
@@ -158,6 +162,12 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             _fixedWidth = value;
             RecalculateSize();
         }
+    }
+
+    public float? MaxWidth
+    {
+        get => _maxWidth;
+        set => _maxWidth = value;
     }
 
     public override bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
@@ -224,13 +234,19 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
     }
 
-    private void RecalculateSize()
+    public void RecalculateSize()
     {
         int itemCount = CategorizedInventory.Items.Count;
+
+        float cellW = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Width : FallbackItemSize;
+        float cellH = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Height : FallbackItemSize;
+        float hPad = _itemGridNode.HorizontalPadding;
+        float vPad = _itemGridNode.VerticalPadding;
 
         if (itemCount == 0)
         {
             float width = _fixedWidth ?? MinWidth;
+            if (_maxWidth.HasValue) width = Math.Min(width, _maxWidth.Value);
             Size = new Vector2(width, HeaderHeight);
             _baseHeaderWidth = width;
             _itemGridNode.Position = new Vector2(0, HeaderHeight);
@@ -240,21 +256,36 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
 
         int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
+
+        float minUsableWidth = cellW;
+        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= minUsableWidth)
+        {
+            int maxColumns = (int)MathF.Floor((_maxWidth.Value + hPad) / (cellW + hPad));
+            maxColumns = Math.Max(1, maxColumns);
+
+            float widthNeeded = maxColumns * cellW + (maxColumns - 1) * hPad;
+            if (widthNeeded > _maxWidth.Value && maxColumns > 1)
+                maxColumns--;
+
+            itemsPerLine = Math.Min(itemsPerLine, maxColumns);
+        }
+
         int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
         int actualColumns = Math.Min(itemCount, itemsPerLine);
 
-        float cellW = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Width : FallbackItemSize;
-        float cellH = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Height : FallbackItemSize;
-
-        float hPad = _itemGridNode.HorizontalPadding;
-        float vPad = _itemGridNode.VerticalPadding;
-
         float calculatedWidth = _fixedWidth ?? Math.Max(MinWidth, actualColumns * cellW + (actualColumns - 1) * hPad);
+
+        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= minUsableWidth)
+            calculatedWidth = Math.Min(calculatedWidth, _maxWidth.Value);
+
         float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
 
         Size = new Vector2(calculatedWidth, height);
         _itemGridNode.Position = new Vector2(0, HeaderHeight);
         _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
+
+        if (_itemGridNode.ItemsPerLine != itemsPerLine)
+            _itemGridNode.ItemsPerLine = itemsPerLine;
         _baseHeaderWidth = calculatedWidth;
 
         ApplyHeaderVisualStateAndSize();

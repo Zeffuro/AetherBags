@@ -30,9 +30,9 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
     private float _lastVSpace = float.NaN;
     private float _lastTopPadding = float.NaN;
     private float _lastBottomPadding = float.NaN;
-    private bool _lastuseCompactPacking;
-    private bool _lastpreferLargestFit;
-    private bool _lastuseStableInsert;
+    private bool _lastUseCompactPacking;
+    private bool _lastPreferLargestFit;
+    private bool _lastUseStableInsert;
     private int _lastCompactLookahead;
 
     private int[] _orderScratch = Array.Empty<int>();
@@ -977,9 +977,9 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
             NearlyEqual(_lastVSpace, VerticalSpacing) &&
             NearlyEqual(_lastTopPadding, TopPadding) &&
             NearlyEqual(_lastBottomPadding, BottomPadding) &&
-            _lastuseCompactPacking == System.Config.General.CompactPackingEnabled &&
-            _lastpreferLargestFit == System.Config.General.CompactPreferLargestFit &&
-            _lastuseStableInsert == System.Config.General.CompactStableInsert &&
+            _lastUseCompactPacking == System.Config.General.CompactPackingEnabled &&
+            _lastPreferLargestFit == System.Config.General.CompactPreferLargestFit &&
+            _lastUseStableInsert == System.Config.General.CompactStableInsert &&
             _lastCompactLookahead == System.Config.General.CompactLookahead;
     }
 
@@ -992,9 +992,9 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
         _lastTopPadding = TopPadding;
         _lastBottomPadding = BottomPadding;
 
-        _lastuseCompactPacking = System.Config.General.CompactPackingEnabled;
-        _lastpreferLargestFit = System.Config.General.CompactPreferLargestFit;
-        _lastuseStableInsert = System.Config.General.CompactStableInsert;
+        _lastUseCompactPacking = System.Config.General.CompactPackingEnabled;
+        _lastPreferLargestFit = System.Config.General.CompactPreferLargestFit;
+        _lastUseStableInsert = System.Config.General.CompactStableInsert;
         _lastCompactLookahead = System.Config.General.CompactLookahead;
     }
 

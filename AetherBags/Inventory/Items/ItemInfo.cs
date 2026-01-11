@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using AetherBags.Helpers;
 using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel;
@@ -23,6 +24,12 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     private string? _name;
     private string? _description;
+    private string? _levelString;
+    private string? _itemLevelString;
+
+    private int _cachedHighlightVersion = -1;
+    private float _cachedVisualAlpha;
+    private Vector3 _cachedHighlightColor;
 
     private ref readonly Item Row
     {
@@ -44,6 +51,8 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public int Level => Row.LevelEquip;
     public int ItemLevel => (int)Row.LevelItem.RowId;
+    private string LevelString => _levelString ??= Level.ToString();
+    private string ItemLevelString => _itemLevelString ??= ItemLevel.ToString();
     public int Rarity => Row.Rarity;
     public uint VendorPrice => Row.PriceLow;
     public uint StackSize => Row.StackSize;
@@ -90,17 +99,35 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         }
     }
 
-    public float VisualAlpha => IsEligibleForContext ? 1.0f : 0.4f;
+    public float VisualAlpha
+    {
+        get
+        {
+            EnsureVisualStateCached();
+            return _cachedVisualAlpha;
+        }
+    }
 
     public Vector3 HighlightOverlayColor
     {
         get
         {
-            if (!System.Config.Categories.BisBuddyEnabled)
-                return Vector3.Zero;
-
-            return HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero;
+            EnsureVisualStateCached();
+            return _cachedHighlightColor;
         }
+    }
+
+    private void EnsureVisualStateCached()
+    {
+        int currentVersion = HighlightState.Version;
+        if (_cachedHighlightVersion == currentVersion)
+            return;
+
+        _cachedVisualAlpha = IsEligibleForContext ? 1.0f : 0.4f;
+        _cachedHighlightColor = System.Config.Categories.BisBuddyEnabled
+            ? HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero
+            : Vector3.Zero;
+        _cachedHighlightVersion = currentVersion;
     }
 
     private bool CheckNativeContextEligibility()
@@ -138,14 +165,16 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         if (string.IsNullOrEmpty(searchTerms))
             return true;
 
-        var re = new Regex(searchTerms, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var re = RegexCache.GetOrCreate(searchTerms);
+        if (re == null)
+            return false;
 
         if (re.IsMatch(Name)) return true;
 
         if (re.IsMatch(Description)) return true;
 
-        if (re.IsMatch(Level.ToString())) return true;
-        if (re.IsMatch(ItemLevel.ToString())) return true;
+        if (re.IsMatch(LevelString)) return true;
+        if (re.IsMatch(ItemLevelString)) return true;
 
         return false;
     }
@@ -155,8 +184,8 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         if (re.IsMatch(Name)) return true;
         if (re.IsMatch(Description)) return true;
 
-        if (re.IsMatch(Level.ToString())) return true;
-        if (re.IsMatch(ItemLevel.ToString())) return true;
+        if (re.IsMatch(LevelString)) return true;
+        if (re.IsMatch(ItemLevelString)) return true;
 
         return false;
     }

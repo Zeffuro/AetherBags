@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
 using KamiToolKit.Classes;
@@ -49,6 +48,7 @@ public static class CategoryBucketManager
             bucket.Used = false;
             bucket.Items.Clear();
             bucket.FilteredItems.Clear();
+            bucket.NeedsSorting = true;
         }
     }
 
@@ -302,8 +302,9 @@ public static class CategoryBucketManager
             CategoryInfo miscInfo;
             if (itemInfoByKey.Count > 0)
             {
-                var sample = itemInfoByKey.Values.First();
-                miscInfo = GetCategoryInfoCached(0u, sample);
+                using var enumerator = itemInfoByKey.Values.GetEnumerator();
+                enumerator.MoveNext();
+                miscInfo = GetCategoryInfoCached(0u, enumerator.Current);
             }
             else
             {
@@ -353,7 +354,12 @@ public static class CategoryBucketManager
                 continue;
 
             // TODO: Make configurable
-            bucket.Items.Sort(ItemCountDescComparer.Instance);
+            // Only sort if items changed
+            if (bucket.NeedsSorting)
+            {
+                bucket.Items.Sort(ItemCountDescComparer.Instance);
+                bucket.NeedsSorting = false;
+            }
             sortedCategoryKeys.Add(bucket.Key);
         }
 

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Currency;
 using AetherBags.Inventory.Categories;
@@ -114,7 +113,7 @@ public abstract class InventoryStateBase
             }
             else
             {
-                UpdateAllaganHighlight(HighlightState.SelectedBisBuddyFilterKey);
+                UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
             }
         }
         else
@@ -161,10 +160,10 @@ public abstract class InventoryStateBase
             return;
         }
 
-        var filterItems = System.IPC.AllaganTools.GetFilterItems(filterKey);
-        if (filterItems != null)
+        var bisItems = System.IPC.BisBuddy.ItemLookup;
+        if (bisItems.Count > 0)
         {
-            HighlightState.SetFilter(HighlightSource.BiSBuddy, filterItems.Keys);
+            HighlightState.SetFilter(HighlightSource.BiSBuddy, bisItems.Keys);
         }
         else
         {

@@ -10,6 +10,7 @@ public sealed class CategoryBucket
     public List<ItemInfo> Items = null!;
     public List<ItemInfo> FilteredItems = null!;
     public bool Used;
+    public bool NeedsSorting = true;
 }
 
 public sealed class ItemCountDescComparer : IComparer<ItemInfo>
