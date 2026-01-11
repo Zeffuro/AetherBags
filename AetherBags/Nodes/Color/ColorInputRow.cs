@@ -48,7 +48,7 @@ public class ColorInputRow : HorizontalListNode
         {
             TextFlags = TextFlags.AutoAdjustNodeSize,
             Position = new Vector2(28, 0),
-            Height = 24,
+            Height = 28,
             String = Label ?? string.Empty,
         };
         _labelTextNode.AttachNode(this);
