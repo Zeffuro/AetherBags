@@ -37,7 +37,7 @@ public class ColorInputRow : HorizontalListNode
                 _colorPickerAddon?.OnColorPreviewed = color =>
                 {
                     _colorPreview?.Color = color;
-                    OnColorChange?.Invoke(color);
+                    OnColorPreviewed?.Invoke(color);
                 };
                 _colorPickerAddon?.OnColorCancelled = () => OnColorCanceled?.Invoke(initialColor);
             }

@@ -243,9 +243,10 @@ public sealed class BasicSettingsSection : ConfigurationSection
             Size = new Vector2(300, 28),
             CurrentColor = new UserCategoryDefinition().Color,
             DefaultColor = new UserCategoryDefinition().Color,
-            OnColorConfirmed = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
-            OnColorCanceled = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
-            OnColorPreviewed = c => { CategoryDefinition.Color = c; OnValueChanged?.Invoke(); },
+            OnColorConfirmed = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorCanceled = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorPreviewed = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorChange = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
         };
         AddNode(_colorInput);
 
@@ -256,9 +257,9 @@ public sealed class BasicSettingsSection : ConfigurationSection
             Min = 0,
             Max = 1000,
             Step = 1,
-            OnValueUpdate = val =>
+            OnValueUpdate = value =>
             {
-                CategoryDefinition.Priority = val;
+                CategoryDefinition.Priority = value;
                 OnValueChanged?.Invoke();
             },
         };

@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Nodes.Color;
@@ -41,15 +42,17 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
+        var defaultColorHandler = CreateColorHandler(color => config.LimitColor = color);
         ColorInputRow defaultCurrencyColorNode = new ColorInputRow
         {
             Label = "Default Currency Color",
             Size = new Vector2(300, 24),
             CurrentColor = config.DefaultColor,
             DefaultColor = new CurrencySettings().DefaultColor,
-            OnColorConfirmed = ApplyColorChange,
-            OnColorChange = ApplyColorChange,
-            OnColorCanceled = ApplyColorChange,
+            OnColorConfirmed = defaultColorHandler,
+            OnColorChange = defaultColorHandler,
+            OnColorCanceled = defaultColorHandler,
+            OnColorPreviewed = defaultColorHandler,
         };
         AddNode(defaultCurrencyColorNode);
 
@@ -70,18 +73,17 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
-
+        var cappedColorHandler = CreateColorHandler(color => config.LimitColor = color);
         ColorInputRow cappedCurrencyColorNode = new ColorInputRow
         {
             Label = "Weekly Cap Color",
             Size = new Vector2(300, 24),
             CurrentColor = config.CappedColor,
             DefaultColor = new CurrencySettings().CappedColor,
-            OnColorConfirmed = color =>
-            {
-                config.CappedColor = color;
-                RefreshCurrency();
-            },
+            OnColorConfirmed = cappedColorHandler,
+            OnColorChange = cappedColorHandler,
+            OnColorCanceled = cappedColorHandler,
+            OnColorPreviewed = cappedColorHandler,
         };
         AddNode(cappedCurrencyColorNode);
 
@@ -104,28 +106,28 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
+        var limitColorHandler = CreateColorHandler(color => config.LimitColor = color);
         ColorInputRow limitCurrencyColorNode = new ColorInputRow
         {
             Label = "Max Capacity Color",
             Size = new Vector2(300, 24),
             CurrentColor = config.LimitColor,
             DefaultColor = new CurrencySettings().LimitColor,
-            OnColorConfirmed = color =>
-            {
-                config.LimitColor = color;
-                RefreshCurrency();
-            },
+            OnColorConfirmed = limitColorHandler,
+            OnColorChange = limitColorHandler,
+            OnColorCanceled = limitColorHandler,
+            OnColorPreviewed = limitColorHandler,
         };
         AddNode(limitCurrencyColorNode);
 
         return;
-
-        void ApplyColorChange(Vector4 color)
-        {
-            config.DefaultColor = color;
-            RefreshCurrency();
-        }
     }
+
+    private Action<Vector4> CreateColorHandler(Action<Vector4> setter) => newColor =>
+    {
+        setter(newColor);
+        RefreshCurrency();
+    };
 
     private void RefreshCurrency() => System.AddonInventoryWindow.ManualCurrencyRefresh();
 }
