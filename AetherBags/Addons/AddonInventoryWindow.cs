@@ -79,7 +79,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         LayoutContent();
 
-        addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
+        //addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
 
