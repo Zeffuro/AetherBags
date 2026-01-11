@@ -180,6 +180,7 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
     private List<NodeBase>? _desiredScratch;
     private List<NodeBase>? _toRemoveScratch;
     private HashSet<object>? _dataKeysScratch;
+    private Dictionary<object, NodeBase>? _byKeyScratch;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private List<NodeBase> RentExistingList(int capacity)
@@ -309,7 +310,16 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         Dictionary<TKey, TU>? byKey = null;
         if (existing.Count > 0)
         {
-            byKey = new Dictionary<TKey, TU>(existing.Count, keyComparer);
+            if (_byKeyScratch is Dictionary<TKey, TU> reusable)
+            {
+                byKey = reusable;
+                byKey.Clear();
+            }
+            else
+            {
+                byKey = new Dictionary<TKey, TU>(existing.Count, keyComparer);
+            }
+
             for (int i = 0; i < existing.Count; i++)
             {
                 var tu = (TU)existing[i];
@@ -405,6 +415,12 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         if (structureChanged || orderChanged)
         {
             RecalculateLayout();
+        }
+
+        if (byKey != null)
+        {
+            byKey.Clear();
+            _byKeyScratch = byKey as Dictionary<object, NodeBase>;
         }
 
         return structureChanged || orderChanged;

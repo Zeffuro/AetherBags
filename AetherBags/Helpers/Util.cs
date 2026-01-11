@@ -88,7 +88,7 @@ public static class Util
     {
         FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
         var config = JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName);
-        config?.EnsureInitialized();
+        config.EnsureInitialized();
         return config;
     }
 

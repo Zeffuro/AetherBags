@@ -1,5 +1,6 @@
 using System;
 using AetherBags.Inventory.Items;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -42,17 +43,28 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
         _quantityTextNode.AttachNode(this);
     }
 
-    public LootedItemInfo LootedItem
+    public LootedItemInfo? LootedItem
     {
         get;
         set
         {
             bool needsCollisionUpdate = field is null && value is not null;
             field = value;
-            var item = value.Item;
-            _iconNode.IconId = item.IconId;
-            _iconNode.ItemTooltip = item.ItemId;
-            _quantityTextNode.String = value.Quantity > 1 ? value.Quantity.ToString() : string.Empty;
+
+            if (value is not null)
+            {
+                InventoryItem item = value.Item;
+                _iconNode.IconId = item.IconId;
+                _iconNode.ItemTooltip = item.ItemId;
+                _quantityTextNode.String = value.Quantity > 1 ? value.Quantity.ToString() : string.Empty;
+                _iconNode.IsVisible = true;
+                _quantityTextNode.IsVisible = true;
+            }
+            else
+            {
+                _iconNode.IsVisible = false;
+                _quantityTextNode.String = string.Empty;
+            }
 
             if (needsCollisionUpdate)
             {
@@ -61,7 +73,7 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
                     addon->UpdateCollisionNodeList(false);
             }
         }
-    } = null!;
+    } = null;
 
     private void OnMouseClick(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {

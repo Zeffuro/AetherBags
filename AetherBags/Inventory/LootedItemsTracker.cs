@@ -20,6 +20,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     private readonly List<LootedItemInfo> _lootedItems = new(capacity: 64);
     private readonly Dictionary<(uint ItemId, bool IsHq), (InventoryItem Item, int Quantity)> _pendingChanges = new(capacity: 32);
 
+    private static HashSet<uint>? _filteredCategoryItems;
+
     private bool _isEnabled;
     private long _batchStartTick;
     private bool _hasPendingRemoval;
@@ -171,12 +173,18 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
     private static bool ShouldFilterItem(uint itemId)
     {
-        if (!Services.DataManager.GetExcelSheet<Item>().TryGetRow(itemId, out var item))
-            return false;
+        if (_filteredCategoryItems == null)
+        {
+            _filteredCategoryItems = new HashSet<uint>();
+            var sheet = Services.DataManager.GetExcelSheet<Item>();
+            foreach (var row in sheet)
+            {
+                if (row.ItemUICategory.RowId == 62)
+                    _filteredCategoryItems.Add(row.RowId);
+            }
+            Services.Logger.DebugOnly($"[LootedItemsTracker] Built filter cache with {_filteredCategoryItems.Count} items");
+        }
 
-        if (item.ItemUICategory.RowId == 62)
-            return true;
-
-        return false;
+        return _filteredCategoryItems.Contains(itemId);
     }
 }

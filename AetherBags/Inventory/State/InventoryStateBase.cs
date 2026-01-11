@@ -69,7 +69,13 @@ public abstract class InventoryStateBase
         bool allaganCategoriesEnabled = config.Categories.AllaganToolsCategoriesEnabled && categoriesEnabled;
         bool bisCategoriesEnabled = config.Categories.BisBuddyEnabled && categoriesEnabled;
         // TODO: Cache this when config changes
-        var userCategories = config.Categories.UserCategories.Where(c => c.Enabled).ToList();
+        UserCategoriesSortedScratch.Clear();
+        foreach (var cat in config.Categories. UserCategories)
+        {
+            if (cat.Enabled)
+                UserCategoriesSortedScratch.Add(cat);
+        }
+        var userCategories = UserCategoriesSortedScratch;
 
         if (userCategoriesEnabled && userCategories.Count > 0)
         {

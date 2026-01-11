@@ -62,6 +62,10 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     private readonly HashSet<uint> _searchMatchScratch = new();
     private bool _isRefreshing;
 
+    private int _requestedUpdateCount;
+    private int _refreshFromLifecycleCount;
+    private long _lastLogTick;
+
     public void ManualRefresh()
     {
         if (!IsOpen) return;
@@ -104,6 +108,10 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         try
         {
             _isRefreshing = true;
+
+            _refreshFromLifecycleCount++;
+            LogRefreshStats();
+
             InventoryState.RefreshFromGame();
             RefreshCategoriesCore(autosize: true);
         }
@@ -405,8 +413,24 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         RefreshCategoriesCore(false);
     }
 
+    private void LogRefreshStats()
+    {
+        long now = Environment.TickCount64;
+        if (now - _lastLogTick > 1000) // Log every second
+        {
+            Services.Logger.DebugOnly($"[Perf] Last 1s: OnRequestedUpdate={_requestedUpdateCount}, RefreshFromLifecycle={_refreshFromLifecycleCount}");
+            _requestedUpdateCount = 0;
+            _refreshFromLifecycleCount = 0;
+            _lastLogTick = now;
+        }
+    }
+
+    /*
     protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
+        _requestedUpdateCount++;
+        LogRefreshStats();
+
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
 
         if (DragDropState.IsDragging)
@@ -415,6 +439,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         InventoryState.RefreshFromGame();
         RefreshCategoriesCore(autosize: true);
     }
+    */
 
     protected override void OnSetup(AtkUnitBase* addon)
     {
