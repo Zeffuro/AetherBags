@@ -10,11 +10,11 @@ namespace AetherBags.Addons;
 
 public class AddonConfigurationWindow : NativeAddon
 {
-    private TabBarNode _tabBarNode = null!;
+    private TabBarNode? _tabBarNode;
 
-    private GeneralScrollingAreaNode _generalScrollingAreaNode = null!;
-    private CategoryScrollingAreaNode _categoryScrollingAreaNode = null!;
-    private CurrencyScrollingAreaNode _currencyScrollingAreaNode = null!;
+    private GeneralScrollingAreaNode? _generalScrollingAreaNode;
+    private CategoryScrollingAreaNode? _categoryScrollingAreaNode;
+    private CurrencyScrollingAreaNode? _currencyScrollingAreaNode;
 
     private readonly List<NodeBase> _tabContent = new();
 
@@ -72,5 +72,18 @@ public class AddonConfigurationWindow : NativeAddon
     {
         for (var i = 0; i < _tabContent.Count; i++)
             _tabContent[i].IsVisible = i == index;
+    }
+
+    protected override unsafe void OnFinalize(AtkUnitBase* addon)
+    {
+        _tabBarNode?.Dispose();
+        _tabBarNode = null;
+        _generalScrollingAreaNode?.Dispose();
+        _generalScrollingAreaNode = null;
+        _categoryScrollingAreaNode?.Dispose();
+        _categoryScrollingAreaNode = null;
+        _currencyScrollingAreaNode?.Dispose();
+        _currencyScrollingAreaNode = null;
+        base.OnFinalize(addon);
     }
 }
