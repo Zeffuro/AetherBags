@@ -154,11 +154,10 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
-        _selectionListNode?.Dispose();
         _selectionListNode = null;
-
-        _configNode?.Dispose();
         _configNode = null;
+        _separatorLine = null;
+        _nothingSelectedTextNode = null;
         base.OnFinalize(addon);
     }
 }
