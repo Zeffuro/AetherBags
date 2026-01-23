@@ -80,7 +80,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
-        LabeledDropdownNode<PluginFilterMode>? bbModeDropdown = new LabeledDropdownNode<PluginFilterMode>
+        LabeledEnumDropdownNode<PluginFilterMode>? bbModeDropdown = new LabeledEnumDropdownNode<PluginFilterMode>
         {
             Size = new Vector2(500, 20),
             LabelText = "Filter Display Mode",
@@ -118,7 +118,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
 
-        LabeledDropdownNode<PluginFilterMode>? atModeDropdown = new LabeledDropdownNode<PluginFilterMode>
+        LabeledEnumDropdownNode<PluginFilterMode>? atModeDropdown = new LabeledEnumDropdownNode<PluginFilterMode>
         {
             Size = new Vector2(500, 20),
             LabelText = "Filter Display Mode",

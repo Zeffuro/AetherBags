@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Dalamud.Utility;
 
-namespace KamiToolKit.Extensions;
+namespace AetherBags.Extensions;
 
 internal static class EnumExtensions {
     extension(Enum enumValue) {
@@ -15,7 +15,7 @@ internal static class EnumExtensions {
             return attribute?.Description ?? enumValue.ToString();
         }
     }
-    
+
     extension<T>(ref T flagValue) where T : unmanaged, Enum {
         public void SetFlags(params T[] flags) {
             foreach (var flag in flags) {

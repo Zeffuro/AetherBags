@@ -6,12 +6,12 @@ using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Input;
 
-public class LabeledDropdownNode<T> : SimpleComponentNode where T : Enum {
+public class LabeledEnumDropdownNode<T> : SimpleComponentNode where T : Enum {
     private readonly GridNode _gridNode;
     private readonly TextNode _labelNode;
     private readonly EnumDropDownNode<T> _dropDownNode;
 
-    public LabeledDropdownNode() {
+    public LabeledEnumDropdownNode() {
         _gridNode = new GridNode {
             GridSize = new GridSize(2, 1),
         };
@@ -60,6 +60,12 @@ public class LabeledDropdownNode<T> : SimpleComponentNode where T : Enum {
                 _dropDownNode.LabelNode.String = value.Description;
             }
         }
+    }
+
+    public int MaxListOptions
+    {
+        get => _dropDownNode.MaxListOptions;
+        set => _dropDownNode.MaxListOptions = value;
     }
 
     public required List<T> Options

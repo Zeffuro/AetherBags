@@ -14,7 +14,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _hideDefaultBagsCheckboxNode;
     private readonly CheckboxNode _hideSaddlebagsCheckboxNode;
     private readonly CheckboxNode _hideRetainerbagsCheckboxNode;
-    private readonly LabeledDropdownNode<InventoryStackMode> _stackDropDown;
+    private readonly LabeledEnumDropdownNode<InventoryStackMode> _stackDropDown;
 
     public FunctionalConfigurationNode()
     {
@@ -139,7 +139,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
             Height = 6
         });
 
-        var searchModeDropDown = new LabeledDropdownNode<SearchMode>
+        var searchModeDropDown = new LabeledEnumDropdownNode<SearchMode>
         {
             Size = new Vector2(500, 20),
             LabelText = "Search Mode",
@@ -154,7 +154,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(searchModeDropDown);
 
-        _stackDropDown = new LabeledDropdownNode<InventoryStackMode>
+        _stackDropDown = new LabeledEnumDropdownNode<InventoryStackMode>
         {
             Size = new Vector2(500, 20),
             IsEnabled = true,

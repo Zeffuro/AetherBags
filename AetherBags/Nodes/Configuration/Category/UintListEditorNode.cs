@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using AetherBags.Configuration;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -15,9 +17,13 @@ public sealed class UintListEditorNode : VerticalListNode
 
     private List<uint> _list = [];
 
+    public List<uint> GetList() => _list.ToList();
+
     private readonly LabelTextNode _headerLabel;
     private readonly VerticalListNode _itemsContainer;
     private readonly NumericInputNode _addInput;
+
+    public Action? OnSearchButtonClicked { get; init; }
 
     public Func<uint, string>? LabelResolver { get; init; }
     public Action? OnChanged { get; set; }
@@ -56,6 +62,15 @@ public sealed class UintListEditorNode : VerticalListNode
             ItemSpacing = 4.0f,
         };
 
+        var searchButton = new CircleButtonNode
+        {
+            Size = new Vector2(28),
+            Icon = ButtonIcon.MagnifyingGlass,
+            OnClick = () => OnSearchButtonClicked?.Invoke(),
+            TextTooltip = "Search the game database..."
+        };
+        addRow.AddNode(searchButton);
+
         _addInput = new NumericInputNode
         {
             Size = new Vector2(120, RowHeight),
@@ -72,14 +87,25 @@ public sealed class UintListEditorNode : VerticalListNode
             OnClick = AddCurrentValue,
         };
         addRow.AddNode(addButton);
-
+        addRow.RecalculateLayout();
         AddNode(addRow);
+        RecalculateLayout();
     }
 
     public void SetList(List<uint> newList)
     {
         _list = newList;
         RefreshItems();
+    }
+
+    public void AddValue(uint value)
+    {
+        if (!_list.Contains(value))
+        {
+            _list.Add(value);
+            RefreshItems();
+            OnChanged?.Invoke();
+        }
     }
 
     private void AddCurrentValue()
@@ -109,6 +135,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         _itemsContainer.RecalculateLayout();
         RecalculateLayout();
+        OnChanged?.Invoke();
     }
 
     private UintListItemNode CreateItemNode(uint value) => new(value, LabelResolver)
@@ -120,8 +147,10 @@ public sealed class UintListEditorNode : VerticalListNode
     private void RemoveValue(uint value)
     {
         _list.Remove(value);
-        RefreshItems();
-        OnChanged?.Invoke();
+        Services.Framework.RunOnTick(() => {
+            RefreshItems();
+            OnChanged?.Invoke();
+        });
     }
 }
 
@@ -137,9 +166,15 @@ public sealed class UintListItemNode : HorizontalListNode
         Value = value;
         ItemSpacing = 4.0f;
 
+        string idDisplay = value switch {
+            0xFFFF_FFFE => "[Weekly]",
+            0xFFFF_FFFD => "[Tome]",
+            _ => value.ToString()
+        };
+        
         var displayText = labelResolver is not null
-            ? $"{value} - {labelResolver(value)}"
-            : value.ToString();
+            ? $"{idDisplay} - {labelResolver(value)}"
+            : idDisplay;
 
         AddNode(new LabelTextNode
         {

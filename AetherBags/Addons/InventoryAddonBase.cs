@@ -195,24 +195,21 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     {
         var header = addon->WindowHeaderCollisionNode;
         float headerW = header->Width;
-        float headerH = header->Height;
 
-        // Center the search bar, width is 50% of header
-        float searchWidth = headerW * 0.5f;
-        var searchSize = new Vector2(searchWidth, 28f);
+        float settingsX = headerW - 62f;
+        float itemY = header->Y + (header->Height - 28f) * 0.5f;
 
+        float searchWidth = headerW * 0.45f;
         float searchX = (headerW - searchWidth) * 0.5f;
-        float itemY = header->Y + (headerH - 28f) * 0.5f;
 
         return new HeaderLayout
         {
             SearchPosition = new Vector2(searchX, itemY),
-            SearchSize = searchSize,
+            SearchSize = new Vector2(searchWidth, 28f),
             HeaderWidth = headerW,
             HeaderY = itemY
         };
     }
-
 
     protected void InitializeBackgroundDropTarget()
     {
@@ -362,6 +359,11 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         float requiredWidth = maxChildWidth + (ContentStartPosition.X * 2);
         float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
+
+        if (SettingsButtonNode != null)
+        {
+            SettingsButtonNode.X = finalWidth - 62f;
+        }
 
         float contentWidth = finalWidth - (ContentStartPosition.X * 2);
 

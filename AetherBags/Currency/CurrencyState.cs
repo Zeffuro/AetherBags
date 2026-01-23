@@ -71,6 +71,31 @@ public static unsafe class CurrencyState
         return currencyInfoList;
     }
 
+    public static (uint Limited, uint NonLimited) GetCurrentTomestoneIds()
+    {
+        var tomestonesItemSheet = Services.DataManager.GetExcelSheet<TomestonesItem>();
+        uint limitedId = 0;
+        uint nonLimitedId = 0;
+
+        foreach (var row in tomestonesItemSheet)
+        {
+            var tomeSheetRef = row.Tomestones.ValueNullable;
+
+            if (tomeSheetRef == null || tomeSheetRef.Value.RowId == 0) continue;
+
+            var itemId = row.Item.RowId;
+            if (itemId == 0 || itemId == 28) continue;
+
+            if (tomeSheetRef.Value.WeeklyLimit > 0)
+                limitedId = itemId;
+            else
+                nonLimitedId = itemId;
+        }
+
+        return (limitedId, nonLimitedId);
+    }
+
+    /*
     private static uint? GetLimitedTomestoneItemIdCached()
     {
         if (_cachedLimitedTomestoneItemId.HasValue)
@@ -96,6 +121,13 @@ public static unsafe class CurrencyState
         _cachedNonLimitedTomestoneItemId = itemId;
         return itemId;
     }
+    */
+
+    private static uint? GetLimitedTomestoneItemIdCached()
+        => _cachedLimitedTomestoneItemId ??= GetCurrentTomestoneIds().Limited;
+
+    private static uint? GetNonLimitedTomestoneItemIdCached()
+        => _cachedNonLimitedTomestoneItemId ??= GetCurrentTomestoneIds().NonLimited;
 
     private static CurrencyItem ResolveCurrencyItemIdCached(uint currencyId)
     {
