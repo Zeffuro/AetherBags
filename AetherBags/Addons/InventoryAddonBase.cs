@@ -52,6 +52,9 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
     protected bool IsSetupComplete;
+    private bool _deferredPopulationInProgress;
+    private bool _initialPopulationComplete;
+    private const int ItemsPerFrame = 70;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -154,17 +157,18 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         float maxContentWidth = CategoriesNode.Width > 0 ? CategoriesNode.Width : ContentSize.X;
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
 
+        bool deferItems = !_deferredPopulationInProgress && !_initialPopulationComplete;
+
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
             dataList: categories,
             getKeyFromData: categorizedInventory => categorizedInventory.Key,
             getKeyFromNode: node => node.CategorizedInventory.Key,
             updateNode: (node, data) =>
             {
-                node.MaxWidth = maxContentWidth;
-                node.SetCategoryData(data, Math.Min(data.Items.Count, maxItemsPerLine));
-                node.RefreshNodeVisuals();
+                node.SetCategoryData(data, Math.Min(data.Items.Count, maxItemsPerLine), deferItemCreation: deferItems);
+                if (!deferItems) node.RefreshNodeVisuals();
             },
-            createNodeMethod: _ => CreateCategoryNode(maxContentWidth));
+            createNodeMethod: _ => CreateCategoryNode());
 
         if (HasPinning)
         {
@@ -180,6 +184,72 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         {
             LayoutContent();
             CategoriesNode.RecalculateLayout();
+        }
+
+        if (deferItems && !_deferredPopulationInProgress)
+        {
+            StartDeferredItemPopulation();
+        }
+        else if (!deferItems && !_initialPopulationComplete)
+        {
+            _initialPopulationComplete = true;
+        }
+    }
+
+    private void StartDeferredItemPopulation()
+    {
+        _deferredPopulationInProgress = true;
+        Services.Framework.RunOnTick(PopulateCategoryBatch, delayTicks: 1);
+    }
+
+    private void PopulateCategoryBatch()
+    {
+        if (!IsOpen)
+        {
+            _deferredPopulationInProgress = false;
+            return;
+        }
+
+        int itemsPopulated = 0;
+        using (CategoriesNode.DeferRecalculateLayout())
+        {
+            foreach (var node in CategoriesNode.Nodes)
+            {
+                if (node is InventoryCategoryNode categoryNode && categoryNode.NeedsItemPopulation)
+                {
+                    int categoryItemCount = categoryNode.CategorizedInventory.Items.Count;
+
+                    if (itemsPopulated > 0 && itemsPopulated + categoryItemCount > ItemsPerFrame)
+                        break;
+
+                    categoryNode.PopulateItems();
+                    categoryNode.RefreshNodeVisuals();
+                    itemsPopulated += categoryItemCount;
+
+                    if (itemsPopulated >= ItemsPerFrame)
+                        break;
+                }
+            }
+        }
+
+        bool hasMore = false;
+        foreach (var node in CategoriesNode.Nodes)
+        {
+            if (node is InventoryCategoryNode categoryNode && categoryNode.NeedsItemPopulation)
+            {
+                hasMore = true;
+                break;
+            }
+        }
+
+        if (hasMore)
+        {
+            Services.Framework.RunOnTick(PopulateCategoryBatch);
+        }
+        else
+        {
+            _deferredPopulationInProgress = false;
+            _initialPopulationComplete = true;
         }
     }
 
@@ -231,12 +301,11 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         BackgroundDropTarget.AttachNode(this);
     }
 
-    protected virtual InventoryCategoryNode CreateCategoryNode(float? maxWidth = null)
+    protected virtual InventoryCategoryNode CreateCategoryNode()
     {
         return new InventoryCategoryNode
         {
             Size = ContentSize with { Y = 120 },
-            MaxWidth = maxWidth,
             OnRefreshRequested = ManualRefresh,
             OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true),
         };
@@ -461,6 +530,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         HoverSubscribed.Clear();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
+        _deferredPopulationInProgress = false;
+        _initialPopulationComplete = false;
 
         base.OnFinalize(addon);
     }

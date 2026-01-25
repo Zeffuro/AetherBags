@@ -25,7 +25,8 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private readonly TextNode _categoryNameTextNode;
     private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
-    private const float FallbackItemSize = 46;
+    private const float ExpectedItemWidth = 42;
+    private const float ExpectedItemHeight = 46;
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
 
@@ -41,9 +42,11 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private int _lastItemCount;
     private ulong _lastItemsHash;
     private int _lastItemsPerLine;
-    private float? _lastMaxWidth;
+    private bool _itemsNeedPopulation;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
+
+    public bool NeedsItemPopulation => _itemsNeedPopulation;
     public Action? OnRefreshRequested { get; set; }
     public Action? OnDragEnd { get; set; }
 
@@ -86,11 +89,10 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         set => SetCategoryData(value, _itemGridNode.ItemsPerLine);
     }
 
-    public void SetCategoryData(CategorizedInventory data, int itemsPerLine)
+    public void SetCategoryData(CategorizedInventory data, int itemsPerLine, bool deferItemCreation = false)
     {
         bool categoryChanged = data.Key != _lastCategoryKey;
         bool itemsPerLineChanged = itemsPerLine != _lastItemsPerLine;
-        bool maxWidthChanged = _maxWidth != _lastMaxWidth;
 
         ulong itemsHash = ComputeItemsHash(CollectionsMarshal.AsSpan(data.Items));
         bool itemsChanged = data.Items.Count != _lastItemCount || itemsHash != _lastItemsHash;
@@ -99,7 +101,6 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _lastItemCount = data.Items.Count;
         _lastItemsHash = itemsHash;
         _lastItemsPerLine = itemsPerLine;
-        _lastMaxWidth = _maxWidth;
 
         _categorizedInventory = data;
 
@@ -113,10 +114,19 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
         if (itemsChanged || categoryChanged)
         {
-            using (_itemGridNode.DeferRecalculateLayout())
+            _itemGridNode.ItemsPerLine = itemsPerLine;
+
+            if (deferItemCreation)
             {
-                _itemGridNode.ItemsPerLine = itemsPerLine;
-                UpdateItemGrid();
+                _itemsNeedPopulation = true;
+            }
+            else
+            {
+                using (_itemGridNode.DeferRecalculateLayout())
+                {
+                    UpdateItemGrid();
+                }
+                _itemsNeedPopulation = false;
             }
         }
         else if (itemsPerLineChanged)
@@ -124,10 +134,22 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             _itemGridNode.ItemsPerLine = itemsPerLine;
         }
 
-        if (categoryChanged || itemsChanged || itemsPerLineChanged || maxWidthChanged)
+        if (categoryChanged || itemsChanged || itemsPerLineChanged)
         {
             RecalculateSize();
         }
+    }
+
+    public void PopulateItems()
+    {
+        if (!_itemsNeedPopulation)
+            return;
+
+        using (_itemGridNode.DeferRecalculateLayout())
+        {
+            UpdateItemGrid();
+        }
+        _itemsNeedPopulation = false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,8 +260,8 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         int itemCount = CategorizedInventory.Items.Count;
 
-        float cellW = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Width : FallbackItemSize;
-        float cellH = _itemGridNode.Nodes.Count > 0 ? _itemGridNode.Nodes[0].Height : FallbackItemSize;
+        float cellW = ExpectedItemWidth;
+        float cellH = ExpectedItemHeight;
         float hPad = _itemGridNode.HorizontalPadding;
         float vPad = _itemGridNode.VerticalPadding;
 

@@ -168,6 +168,8 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
+        _lootedCategoryNode?.Dispose();
+
         IsSetupComplete = false;
         base.OnFinalize(addon);
     }
