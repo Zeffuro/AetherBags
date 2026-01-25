@@ -1,18 +1,22 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Context;
+using AetherBags.Inventory.Scanning;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using Dalamud.Game.NativeWrapper;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text.ReadOnly;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
-namespace AetherBags.AddonLifecycles;
+namespace AetherBags.Monitoring;
 
 public static unsafe class DragDropState
 {
@@ -22,10 +26,10 @@ public static unsafe class DragDropState
     public static bool IsDragging => AtkStage.Instance()->DragDropManager.IsDragging;
 }
 
-public class InventoryLifecycles : IDisposable
+public class InventoryMonitor : IDisposable
 {
 
-    public InventoryLifecycles()
+    public InventoryMonitor()
     {
         var bags = new[] { "Inventory", "InventoryLarge", "InventoryExpansion" };
         var saddle = new[] { "InventoryBuddy" };
@@ -45,8 +49,8 @@ public class InventoryLifecycles : IDisposable
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, retainer, OnRetainerInventoryUpdate);
 
-        // PreShow
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreOpen, "InventoryBuddy", OnSaddleBagOpen);
+        // Dalamud raw event for raw inventory changes (scans once per frame)
+        Services.GameInventory.InventoryChangedRaw += OnInventoryChangedRaw;
 
         Services.Logger.Verbose("InventoryLifecycles initialized");
     }
@@ -122,6 +126,32 @@ public class InventoryLifecycles : IDisposable
     values[7] = can use Saddlebags (Agent InventoryBuddy IsActivatable)
     */
 
+    private void OnInventoryChangedRaw(IReadOnlyCollection<InventoryEventArgs> events)
+    {
+        bool needsRefresh = false;
+        foreach (var inventoryEventArgs in events)
+        {
+            if (InventoryScanner.StandardInventories.Contains((InventoryType)inventoryEventArgs.Item.ContainerType))
+            {
+                needsRefresh = true;
+                break;
+            }
+        }
+
+        if (needsRefresh)
+        {
+            Services.Framework.RunOnTick(() =>
+            {
+                if (IsInUnsafeState() || DragDropState.IsDragging) return;
+
+                System.LootedItemsTracker.FlushPendingChanges();
+                System.AddonInventoryWindow?.RefreshFromLifecycle();
+                System.AddonSaddleBagWindow?.RefreshFromLifecycle();
+                System.AddonRetainerWindow?.RefreshFromLifecycle();
+            });
+        }
+    }
+
     private unsafe void InventoryPreRefreshHandler(AddonEvent type, AddonArgs args)
     {
         if (args is not AddonRefreshArgs refreshArgs)
@@ -165,25 +195,6 @@ public class InventoryLifecycles : IDisposable
         }
     }
 
-    // TODO: Inventory/Retainers are not perma open, need some way to close it too.
-    private void InventoryBuddyPreRefreshHandler(AddonEvent type, AddonArgs args)
-    {
-        if (args is not AddonRefreshArgs refreshArgs)
-            return;
-
-        if (IsInUnsafeState())
-            return;
-
-        GeneralSettings config = System.Config.General;
-
-        if (config.HideGameSaddleBags) refreshArgs.AtkValueCount = 0;
-        if (config.OpenSaddleBagsWithGameInventory)
-        {
-            System.AddonSaddleBagWindow.Toggle();
-        }
-    }
-
-
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
     {
         if (IsInUnsafeState())
@@ -204,6 +215,7 @@ public class InventoryLifecycles : IDisposable
         if (DragDropState.IsDragging)
             return;
 
+        System.LootedItemsTracker.FlushPendingChanges();
         System.AddonSaddleBagWindow?.RefreshFromLifecycle();
     }
 
@@ -215,17 +227,13 @@ public class InventoryLifecycles : IDisposable
         if (DragDropState.IsDragging)
             return;
 
+        System.LootedItemsTracker.FlushPendingChanges();
         System.AddonRetainerWindow?.RefreshFromLifecycle();
-    }
-
-    private void OnSaddleBagOpen(AddonEvent type, AddonArgs args)
-    {
-        if (args is not AddonShowArgs showArgs)
-            return;
     }
 
     public void Dispose()
     {
-        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnSaddleBagOpen);
+        Services.GameInventory.InventoryChangedRaw -= OnInventoryChangedRaw;
+        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate);
     }
 }

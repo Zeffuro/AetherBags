@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace AetherBags.Configuration;
 
 public class GeneralSettings
@@ -21,12 +23,18 @@ public class GeneralSettings
 
 public enum InventoryStackMode : byte
 {
+    [Description("Split Stacks (Game Default)")]
     NaturalStacks = 0,
+
+    [Description("Merge Stacks (By Item ID)")]
     AggregateByItemId = 1,
 }
 
 public enum SearchMode : byte
 {
+    [Description("Filter (Hide non-matches)")]
     Filter = 0,
+
+    [Description("Highlight (Dim non-matches)")]
     Highlight = 1,
 }

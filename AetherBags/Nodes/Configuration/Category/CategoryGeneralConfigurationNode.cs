@@ -80,24 +80,21 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
-        LabeledDropdownNode? bbModeDropdown = new LabeledDropdownNode
+        LabeledEnumDropdownNode<PluginFilterMode>? bbModeDropdown = new LabeledEnumDropdownNode<PluginFilterMode>
         {
-            Size = new Vector2(300, 20),
+            Size = new Vector2(500, 20),
             LabelText = "Filter Display Mode",
             LabelTextFlags = TextFlags.AutoAdjustNodeSize,
             IsEnabled = config.BisBuddyEnabled && bisBuddyReady,
-            Options = Enum.GetNames(typeof(PluginFilterMode)).ToList(),
-            SelectedOption = config.BisBuddyMode.ToString(),
+            Options = Enum.GetValues<PluginFilterMode>().ToList(),
+            SelectedOption = config.BisBuddyMode,
             OnOptionSelected = selected =>
             {
-                if (Enum.TryParse<PluginFilterMode>(selected, out var parsed))
-                {
-                    config.BisBuddyMode = parsed;
-                    if (parsed == PluginFilterMode.Categorize)
-                        HighlightState.ClearFilter(HighlightSource.AllaganTools);
+                config.BisBuddyMode = selected;
+                if (selected == PluginFilterMode.Categorize)
+                    HighlightState.ClearFilter(HighlightSource.AllaganTools);
 
-                    RefreshInventory();
-                }
+                RefreshInventory();
             }
         };
 
@@ -121,24 +118,23 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
 
-        LabeledDropdownNode? atModeDropdown = new LabeledDropdownNode
+        LabeledEnumDropdownNode<PluginFilterMode>? atModeDropdown = new LabeledEnumDropdownNode<PluginFilterMode>
         {
-            Size = new Vector2(300, 20),
+            Size = new Vector2(500, 20),
             LabelText = "Filter Display Mode",
             LabelTextFlags = TextFlags.AutoAdjustNodeSize,
             IsEnabled = config.AllaganToolsCategoriesEnabled && allaganReady,
-            Options = Enum.GetNames(typeof(PluginFilterMode)).ToList(),
-            SelectedOption = config.AllaganToolsFilterMode.ToString(),
+            Options = Enum.GetValues<PluginFilterMode>().ToList(),
+            SelectedOption = config.AllaganToolsFilterMode,
             OnOptionSelected = selected =>
             {
-                if (Enum.TryParse<PluginFilterMode>(selected, out var parsed))
+                config.AllaganToolsFilterMode = selected;
+                if (selected == PluginFilterMode.Categorize)
                 {
-                    config.AllaganToolsFilterMode = parsed;
-                    if (parsed == PluginFilterMode.Categorize)
-                        HighlightState.ClearFilter(HighlightSource.AllaganTools);
-
-                    RefreshInventory();
+                    HighlightState.ClearFilter(HighlightSource.AllaganTools);
                 }
+
+                RefreshInventory();
             }
         };
 

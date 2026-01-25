@@ -49,9 +49,9 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         set
         {
             if (value)
-                AddFlags(NodeFlags.Clip);
+                AddNodeFlags(NodeFlags.Clip);
             else
-                RemoveFlags(NodeFlags.Clip);
+                RemoveNodeFlags(NodeFlags.Clip);
         }
     }
 

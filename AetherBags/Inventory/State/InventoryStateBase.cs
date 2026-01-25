@@ -18,6 +18,7 @@ public abstract class InventoryStateBase
     protected readonly List<CategorizedInventory> AllCategories = new(capacity: 256);
     protected readonly List<CategorizedInventory> FilteredCategories = new(capacity: 256);
     protected readonly List<UserCategoryDefinition> UserCategoriesSortedScratch = new(capacity: 64);
+    protected readonly List<UserCategoryDefinition> EnabledUserCategoriesScratch = new(capacity: 64);
     protected readonly List<ulong> RemoveKeysScratch = new(capacity:  256);
     protected readonly HashSet<ulong> ClaimedKeys = new(capacity: 512);
 
@@ -68,18 +69,22 @@ public abstract class InventoryStateBase
         bool allaganCategoriesEnabled = config.Categories.AllaganToolsCategoriesEnabled && categoriesEnabled;
         bool bisCategoriesEnabled = config.Categories.BisBuddyEnabled && categoriesEnabled;
         // TODO: Cache this when config changes
-        UserCategoriesSortedScratch.Clear();
-        foreach (var cat in config.Categories. UserCategories)
+        EnabledUserCategoriesScratch.Clear();
+        foreach (var cat in config.Categories.UserCategories)
         {
             if (cat.Enabled)
-                UserCategoriesSortedScratch.Add(cat);
+                EnabledUserCategoriesScratch.Add(cat);
         }
-        var userCategories = UserCategoriesSortedScratch;
 
-        if (userCategoriesEnabled && userCategories.Count > 0)
+        if (userCategoriesEnabled && EnabledUserCategoriesScratch.Count > 0)
         {
             CategoryBucketManager.BucketByUserCategories(
-                ItemInfoByKey, userCategories, BucketsByKey, ClaimedKeys, UserCategoriesSortedScratch);
+                ItemInfoByKey,
+                EnabledUserCategoriesScratch,
+                BucketsByKey,
+                ClaimedKeys,
+                UserCategoriesSortedScratch
+            );
         }
 
         if (allaganCategoriesEnabled)

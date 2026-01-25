@@ -14,7 +14,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _hideDefaultBagsCheckboxNode;
     private readonly CheckboxNode _hideSaddlebagsCheckboxNode;
     private readonly CheckboxNode _hideRetainerbagsCheckboxNode;
-    private readonly LabeledDropdownNode _stackDropDown;
+    private readonly LabeledEnumDropdownNode<InventoryStackMode> _stackDropDown;
 
     public FunctionalConfigurationNode()
     {
@@ -139,39 +139,33 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
             Height = 6
         });
 
-        var searchModeDropDown = new LabeledDropdownNode
+        var searchModeDropDown = new LabeledEnumDropdownNode<SearchMode>
         {
-            Size = new Vector2(300, 20),
+            Size = new Vector2(500, 20),
             LabelText = "Search Mode",
             LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetNames(typeof(SearchMode)).ToList(),
-            SelectedOption = config.SearchMode.ToString(),
+            Options = Enum.GetValues<SearchMode>().ToList(),
+            SelectedOption = config.SearchMode,
             OnOptionSelected = selected =>
             {
-                if (Enum.TryParse<SearchMode>(selected, out var parsed))
-                {
-                    config.SearchMode = parsed;
-                    InventoryOrchestrator.RefreshAll(updateMaps: false);
-                }
+                config.SearchMode = selected;
+                InventoryOrchestrator.RefreshAll(updateMaps: false);
             }
         };
         AddNode(searchModeDropDown);
 
-        _stackDropDown = new LabeledDropdownNode
+        _stackDropDown = new LabeledEnumDropdownNode<InventoryStackMode>
         {
-            Size = new Vector2(300, 20),
+            Size = new Vector2(500, 20),
             IsEnabled = true,
             LabelText = "Stack Mode",
             LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetNames(typeof(InventoryStackMode)).ToList(),
-            SelectedOption = config.StackMode.ToString(),
+            Options = Enum.GetValues<InventoryStackMode>().ToList(),
+            SelectedOption = config.StackMode,
             OnOptionSelected = selected =>
             {
-                if (Enum.TryParse<InventoryStackMode>(selected, out var parsed))
-                {
-                    config.StackMode = parsed;
-                    InventoryOrchestrator.RefreshAll(updateMaps: true);
-                }
+                config.StackMode = selected;
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(_stackDropDown);

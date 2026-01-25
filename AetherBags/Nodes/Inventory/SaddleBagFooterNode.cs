@@ -1,6 +1,7 @@
 using System. Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -23,7 +24,7 @@ public class SaddleBagFooterNode : SimpleComponentNode
         _slotCounterNode.AttachNode(this);
     }
 
-    public string SlotAmountText
+    public ReadOnlySeString SlotAmountText
     {
         get => _slotCounterNode.String;
         set => _slotCounterNode.String = $"Slots: {value}";

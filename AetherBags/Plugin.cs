@@ -1,5 +1,4 @@
 using System.Numerics;
-using AetherBags.AddonLifecycles;
 using AetherBags.Addons;
 using AetherBags.Commands;
 using AetherBags.Helpers;
@@ -7,6 +6,7 @@ using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using AetherBags.IPC;
+using AetherBags.Monitoring;
 using Dalamud.Plugin;
 using KamiToolKit;
 
@@ -16,7 +16,7 @@ public class Plugin : IDalamudPlugin
 {
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
-    private readonly InventoryLifecycles _inventoryLifecycles;
+    private readonly InventoryMonitor inventoryMonitor;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -72,14 +72,14 @@ public class Plugin : IDalamudPlugin
         }
 
         _inventoryHooks = new InventoryHooks();
-        _inventoryLifecycles = new InventoryLifecycles();
+        inventoryMonitor = new InventoryMonitor();
     }
 
     public void Dispose()
     {
         InventoryAddonContextMenu.Close();
         _inventoryHooks.Dispose();
-        _inventoryLifecycles.Dispose();
+        inventoryMonitor.Dispose();
 
         System.LootedItemsTracker.Dispose();
         System.IPC.Dispose();
@@ -99,10 +99,8 @@ public class Plugin : IDalamudPlugin
         System.Config = Util.LoadConfigOrDefault();
         System.LootedItemsTracker.Enable();
 
-#if DEBUG
-        System.AddonInventoryWindow.Toggle();
-        System.AddonConfigurationWindow.Toggle();
-#endif
+        System.AddonInventoryWindow.DebugOpen();
+        System.AddonConfigurationWindow.DebugOpen();
     }
 
     private void OnLogout(int type, int code)

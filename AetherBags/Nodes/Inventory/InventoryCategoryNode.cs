@@ -61,7 +61,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _categoryNameTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
         _categoryNameTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
 
-        _categoryNameTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
+        _categoryNameTextNode.AddNodeFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
         _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>

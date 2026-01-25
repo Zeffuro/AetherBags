@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Numerics;
 using System.Text.Json.Serialization;
 using KamiToolKit.Classes;
@@ -84,6 +85,9 @@ public enum ToggleFilterState
 
 public enum PluginFilterMode
 {
+    [Description("Create New Categories")]
     Categorize = 0,
+
+    [Description("Apply Highlight Only")]
     Highlight = 1,
 }

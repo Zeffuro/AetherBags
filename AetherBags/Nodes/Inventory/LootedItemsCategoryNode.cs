@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using AetherBags.Inventory.Items;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Inventory;
@@ -62,7 +63,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             AlignmentType = AlignmentType.Left,
             String = "Recently Looted",
             TextFlags = TextFlags.OverflowHidden | TextFlags.Ellipsis,
-            TextColor = new Vector4(0.9f, 0.8f, 0.5f, 1.0f), // Gold-ish color
+            TextColor = ColorHelper.GetColor(26), // Gold-ish color
         };
 
         _headerTextNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
@@ -71,7 +72,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         _headerTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
         _headerTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
 
-        _headerTextNode.AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
+        _headerTextNode.AddNodeFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _headerTextNode.AttachNode(this);
 
         _clearButton = new CircleButtonNode
@@ -197,7 +198,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     private void SyncItemGrid()
     {
-        _itemGridNode.SyncWithListDataByKey<LootedItemInfo, LootedItemDisplayNode, int>(
+        _itemGridNode.SyncWithListDataByKey(
             dataList: _lootedItems,
             getKeyFromData: item => item.Index,
             getKeyFromNode: node => node.LootedItem?.Index ?? -1,
@@ -221,6 +222,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     private void OnItemDismissed(LootedItemDisplayNode node)
     {
+        if(node.LootedItem is null) return;
         int index = node.LootedItem.Index;
         OnDismissItem?.Invoke(index);
     }

@@ -49,7 +49,7 @@ public class TextInputWithButtonNode : SimpleComponentNode {
     }
 
     public ReadOnlySeString SearchString {
-        get => _textInputNode.SeString;
-        set => _textInputNode.SeString = value;
+        get => _textInputNode.String;
+        set => _textInputNode.String = value;
     }
 }

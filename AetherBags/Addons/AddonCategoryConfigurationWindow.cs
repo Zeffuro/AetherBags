@@ -14,7 +14,7 @@ namespace AetherBags.Addons;
 
 public class AddonCategoryConfigurationWindow : NativeAddon
 {
-    private ModifyListNode<CategoryWrapper>? _selectionListNode;
+    private ModifyListNode<CategoryWrapper, CategoryListItemNode>? _selectionListNode;
     private VerticalLineNode? _separatorLine;
     private CategoryConfigurationNode? _configNode;
     private TextNode? _nothingSelectedTextNode;
@@ -28,21 +28,24 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     {
         _categoryWrappers = CreateCategoryWrappers();
 
-        _selectionListNode = new ModifyListNode<CategoryWrapper>
+        _selectionListNode = new ModifyListNode<CategoryWrapper, CategoryListItemNode>
         {
             Position = ContentStartPosition,
-            Size = new Vector2(250.0f, ContentSize.Y),
-            SelectionOptions = _categoryWrappers,
-            OnOptionChanged = OnOptionChanged,
+            Size = ContentSize with { X = 250.0f },
+            Options = _categoryWrappers,
+            SelectionChanged = OnOptionChanged,
             AddNewEntry = OnAddNewCategory,
             RemoveEntry = OnRemoveCategory,
+            SortOptions = [ "Order" ],
+            ItemComparer = (left, right, mode) => left.Compare(right, mode),
+            IsSearchMatch = (data, search) => data.GetLabel().Contains(search, global::System.StringComparison.OrdinalIgnoreCase)
         };
         _selectionListNode.AttachNode(this);
 
         _separatorLine = new VerticalLineNode
         {
             Position = ContentStartPosition + new Vector2(250.0f + 8.0f, 0.0f),
-            Size = new Vector2(4.0f, ContentSize.Y),
+            Size = ContentSize with { X = 4.0f },
         };
         _separatorLine.AttachNode(this);
 
@@ -78,6 +81,24 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             .ToList();
     }
 
+    private void OnAddNewCategory()
+    {
+        var newCategory = new UserCategoryDefinition
+        {
+            Name = $"New Category {System.Config.Categories.UserCategories.Count + 1}",
+            Order = System.Config.Categories.UserCategories.Count,
+        };
+
+        System.Config.Categories.UserCategories.Add(newCategory);
+
+        var newWrapper = new CategoryWrapper(newCategory);
+        _categoryWrappers.Add(newWrapper);
+
+        RefreshSelectionList();
+        _selectionListNode?.RefreshList();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
+    }
+
     private void OnOptionChanged(CategoryWrapper? newOption)
     {
         if (_configNode is null) return;
@@ -99,27 +120,9 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             if (_pendingSelectionListRefresh)
             {
                 _pendingSelectionListRefresh = false;
-                _selectionListNode?.UpdateList();
+                _selectionListNode?.RefreshList();
             }
         }
-    }
-
-    private void OnAddNewCategory(ModifyListNode<CategoryWrapper> listNode)
-    {
-        var newCategory = new UserCategoryDefinition
-        {
-            Name = $"New Category {System.Config.Categories.UserCategories.Count + 1}",
-            Order = System.Config.Categories.UserCategories.Count,
-        };
-
-        System.Config.Categories.UserCategories.Add(newCategory);
-
-        var newWrapper = new CategoryWrapper(newCategory);
-        _categoryWrappers.Add(newWrapper);
-        listNode.AddOption(newWrapper);
-
-        RefreshSelectionList();
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
@@ -146,6 +149,15 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             return;
         }
 
-        _selectionListNode?.UpdateList();
+        _selectionListNode?.RefreshList();
+    }
+
+    protected override unsafe void OnFinalize(AtkUnitBase* addon)
+    {
+        _selectionListNode = null;
+        _configNode = null;
+        _separatorLine = null;
+        _nothingSelectedTextNode = null;
+        base.OnFinalize(addon);
     }
 }

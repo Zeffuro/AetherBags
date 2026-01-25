@@ -2,7 +2,7 @@ using System.Drawing;
 using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
-using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Color;

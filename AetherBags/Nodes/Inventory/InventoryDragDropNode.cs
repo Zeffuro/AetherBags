@@ -18,7 +18,7 @@ public class InventoryDragDropNode : DragDropNode
             Size = new Vector2(40.0f, 12.0f),
             Position = new Vector2(4.0f, 34.0f),
             NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
-            Color = ColorHelper.GetColor(50),
+            TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(51),
             TextFlags = TextFlags.Edge,
             AlignmentType = AlignmentType.Right,

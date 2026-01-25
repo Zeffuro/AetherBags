@@ -3,6 +3,7 @@ using System.Numerics;
 using AetherBags.Configuration;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -14,9 +15,9 @@ public sealed class RangeFilterRow : VerticalListNode
 
     public Action<bool, int, int>? OnFilterChanged { get; set; }
 
-    public required string Label
+    public required ReadOnlySeString Label
     {
-        get => _enabledCheckbox.String.Replace(" Filter", "");
+        get => _enabledCheckbox.String.ExtractText().Replace(" Filter", "");
         init => _enabledCheckbox.String = $"{value} Filter";
     }
 
@@ -113,9 +114,9 @@ public sealed class RangeFilterRowUint : VerticalListNode
 
     public Action<bool, uint, uint>? OnFilterChanged { get; set; }
 
-    public required string Label
+    public required ReadOnlySeString Label
     {
-        get => _enabledCheckbox.String.Replace(" Filter", "");
+        get => _enabledCheckbox.String.ExtractText().Replace(" Filter", "");
         init => _enabledCheckbox.String = $"{value} Filter";
     }
 

@@ -1,9 +1,9 @@
 ﻿using AetherBags.Configuration;
-using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Nodes;
 using System.Numerics;
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Timelines;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 

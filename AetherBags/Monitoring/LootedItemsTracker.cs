@@ -9,7 +9,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
 
-namespace AetherBags.Inventory;
+namespace AetherBags.Monitoring;
 
 public sealed unsafe class LootedItemsTracker : IDisposable
 {
@@ -31,6 +31,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     public IReadOnlyList<LootedItemInfo> LootedItems => _lootedItems;
 
     public bool HasPendingChanges => _pendingChanges.Count > 0 || _hasPendingRemoval;
+
+    private int GetNextIndex() => _lootedItems.Count > 0 ? _lootedItems.Max(x => x.Index) + 1 : 0;
 
     public void Enable()
     {
@@ -81,6 +83,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     {
         if (_pendingChanges.Count == 0 && !_hasPendingRemoval) return;
 
+        ProcessPendingChanges();
+
         _hasPendingRemoval = false;
         OnLootedItemsChanged?.Invoke(_lootedItems);
     }
@@ -90,12 +94,40 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         Disable();
     }
 
+    private void ProcessPendingChanges()
+    {
+        if (_pendingChanges.Count == 0) return;
+
+        foreach (var ((itemId, isHq), (item, delta)) in _pendingChanges)
+        {
+            int existingIndex = _lootedItems.FindIndex(x =>
+                x.Item.ItemId == itemId &&
+                x.Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality) == isHq);
+
+            if (existingIndex >= 0)
+            {
+                var current = _lootedItems[existingIndex];
+                int newQty = current.Quantity + delta;
+
+                if (newQty <= 0)
+                    _lootedItems.RemoveAt(existingIndex);
+                else
+                    _lootedItems[existingIndex] = current with { Quantity = newQty };
+            }
+            else if (delta > 0)
+            {
+                _lootedItems.Add(new LootedItemInfo(GetNextIndex(), item, delta));
+            }
+        }
+
+        _pendingChanges.Clear();
+    }
+
     private void OnInventoryChangedRaw(IReadOnlyCollection<InventoryEventArgs> events)
     {
-        if (!_isEnabled) return;
-        if (!Services.ClientState.IsLoggedIn) return;
+        if (!_isEnabled || !Services.ClientState.IsLoggedIn) return;
 
-        bool anyAdded = false;
+        bool anyChanged = false;
 
         foreach (var eventData in events)
         {
@@ -105,38 +137,42 @@ public sealed unsafe class LootedItemsTracker : IDisposable
             if (eventData.Item.ContainerType == GameInventoryType.DamagedGear)
                 continue;
 
-            if (eventData is not (InventoryItemAddedArgs or InventoryItemChangedArgs))
-                continue;
-
-            if (eventData is InventoryItemChangedArgs changedArgs &&
-                changedArgs.OldItemState.Quantity >= changedArgs.Item.Quantity)
+            int changeAmount = eventData switch
             {
-                continue;
-            }
+                InventoryItemAddedArgs added => added.Item.Quantity,
+                InventoryItemRemovedArgs removed => -removed.Item.Quantity,
+                InventoryItemChangedArgs changed => changed.Item.Quantity - changed.OldItemState.Quantity,
+                _ => 0
+            };
+
+            if (changeAmount == 0) continue;
 
             if (ShouldFilterItem(eventData.Item.ItemId))
                 continue;
 
-            var inventoryItem = *(InventoryItem*)eventData.Item.Address;
-            var changeAmount = eventData is InventoryItemChangedArgs changed
-                ? changed.Item.Quantity - changed.OldItemState.Quantity
-                : eventData.Item.Quantity;
-
-            var key = (inventoryItem.ItemId, IsHq: inventoryItem.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality));
+            uint itemId = eventData.Item.ItemId;
+            bool isHq = eventData.Item.IsHq;
+            var key = (itemId, isHq);
 
             if (_pendingChanges.TryGetValue(key, out var existing))
             {
-                _pendingChanges[key] = (inventoryItem, existing.Quantity + changeAmount);
+                _pendingChanges[key] = (existing.Item, existing.Quantity + changeAmount);
             }
             else
             {
-                _pendingChanges[key] = (inventoryItem, changeAmount);
+                InventoryItem itemStruct = default;
+                if (changeAmount > 0)
+                {
+                    itemStruct = *(InventoryItem*)eventData.Item.Address;
+                }
+
+                _pendingChanges[key] = (itemStruct, changeAmount);
             }
 
-            anyAdded = true;
+            anyChanged = true;
         }
 
-        if (anyAdded && _batchStartTick == 0)
+        if (anyChanged && _batchStartTick == 0)
         {
             _batchStartTick = Environment.TickCount64;
         }
@@ -152,23 +188,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
         _batchStartTick = 0;
 
-        if (_pendingChanges.Count == 0)
-            return;
-
-        foreach (var ((itemId, isHq), (item, quantity)) in _pendingChanges)
-        {
-            if (quantity <= 0)
-                continue;
-
-            _lootedItems.Add(new LootedItemInfo(
-                _lootedItems.Count,
-                item,
-                quantity));
-        }
-
-        _pendingChanges.Clear();
-
-        OnLootedItemsChanged?.Invoke(_lootedItems);
+        FlushPendingChanges();
     }
 
     private static bool ShouldFilterItem(uint itemId)

@@ -2,6 +2,7 @@ using AetherBags.Addons;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.IPC;
+using AetherBags.Monitoring;
 
 namespace AetherBags;
 

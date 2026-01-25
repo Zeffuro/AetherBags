@@ -1,17 +1,14 @@
 using AetherBags.Configuration;
 using AetherBags.Inventory.Categories;
-using KamiToolKit.Premade;
 
 namespace AetherBags.Addons;
 
-public class CategoryWrapper(UserCategoryDefinition categoryDefinition) : IInfoNodeData
+// Removed IInfoNodeData implementation
+public class CategoryWrapper(UserCategoryDefinition categoryDefinition)
 {
     public UserCategoryDefinition? CategoryDefinition { get; } = categoryDefinition;
 
-    public string GetLabel() {
-
-        return CategoryDefinition!.Name;
-    }
+    public string GetLabel() => CategoryDefinition!.Name;
 
     public string GetSubLabel() {
         if(UserCategoryMatcher.IsCatchAll(CategoryDefinition!)) return " No valid rules!";
@@ -20,16 +17,9 @@ public class CategoryWrapper(UserCategoryDefinition categoryDefinition) : IInfoN
 
     public uint? GetId() => null;
 
-    public uint? GetIconId() {
-        return 0;
-    }
+    public uint? GetIconId() => 0;
 
-    public string? GetTexturePath()
-        => null;
-
-    public int Compare(IInfoNodeData other, string sortingMode) {
-        if (other is not CategoryWrapper otherWrapper) return 0;
-
-        return CategoryDefinition!.Order.CompareTo(otherWrapper.CategoryDefinition!.Order);
+    public int Compare(CategoryWrapper other, string sortingMode) {
+        return CategoryDefinition!.Order.CompareTo(other.CategoryDefinition!.Order);
     }
 }

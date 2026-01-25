@@ -2,7 +2,7 @@ using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiToolKit.Classes.ContextMenu;
+using KamiToolKit.ContextMenu;
 
 namespace AetherBags.Addons;
 

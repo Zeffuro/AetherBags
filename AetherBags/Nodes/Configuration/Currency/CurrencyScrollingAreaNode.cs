@@ -1,3 +1,4 @@
+using System.Numerics;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Currency;
@@ -8,7 +9,7 @@ public sealed class CurrencyScrollingAreaNode : ScrollingListNode
     {
         AddNode(new CurrencyGeneralConfigurationNode
         {
-            Size = Size
+            Width = 600
         });
     }
 }

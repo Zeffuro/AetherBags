@@ -3,6 +3,7 @@ using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Addons;
+using KamiToolKit.Premade.Color;
 
 namespace AetherBags.Nodes.Color;
 
@@ -16,41 +17,49 @@ public class ColorInputRow : HorizontalListNode
     {
         InitializeColorPicker();
 
-        var initialColor = CurrentColor;
-
-        _colorPreview = new ColorPreviewButtonNode
-        {
-            Size = new Vector2(28),
-            Color = CurrentColor,
-            OnClick = () =>
-            {
-                _colorPickerAddon?.InitialColor = CurrentColor;
-                _colorPickerAddon?.DefaultColor = DefaultColor;
-                _colorPickerAddon?.Toggle();
-                _colorPickerAddon?.OnColorConfirmed = color =>
-                {
-                    CurrentColor = color;
-                    _colorPreview?.Color = color;
-                    initialColor = color;
-                    OnColorConfirmed?.Invoke(color);
-                };
-                _colorPickerAddon?.OnColorPreviewed = color =>
-                {
-                    _colorPreview?.Color = color;
-                    OnColorChange?.Invoke(color);
-                };
-                _colorPickerAddon?.OnColorCancelled = () => OnColorCanceled?.Invoke(initialColor);
-            }
-        };
-        _colorPreview.AttachNode(this);
-
+        _colorPreview = new ColorPreviewButtonNode { Size = new Vector2(28) };
         _labelTextNode = new LabelTextNode
         {
             TextFlags = TextFlags.AutoAdjustNodeSize,
             Position = new Vector2(28, 0),
-            Height = 24,
-            String = Label ?? string.Empty,
+            Height = 28,
         };
+
+        var node = _colorPreview;
+
+        node.OnClick = () =>
+        {
+            var snapshot = CurrentColor;
+
+            if (_colorPickerAddon is not null)
+            {
+                _colorPickerAddon.InitialColor = snapshot;
+                _colorPickerAddon.DefaultColor = DefaultColor;
+                _colorPickerAddon.Toggle();
+
+                _colorPickerAddon.OnColorConfirmed = color =>
+                {
+                    CurrentColor = color;
+                    node.Color = color;
+                    OnColorConfirmed?.Invoke(color);
+                };
+
+                _colorPickerAddon.OnColorPreviewed = color =>
+                {
+                    node.Color = color;
+                    OnColorPreviewed?.Invoke(color);
+                };
+
+                _colorPickerAddon.OnColorCancelled = () =>
+                {
+                    CurrentColor = snapshot;
+                    node.Color = snapshot;
+                    OnColorCanceled?.Invoke(snapshot);
+                };
+            }
+        };
+
+        _colorPreview.AttachNode(this);
         _labelTextNode.AttachNode(this);
     }
 
