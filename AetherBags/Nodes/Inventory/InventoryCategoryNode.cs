@@ -508,7 +508,44 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
         using (_itemGridNode.DeferRecalculateLayout())
         {
-            _itemGridNode.Clear();
+            ReturnItemsToPool();
+            _itemGridNode.ClearListOnly();
+        }
+    }
+
+    private void ReturnItemsToPool()
+    {
+        var nodes = _itemGridNode.Nodes;
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i] is not InventoryDragDropNode itemNode)
+                continue;
+
+            if (SharedItemPool != null)
+            {
+                if (!SharedItemPool.TryReturn(itemNode))
+                {
+                    try
+                    {
+                        itemNode.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing overflow item node");
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    itemNode.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing item node (no pool)");
+                }
+            }
         }
     }
 }
