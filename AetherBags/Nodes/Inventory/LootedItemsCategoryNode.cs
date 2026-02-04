@@ -32,6 +32,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
     private int _lastItemCount;
     private long _lastItemsHash;
 
+    private float? _maxWidth;
+
     private int _hoverRefs;
     private bool _headerExpanded;
     private float _baseHeaderWidth = 96f;
@@ -53,6 +55,12 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
     }
 
     public bool HasItems => _lootedItems.Count > 0;
+
+    public override float? MaxWidth
+    {
+        get => _maxWidth;
+        set => _maxWidth = value;
+    }
 
     public LootedItemsCategoryNode()
     {
@@ -183,6 +191,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             Vector2 drawSize = _headerTextNode.GetTextDrawSize();
             float expandedWidth = MathF.Max(_baseHeaderWidth, drawSize.X + 4f);
             _headerTextNode.Size = _headerTextNode.Size with { X = expandedWidth };
+
+            _clearButton.Position = new Vector2(expandedWidth + 4f, (HeaderHeight - ClearButtonSize) / 2);
         }
         else
         {
@@ -193,6 +203,9 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
             flags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
             _headerTextNode.TextFlags = flags;
+
+            float nodeWidth = Size.X;
+            _clearButton.Position = new Vector2(nodeWidth - ClearButtonSize, (HeaderHeight - ClearButtonSize) / 2);
         }
     }
 
@@ -203,7 +216,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             getKeyFromData: item => item.Index,
             getKeyFromNode: node => node.LootedItem?.Index ?? -1,
             updateNode: UpdateLootedItemNode,
-            createNodeMethod: CreateLootedItemNode);
+            createNodeMethod: CreateLootedItemNode,
+            resetNodeForReuse: ResetLootedItemNodeForReuse);
     }
 
     private static void UpdateLootedItemNode(LootedItemDisplayNode node, LootedItemInfo data)
@@ -211,11 +225,18 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         node.LootedItem = data;
     }
 
+    private static void ResetLootedItemNodeForReuse(LootedItemDisplayNode node)
+    {
+        node.ResetForReuse();
+    }
+
     private LootedItemDisplayNode CreateLootedItemNode(LootedItemInfo lootedItem)
     {
         return new LootedItemDisplayNode
         {
             OnDismiss = OnItemDismissed,
+            OnRollOver = _ => BeginHeaderHover(),
+            OnRollOut = _ => EndHeaderHover(),
             LootedItem = lootedItem,
         };
     }
@@ -227,13 +248,19 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         OnDismissItem?.Invoke(index);
     }
 
-    private void RecalculateSize()
+    public override void RecalculateSize()
     {
         int itemCount = _lootedItems.Count;
 
+        const float cellW = 42f;
+        const float cellH = 46f;
+
+        float hPad = _itemGridNode.HorizontalPadding;
+        float vPad = _itemGridNode.VerticalPadding;
+
         if (itemCount == 0)
         {
-            float width = MinWidth;
+            float width = _maxWidth.HasValue ? Math.Min(MinWidth, _maxWidth.Value) : MinWidth;
             Size = new Vector2(width, HeaderHeight);
             _baseHeaderWidth = width - ClearButtonSize - 4;
             _headerTextNode.Size = new Vector2(_baseHeaderWidth, HeaderHeight);
@@ -246,20 +273,36 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         }
 
         int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
+
+        float minUsableWidth = cellW;
+        if (_maxWidth.HasValue && _maxWidth.Value >= minUsableWidth)
+        {
+            int maxColumns = (int)MathF.Floor((_maxWidth.Value + hPad) / (cellW + hPad));
+            maxColumns = Math.Max(1, maxColumns);
+
+            float widthNeeded = maxColumns * cellW + (maxColumns - 1) * hPad;
+            if (widthNeeded > _maxWidth.Value && maxColumns > 1)
+                maxColumns--;
+
+            itemsPerLine = Math.Min(itemsPerLine, maxColumns);
+        }
+
         int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
         int actualColumns = Math.Min(itemCount, itemsPerLine);
 
-        const float cellW = 42f;
-        const float cellH = 46f;
-
-        float hPad = _itemGridNode.HorizontalPadding;
-        float vPad = _itemGridNode.VerticalPadding;
-
         float calculatedWidth = Math.Max(MinWidth, actualColumns * cellW + (actualColumns - 1) * hPad);
+
+        if (_maxWidth.HasValue && _maxWidth.Value >= minUsableWidth)
+            calculatedWidth = Math.Min(calculatedWidth, _maxWidth.Value);
+
         float gridHeight = rows * cellH + (rows - 1) * vPad;
         float totalHeight = HeaderHeight + gridHeight;
 
         Size = new Vector2(calculatedWidth, totalHeight);
+
+        if (_itemGridNode.ItemsPerLine != itemsPerLine)
+            _itemGridNode.ItemsPerLine = itemsPerLine;
+
         _baseHeaderWidth = calculatedWidth - ClearButtonSize - 4;
         _headerTextNode.Size = new Vector2(_baseHeaderWidth, HeaderHeight);
         _clearButton.Position = new Vector2(calculatedWidth - ClearButtonSize, (HeaderHeight - ClearButtonSize) / 2);

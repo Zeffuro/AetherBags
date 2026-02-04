@@ -25,16 +25,20 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         InitializeBackgroundDropTarget();
 
-        CategoriesNode = new WrappingGridNode<InventoryCategoryNodeBase>
+        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            HorizontalSpacing = CategorySpacing,
-            VerticalSpacing = CategorySpacing,
-            TopPadding = 4.0f,
-            BottomPadding = 4.0f,
+            ContentHeight = 0f,
+            AutoHideScrollBar = true,
         };
-        CategoriesNode.AttachNode(this);
+        ScrollableCategories.AttachNode(this);
+
+        CategoriesNode = ScrollableCategories.ContentNode;
+        CategoriesNode.HorizontalSpacing = CategorySpacing;
+        CategoriesNode.VerticalSpacing = CategorySpacing;
+        CategoriesNode.TopPadding = 4.0f;
+        CategoriesNode.BottomPadding = 4.0f;
 
         _lootedCategoryNode = new LootedItemsCategoryNode
         {
@@ -127,6 +131,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
                 CategoriesNode.RemoveNode(_lootedCategoryNode);
             }
+            CategoriesNode.InvalidateLayout();
             AutoSizeWindow();
         }
     }
@@ -134,6 +139,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     private void OnDismissLootedItem(int index)
     {
         System.LootedItemsTracker.RemoveByIndex(index);
+        System.LootedItemsTracker.FlushPendingChanges();
     }
 
     private void OnClearAllLootedItems()
@@ -146,6 +152,21 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         if (!Services.ClientState.IsLoggedIn) return;
         FooterNode.RefreshCurrencies();
+    }
+
+    protected override void UpdateHeaderLayout()
+    {
+        base.UpdateHeaderLayout();
+
+        AtkUnitBase* addon = this;
+        if (addon == null) return;
+
+        var header = CalculateHeaderLayout(addon);
+
+        if (_notificationNode != null)
+        {
+            _notificationNode.Size = new Vector2(header.HeaderWidth, 28f);
+        }
     }
 
     public void SetNotification(InventoryNotificationInfo info)

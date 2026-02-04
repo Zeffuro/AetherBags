@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace AetherBags.Currency;
 
@@ -16,6 +16,7 @@ public static unsafe class CurrencyState
 
     private static readonly Dictionary<uint, CurrencyItem> CurrencyItemByCurrencyIdCache = new(capacity:  32);
     private static readonly Dictionary<uint, CurrencyStaticInfo> CurrencyStaticByItemIdCache = new(capacity: 64);
+    private static readonly List<CurrencyInfo> CurrencyInfoScratch = new(capacity: 8);
 
     private static uint? _cachedLimitedTomestoneItemId;
     private static uint? _cachedNonLimitedTomestoneItemId;
@@ -29,6 +30,12 @@ public static unsafe class CurrencyState
     }
 
     public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
+        => GetCurrencyInfoListCore(currencyIds.AsSpan());
+
+    public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(List<uint> currencyIds)
+        => GetCurrencyInfoListCore(CollectionsMarshal.AsSpan(currencyIds));
+
+    private static IReadOnlyList<CurrencyInfo> GetCurrencyInfoListCore(ReadOnlySpan<uint> currencyIds)
     {
         if (currencyIds.Length == 0)
             return Array.Empty<CurrencyInfo>();
@@ -37,7 +44,7 @@ public static unsafe class CurrencyState
         if (inventoryManager == null)
             return Array.Empty<CurrencyInfo>();
 
-        List<CurrencyInfo> currencyInfoList = new List<CurrencyInfo>(currencyIds.Length);
+        CurrencyInfoScratch.Clear();
 
         for (int i = 0; i < currencyIds.Length; i++)
         {
@@ -57,7 +64,7 @@ public static unsafe class CurrencyState
                 isCapped = weeklyAcquired >= weeklyLimit;
             }
 
-            currencyInfoList.Add(new CurrencyInfo
+            CurrencyInfoScratch.Add(new CurrencyInfo
             {
                 Amount = amount,
                 MaxAmount = staticInfo.MaxAmount,
@@ -68,7 +75,7 @@ public static unsafe class CurrencyState
             });
         }
 
-        return currencyInfoList;
+        return CurrencyInfoScratch;
     }
 
     public static (uint Limited, uint NonLimited) GetCurrentTomestoneIds()

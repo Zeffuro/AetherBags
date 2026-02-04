@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Context;
+using AetherBags.IPC.ExternalCategorySystem;
 using Dalamud.Plugin.Ipc;
+using KamiToolKit.Classes;
 
 namespace AetherBags.IPC;
 
@@ -188,8 +192,119 @@ public class AllaganToolsIPC : IDisposable
         InventoryOrchestrator.RefreshHighlights();
     }
 
+    private AllaganToolsSource? _source;
+
+    public void EnableExternalCategorySupport()
+    {
+        if (_source != null) return;
+
+        _source = new AllaganToolsSource(this);
+        ExternalCategoryManager.RegisterSource(_source);
+    }
+
+    public void DisableExternalCategorySupport()
+    {
+        if (_source == null) return;
+
+        ExternalCategoryManager.UnregisterSource(_source.SourceName);
+        _source = null;
+    }
+
     public void Dispose()
     {
+        DisableExternalCategorySupport();
         _initialized?.Unsubscribe(OnAllaganInitialized);
+    }
+
+    private sealed class AllaganToolsSource : IExternalItemSource
+    {
+        private readonly AllaganToolsIPC _ipc;
+        private int _version;
+
+        public string SourceName => "AllaganTools";
+        public string DisplayName => "Allagan Tools";
+        public int Priority => 50;
+        public bool IsReady => _ipc.IsReady;
+        public int Version => _version;
+        public event Action? OnDataChanged;
+
+        public SourceCapabilities Capabilities =>
+            SourceCapabilities.Categories |
+            SourceCapabilities.SearchTags;
+
+        public ConflictBehavior ConflictBehavior => ConflictBehavior.Defer;
+
+        public AllaganToolsSource(AllaganToolsIPC ipc)
+        {
+            _ipc = ipc;
+            _ipc.OnFiltersRefreshed += OnIpcRefreshed;
+        }
+
+        private void OnIpcRefreshed()
+        {
+            _version++;
+            OnDataChanged?.Invoke();
+        }
+
+        public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
+        {
+            if (_ipc.CachedFilterItems.Count == 0) return null;
+
+            var result = new Dictionary<uint, ExternalCategoryAssignment>();
+            int filterIndex = 0;
+
+            foreach (var (filterKey, filterName) in _ipc.CachedSearchFilters)
+            {
+                if (!_ipc.CachedFilterItems.TryGetValue(filterKey, out var itemIds))
+                {
+                    filterIndex++;
+                    continue;
+                }
+
+                uint categoryKey = CategoryBucketManager.MakeAllaganFilterKey(filterIndex);
+
+                foreach (var itemId in itemIds.Keys)
+                {
+                    result.TryAdd(itemId, new ExternalCategoryAssignment(
+                        CategoryKey: categoryKey,
+                        CategoryName: $"[AT] {filterName}",
+                        CategoryDescription: $"Allagan Tools filter: {filterName}",
+                        CategoryColor: ColorHelper.GetColor(32),
+                        ItemOverlayColor: null,
+                        SubPriority: filterIndex
+                    ));
+                }
+
+                filterIndex++;
+            }
+
+            return result;
+        }
+
+        public IReadOnlyDictionary<uint, ItemDecoration>? GetItemDecorations() => null;
+
+        public IReadOnlyList<ContextMenuEntry>? GetContextMenuEntries(uint itemId) => null;
+
+        public IReadOnlyDictionary<uint, string[]>? GetSearchTags()
+        {
+            if (_ipc.ItemToFilters.Count == 0) return null;
+
+            var result = new Dictionary<uint, string[]>();
+            foreach (var (itemId, filterKeys) in _ipc.ItemToFilters)
+            {
+                var tags = new List<string>(filterKeys.Count + 1) { "at", "allagantools" };
+                foreach (var key in filterKeys)
+                {
+                    if (_ipc.CachedSearchFilters.TryGetValue(key, out var name))
+                    {
+                        tags.Add(name.ToLowerInvariant());
+                    }
+                }
+                result[itemId] = tags.ToArray();
+            }
+            return result;
+        }
+
+        public IReadOnlyList<ItemRelationship>? GetItemRelationships(uint itemId) => null;
     }
 }

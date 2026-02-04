@@ -14,6 +14,8 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
 
         AddNode(new CategoryGeneralConfigurationNode());
 
+        AddNode(new ExperimentalConfigurationNode());
+
         var categoryConfigurationButtonNode = new TextButtonNode
         {
             Size = new Vector2(300, 28),

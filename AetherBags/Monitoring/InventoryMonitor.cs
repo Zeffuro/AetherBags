@@ -40,6 +40,7 @@ public class InventoryMonitor : IDisposable
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, bags, OnInventoryPreFinalize);
 
         // PreRefresh Handlers
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
@@ -63,6 +64,11 @@ public class InventoryMonitor : IDisposable
     private void OnPostSetup(AddonEvent type, AddonArgs args)
     {
         OpenInventories(args.AddonName);
+    }
+
+    private void OnInventoryPreFinalize(AddonEvent type, AddonArgs args)
+    {
+        System.AddonInventoryWindow.Close();
     }
 
     private unsafe void OpenInventories(string name)
@@ -168,22 +174,27 @@ public class InventoryMonitor : IDisposable
 
         if (atkValues.Length < 7) return;
 
-        AtkValue* value1 = (AtkValue*)atkValues[1].Address;
         AtkValue* value5 = (AtkValue*)atkValues[5].Address;
         AtkValue* value6 = (AtkValue*)atkValues[6].Address;
 
         if (value5->Type != ValueType.ManagedString || value6->Type != ValueType.ManagedString)
             return;
 
-        int openTitleId = value1->Int;
         ReadOnlySeString title = value5->String.AsReadOnlySeString();
         ReadOnlySeString upperTitle = value6->String.AsReadOnlySeString();
 
         System.AddonInventoryWindow.SetNotification(new InventoryNotificationInfo(title, upperTitle));
 
-        if (config.HideGameInventory) refreshArgs.AtkValueCount = 0;
+        if (config.HideGameInventory)
+        {
+            refreshArgs.AtkValueCount = 0;
+        }
+
         if (config.OpenWithGameInventory)
         {
+            AtkValue* value1 = (AtkValue*)atkValues[1].Address;
+            int openTitleId = value1->Int;
+
             if (openTitleId == 0)
             {
                 System.AddonInventoryWindow.Toggle();
@@ -234,6 +245,6 @@ public class InventoryMonitor : IDisposable
     public void Dispose()
     {
         Services.GameInventory.InventoryChangedRaw -= OnInventoryChangedRaw;
-        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate);
+        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
     }
 }

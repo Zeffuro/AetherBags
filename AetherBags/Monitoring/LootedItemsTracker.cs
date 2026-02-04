@@ -25,14 +25,13 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     private bool _isEnabled;
     private long _batchStartTick;
     private bool _hasPendingRemoval;
+    private int _nextIndex;
 
     public event Action<IReadOnlyList<LootedItemInfo>>? OnLootedItemsChanged;
 
     public IReadOnlyList<LootedItemInfo> LootedItems => _lootedItems;
 
     public bool HasPendingChanges => _pendingChanges.Count > 0 || _hasPendingRemoval;
-
-    private int GetNextIndex() => _lootedItems.Count > 0 ? _lootedItems.Max(x => x.Index) + 1 : 0;
 
     public void Enable()
     {
@@ -43,6 +42,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         _pendingChanges.Clear();
         _batchStartTick = 0;
         _hasPendingRemoval = false;
+        _nextIndex = 0;
         Services.GameInventory.InventoryChangedRaw += OnInventoryChangedRaw;
         Services.Framework.Update += OnFrameworkUpdate;
     }
@@ -58,12 +58,14 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         _pendingChanges.Clear();
         _batchStartTick = 0;
         _hasPendingRemoval = false;
+        _nextIndex = 0;
     }
 
     public void Clear()
     {
         _lootedItems.Clear();
         _hasPendingRemoval = true;
+        _nextIndex = 0;
     }
 
     public void RemoveByIndex(int index)
@@ -100,9 +102,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
         foreach (var ((itemId, isHq), (item, delta)) in _pendingChanges)
         {
-            int existingIndex = _lootedItems.FindIndex(x =>
-                x.Item.ItemId == itemId &&
-                x.Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality) == isHq);
+            int existingIndex = FindExistingItemIndex(itemId, isHq);
 
             if (existingIndex >= 0)
             {
@@ -116,11 +116,25 @@ public sealed unsafe class LootedItemsTracker : IDisposable
             }
             else if (delta > 0)
             {
-                _lootedItems.Add(new LootedItemInfo(GetNextIndex(), item, delta));
+                _lootedItems.Add(new LootedItemInfo(_nextIndex++, item, delta));
             }
         }
 
         _pendingChanges.Clear();
+    }
+
+    private int FindExistingItemIndex(uint itemId, bool isHq)
+    {
+        for (int i = 0; i < _lootedItems.Count; i++)
+        {
+            var info = _lootedItems[i];
+            if (info.Item.ItemId == itemId &&
+                info.Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality) == isHq)
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void OnInventoryChangedRaw(IReadOnlyCollection<InventoryEventArgs> events)
@@ -156,7 +170,12 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
             if (_pendingChanges.TryGetValue(key, out var existing))
             {
-                _pendingChanges[key] = (existing.Item, existing.Quantity + changeAmount);
+                InventoryItem itemStruct = existing.Item;
+                if (changeAmount > 0 && itemStruct.ItemId == 0)
+                {
+                    itemStruct = *(InventoryItem*)eventData.Item.Address;
+                }
+                _pendingChanges[key] = (itemStruct, existing.Quantity + changeAmount);
             }
             else
             {

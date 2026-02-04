@@ -50,6 +50,8 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     public Action? OnRefreshRequested { get; set; }
     public Action? OnDragEnd { get; set; }
 
+    public SharedNodePool<InventoryDragDropNode>? SharedItemPool { get; set; }
+
     public InventoryCategoryNode()
     {
         _categoryNameTextNode = new TextNode
@@ -186,7 +188,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
     }
 
-    public float? MaxWidth
+    public override float? MaxWidth
     {
         get => _maxWidth;
         set => _maxWidth = value;
@@ -256,7 +258,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
     }
 
-    public void RecalculateSize()
+    public override void RecalculateSize()
     {
         int itemCount = CategorizedInventory.Items.Count;
 
@@ -320,31 +322,55 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             getKeyFromData: item => item.Key,
             getKeyFromNode: node => node.ItemInfo?.Key ?? 0,
             updateNode: UpdateInventoryDragDropNode,
-            createNodeMethod: CreateInventoryDragDropNode);
+            createNodeMethod: CreateInventoryDragDropNode,
+            resetNodeForReuse: ResetDragDropNodeForReuse,
+            externalPool: SharedItemPool);
     }
 
     private void UpdateInventoryDragDropNode(InventoryDragDropNode node, ItemInfo data)
     {
-        if (node.ItemInfo?.Key == data.Key)
-        {
-            node.ItemInfo = data;
-            node.Alpha = data.VisualAlpha;
-            node.AddColor = data.HighlightOverlayColor;
-            node.IsDraggable = !data.IsSlotBlocked;
-            return;
-        }
+        node.ItemInfo = data;
+        ApplyItemDataToNode(node, data);
+    }
 
+    private static void ResetDragDropNodeForReuse(InventoryDragDropNode node)
+    {
+        node.ResetForReuse();
+    }
+
+    private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
+    {
+        var node = new InventoryDragDropNode
+        {
+            Size = new Vector2(42, 46),
+            IsVisible = true,
+            AcceptedType = DragDropType.Item,
+            IsClickable = true,
+            OnDiscard = OnNodeDiscard,
+            OnEnd = _ => OnDragEnd?.Invoke(),
+            OnPayloadAccepted = OnNodePayloadAccepted,
+            OnRollOver = OnNodeRollOver,
+            OnRollOut = OnNodeRollOut,
+            ItemInfo = data
+        };
+
+        ApplyItemDataToNode(node, data);
+        return node;
+    }
+
+    private void ApplyItemDataToNode(InventoryDragDropNode node, ItemInfo data)
+    {
         InventoryItem item = data.Item;
         InventoryMappedLocation visualLocation = data.VisualLocation;
 
         var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
         int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
 
-        node.ItemInfo = data;
         node.IconId = item.IconId;
         node.Alpha = data.VisualAlpha;
         node.AddColor = data.HighlightOverlayColor;
         node.IsDraggable = !data.IsSlotBlocked;
+        node.IconNode.IconExtras.AntsNode.IsVisible = data.IsRelationshipHighlighted;
         node.Payload = new DragDropPayload
         {
             Type = DragDropType.Item,
@@ -354,52 +380,31 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         };
     }
 
-    private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
+    private void OnNodeDiscard(DragDropNode n)
     {
-        InventoryItem item = data.Item;
-        InventoryMappedLocation visualLocation = data.VisualLocation;
+        if (n is not InventoryDragDropNode node) return;
+        OnDiscard(n, node.ItemInfo);
+    }
 
-        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
-        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
+    private void OnNodePayloadAccepted(DragDropNode n, DragDropPayload acceptedPayload)
+    {
+        if (n is not InventoryDragDropNode node) return;
+        OnPayloadAccepted(n, acceptedPayload, node.ItemInfo);
+    }
 
-        DragDropPayload nodePayload = new DragDropPayload
-        {
-            // Int1 is always the container ID, for Item DragDrop Int2 is only used as a fallback
-            // ReferenceIndex is the absolute index that's actually used
-            Type = DragDropType.Item,
-            Int1 = visualLocation.Container,
-            Int2 = visualLocation.Slot,
-            ReferenceIndex = (short)absoluteIndex
-        };
+    private unsafe void OnNodeRollOver(DragDropNode n)
+    {
+        if (n is not InventoryDragDropNode node) return;
+        BeginHeaderHover();
+        var item = node.ItemInfo.Item;
+        n.ShowInventoryItemTooltip(item.Container, item.Slot);
+    }
 
-        return new InventoryDragDropNode
-        {
-            Size = new Vector2(42, 46),
-            Alpha = data.VisualAlpha,
-            AddColor = data.HighlightOverlayColor,
-            IsDraggable = !data.IsSlotBlocked,
-            IsVisible = true,
-            IconId = item.IconId,
-            AcceptedType = DragDropType.Item,
-            Payload = nodePayload,
-            IsClickable = true,
-            OnDiscard = node => OnDiscard(node, data),
-            OnEnd = _ => OnDragEnd?.Invoke(),
-            OnPayloadAccepted = (node, acceptedPayload) => OnPayloadAccepted(node, acceptedPayload, data),
-            OnRollOver = node =>
-            {
-                BeginHeaderHover();
-                node.ShowInventoryItemTooltip(item.Container, item.Slot);
-            },
-            OnRollOut = node =>
-            {
-                EndHeaderHover();
-
-                ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(node)->Id;
-                AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
-            },
-            ItemInfo = data
-        };
+    private unsafe void OnNodeRollOut(DragDropNode n)
+    {
+        EndHeaderHover();
+        ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(n)->Id;
+        AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
     }
 
     public void RefreshNodeVisuals()
@@ -414,6 +419,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             float newAlpha = info.VisualAlpha;
             Vector3 newColor = info.HighlightOverlayColor;
             bool newDraggable = !info.IsSlotBlocked;
+            bool newAntsVisible = info.IsRelationshipHighlighted;
 
             if (!NearlyEqual(itemNode.Alpha, newAlpha))
                 itemNode.Alpha = newAlpha;
@@ -423,6 +429,9 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             if (itemNode.IsDraggable != newDraggable)
                 itemNode.IsDraggable = newDraggable;
+
+            if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != newAntsVisible)
+                itemNode.IconNode.IconExtras.AntsNode.IsVisible = newAntsVisible;
         }
     }
 
@@ -474,6 +483,32 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         catch (Exception ex)
         {
             Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance");
+        }
+    }
+
+    public void ResetForReuse()
+    {
+        _lastCategoryKey = 0;
+        _lastItemCount = 0;
+        _lastItemsHash = 0;
+        _lastItemsPerLine = 0;
+        _itemsNeedPopulation = false;
+
+        _hoverRefs = 0;
+        _headerSuppressed = false;
+        _headerExpanded = false;
+        _fullHeaderText = string.Empty;
+
+        _fixedWidth = null;
+        _maxWidth = null;
+
+        _categoryNameTextNode.String = string.Empty;
+        _categoryNameTextNode.TextTooltip = string.Empty;
+        _categoryNameTextNode.IsVisible = true;
+
+        using (_itemGridNode.DeferRecalculateLayout())
+        {
+            _itemGridNode.Clear();
         }
     }
 }

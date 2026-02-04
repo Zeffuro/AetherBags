@@ -36,6 +36,7 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
     private int _lastCompactLookahead;
 
     private int[] _orderScratch = Array.Empty<int>();
+    private bool _forceFullReflow;
 
     private T? _hoistedNode;
     private readonly HashSet<T> _pinned = new(ReferenceEqualityComparer<T>.Instance);
@@ -43,6 +44,7 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
     private readonly List<NodeBase> _layoutOrder = new(capacity: 256);
     private readonly List<NodeBase> _pinnedScratch = new(capacity: 64);
     private readonly List<NodeBase> _normalScratch = new(capacity: 256);
+    private readonly HashSet<T> _presentScratch = new(ReferenceEqualityComparer<T>.Instance);
 
     public WrappingGridNode()
     {
@@ -55,6 +57,11 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryGetRowIndex(NodeBase node, out int rowIndex) => _rowIndex.TryGetValue(node, out rowIndex);
+
+    public void InvalidateLayout()
+    {
+        _forceFullReflow = true;
+    }
 
     public void SetHoistedNode(T? node)
     {
@@ -111,9 +118,13 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
             _rowIndex.Clear();
             _requiredHeight = 0f;
             _requiredHeightDirty = false;
+            _forceFullReflow = false;
             RememberLayoutParams();
             return;
         }
+
+        bool forceReflow = _forceFullReflow;
+        _forceFullReflow = false;
 
         bool hasSpecials = hoistedCount != 0 || pinnedCount != 0;
         bool compactEnabled = System.Config.General.CompactPackingEnabled;
@@ -128,7 +139,7 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
                 return;
             }
 
-            if (_rows.Count != 0 && LayoutParamsMatchLast() && NodeSetMatchesExistingLayout(layoutCount))
+            if (!forceReflow && _rows.Count != 0 && LayoutParamsMatchLast() && NodeSetMatchesExistingLayout(layoutCount))
             {
                 RepositionExistingRows();
                 _requiredHeightDirty = true;
@@ -142,7 +153,8 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
             return;
         }
 
-        if (_rows.Count != 0 &&
+        if (!forceReflow &&
+            _rows.Count != 0 &&
             NodeSetMatchesExistingLayout(layoutCount) &&
             TryUpdateLayoutWithoutReflowOrTailReflow(layoutCount, hoistedCount, pinnedCount))
         {
@@ -173,7 +185,8 @@ public sealed class WrappingGridNode<T> : DeferrableLayoutListNode where T : Nod
             return 0;
         }
 
-        var present = new HashSet<T>(ReferenceEqualityComparer<T>.Instance);
+        _presentScratch.Clear();
+        var present = _presentScratch;
 
         bool hoistedPresent = false;
         T? hoisted = _hoistedNode;

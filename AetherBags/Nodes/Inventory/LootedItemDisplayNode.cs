@@ -18,6 +18,8 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
     private readonly TextNode _quantityTextNode;
 
     public Action<LootedItemDisplayNode>? OnDismiss { get; set; }
+    public Action<LootedItemDisplayNode>? OnRollOver { get; set; }
+    public Action<LootedItemDisplayNode>? OnRollOut { get; set; }
 
     public LootedItemDisplayNode()
     {
@@ -28,8 +30,12 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
             Position = new Vector2(0, 0),
             Size = new Vector2(42, 46),
         };
-        _iconNode.AddEvent(AtkEventType.MouseClick, OnMouseClick);
+        _iconNode.CollisionNode.NodeFlags = 0;
         _iconNode.AttachNode(this);
+
+        CollisionNode.AddEvent(AtkEventType.MouseClick, OnMouseClick);
+        CollisionNode.AddEvent(AtkEventType.MouseOver, OnMouseOver);
+        CollisionNode.AddEvent(AtkEventType.MouseOut, OnMouseOut);
 
         _quantityTextNode = new TextNode
         {
@@ -79,5 +85,22 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
     {
         if (!atkEventData->IsLeftClick) return;
         OnDismiss?.Invoke(this);
+    }
+
+    private void OnMouseOver(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
+    {
+        OnRollOver?.Invoke(this);
+    }
+
+    private void OnMouseOut(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
+    {
+        OnRollOut?.Invoke(this);
+    }
+
+    public void ResetForReuse()
+    {
+        LootedItem = null;
+        _iconNode.IsVisible = false;
+        _quantityTextNode.String = string.Empty;
     }
 }

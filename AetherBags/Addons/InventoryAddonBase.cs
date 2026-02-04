@@ -29,6 +29,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected readonly HashSet<InventoryCategoryNode> HoverSubscribed = new();
 
     protected DragDropNode BackgroundDropTarget = null!;
+    protected ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>> ScrollableCategories = null!;
     protected WrappingGridNode<InventoryCategoryNodeBase> CategoriesNode = null!;
     protected TextInputWithButtonNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;
@@ -36,6 +37,18 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected CircleButtonNode SettingsButtonNode = null!;
 
     internal ContextMenu ContextMenu = null!;
+
+    protected readonly SharedNodePool<InventoryDragDropNode> SharedItemNodePool = new(
+        maxSize: 256,
+        factory: null,
+        resetAction: node => node.ResetForReuse());
+
+    protected readonly SharedNodePool<InventoryCategoryNode> SharedCategoryNodePool = new(
+        maxSize: 32,
+        factory: null,
+        resetAction: node => node.ResetForReuse());
+
+    protected readonly VirtualizationState CategoryVirtualization = new() { BufferSize = 200f };
 
     protected virtual float MinWindowWidth => 600;
     protected virtual float MaxWindowWidth => 800;
@@ -47,14 +60,16 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected const float ItemPadding = 5;
     protected const float FooterHeight = 28f;
     protected const float FooterTopSpacing = 4f;
-    protected const float SettingsButtonOffset = 48f;
+    protected const float SettingsButtonOffset = 62f;
+    protected const float ScrollBarWidth = 16f;
+    protected const float ContentHeightOffset = 4f;
 
     protected bool RefreshQueued;
     protected bool RefreshAutosizeQueued;
     protected bool IsSetupComplete;
     private bool _deferredPopulationInProgress;
     private bool _initialPopulationComplete;
-    private const int ItemsPerFrame = 70;
+    private const int ItemsPerFrame = 50;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -64,6 +79,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     private readonly HashSet<uint> _searchMatchScratch = new();
     private bool _isRefreshing;
+    private string _lastSearchText = string.Empty;
 
     private int _requestedUpdateCount;
     private int _refreshFromLifecycleCount;
@@ -74,6 +90,13 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     public string GetSearchText() => SearchInputNode?.SearchString.ExtractText() ?? string.Empty;
 
     public InventoryStats GetStats() => InventoryState.GetStats();
+
+    public IReadOnlyList<CategorizedInventory>? GetVisibleCategories()
+    {
+        if (!IsSetupComplete) return null;
+        string filter = GetSearchText();
+        return InventoryState.GetCategories(filter);
+    }
 
     public virtual void SetSearchText(string searchText)
     {
@@ -111,6 +134,12 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         var config = System.Config.General;
         string searchText = SearchInputNode.SearchString.ExtractText();
         bool isSearching = !string.IsNullOrWhiteSpace(searchText);
+
+        if (searchText != _lastSearchText)
+        {
+            _lastSearchText = searchText;
+            System.AetherBagsAPI?.API.RaiseSearchChanged(searchText);
+        }
 
         if (config.SearchMode == SearchMode.Highlight && isSearching)
         {
@@ -168,7 +197,9 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
                 node.SetCategoryData(data, Math.Min(data.Items.Count, maxItemsPerLine), deferItemCreation: deferItems);
                 if (!deferItems) node.RefreshNodeVisuals();
             },
-            createNodeMethod: _ => CreateCategoryNode());
+            createNodeMethod: _ => CreateCategoryNode(),
+            resetNodeForReuse: ResetCategoryNodeForReuse,
+            externalPool: SharedCategoryNodePool);
 
         if (HasPinning)
         {
@@ -177,6 +208,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }
 
         WireHoverHandlers();
+
+        CategoriesNode.InvalidateLayout();
 
         if (autosize)
             AutoSizeWindow();
@@ -194,6 +227,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         {
             _initialPopulationComplete = true;
         }
+
+        System.AetherBagsAPI?.API.RaiseCategoriesRefreshed();
     }
 
     private void StartDeferredItemPopulation()
@@ -210,13 +245,43 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             return;
         }
 
+        UpdateCategoryVisibility();
+
         int itemsPopulated = 0;
         using (CategoriesNode.DeferRecalculateLayout())
         {
-            foreach (var node in CategoriesNode.Nodes)
+            var nodes = CategoriesNode.Nodes;
+            for (int i = 0; i < nodes.Count; i++)
             {
-                if (node is InventoryCategoryNode categoryNode && categoryNode.NeedsItemPopulation)
+                if (nodes[i] is not InventoryCategoryNode categoryNode || !categoryNode.NeedsItemPopulation)
+                    continue;
+
+                if (!CategoryVirtualization.IsVisible(i))
+                    continue;
+
+                int categoryItemCount = categoryNode.CategorizedInventory.Items.Count;
+
+                if (itemsPopulated > 0 && itemsPopulated + categoryItemCount > ItemsPerFrame)
+                    break;
+
+                categoryNode.PopulateItems();
+                categoryNode.RefreshNodeVisuals();
+                itemsPopulated += categoryItemCount;
+
+                if (itemsPopulated >= ItemsPerFrame)
+                    break;
+            }
+
+            if (itemsPopulated < ItemsPerFrame)
+            {
+                for (int i = 0; i < nodes.Count; i++)
                 {
+                    if (nodes[i] is not InventoryCategoryNode categoryNode || !categoryNode.NeedsItemPopulation)
+                        continue;
+
+                    if (CategoryVirtualization.IsVisible(i))
+                        continue;
+
                     int categoryItemCount = categoryNode.CategorizedInventory.Items.Count;
 
                     if (itemsPopulated > 0 && itemsPopulated + categoryItemCount > ItemsPerFrame)
@@ -266,11 +331,38 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         var header = addon->WindowHeaderCollisionNode;
         float headerW = header->Width;
 
-        float settingsX = headerW - 62f;
         float itemY = header->Y + (header->Height - 28f) * 0.5f;
 
-        float searchWidth = headerW * 0.45f;
-        float searchX = (headerW - searchWidth) * 0.5f;
+        // Reserve space for close button (~50px) and settings button (~48px + gap)
+        const float closeButtonReserve = 50f;
+        const float settingsButtonWidth = 28f;
+        const float minGap = 16f;
+        const float minSearchWidth = 150f;
+        const float maxSearchWidth = 350f;
+
+        // Calculate max available width for search bar
+        // Layout from right: [closeButton 50px] [settings 28px] [gap 16px] [searchBar] [gap 16px] [leftContent]
+        float rightReserve = closeButtonReserve + settingsButtonWidth + minGap;
+        float leftReserve = 220f; // Space for title (e.g. "Chocobo Saddlebag" is ~200px)
+        float availableForSearch = headerW - rightReserve - leftReserve;
+
+        // Search bar width: prefer 45% of header, but clamp to available space and min/max
+        float desiredSearchWidth = headerW * 0.45f;
+        float searchWidth = Math.Clamp(desiredSearchWidth, minSearchWidth, Math.Min(maxSearchWidth, availableForSearch));
+
+        // Center the search bar, but ensure it doesn't extend past the safe right boundary
+        float maxSearchRight = headerW - rightReserve;
+        float centeredSearchX = (headerW - searchWidth) * 0.5f;
+        float searchRight = centeredSearchX + searchWidth;
+
+        // If centered position would overlap with right elements, shift left
+        float searchX = searchRight > maxSearchRight
+            ? maxSearchRight - searchWidth
+            : centeredSearchX;
+
+        // Ensure search bar doesn't go past left reserve
+        if (searchX < leftReserve)
+            searchX = leftReserve;
 
         return new HeaderLayout
         {
@@ -303,12 +395,25 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected virtual InventoryCategoryNode CreateCategoryNode()
     {
-        return new InventoryCategoryNode
+        var node = SharedCategoryNodePool.TryRent();
+        if (node == null)
         {
-            Size = ContentSize with { Y = 120 },
-            OnRefreshRequested = ManualRefresh,
-            OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true),
-        };
+            node = new InventoryCategoryNode
+            {
+                Size = ContentSize with { Y = 120 },
+                SharedItemPool = SharedItemNodePool,
+            };
+        }
+
+        node.OnRefreshRequested = ManualRefresh;
+        node.OnDragEnd = () => InventoryOrchestrator.RefreshAll(updateMaps: true);
+        node.SharedItemPool = SharedItemNodePool;
+        return node;
+    }
+
+    private static void ResetCategoryNodeForReuse(InventoryCategoryNode node)
+    {
+        node.ResetForReuse();
     }
 
     private void OnBackgroundPayloadAccepted(DragDropNode node, DragDropPayload acceptedPayload)
@@ -385,17 +490,20 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         float gridH = contentSize.Y - (HasFooter ? FooterHeight + FooterTopSpacing : 0);
         if (gridH < 0) gridH = 0;
 
-        CategoriesNode.Position = contentPos;
-        CategoriesNode.Size = new Vector2(contentSize.X, gridH);
+        ScrollableCategories.Position = contentPos;
+        ScrollableCategories.Size = new Vector2(contentSize.X, gridH);
 
-        UpdateCategoryMaxWidths(contentSize.X);
+        float categoriesWidth = contentSize.X - ScrollBarWidth;
+        CategoriesNode.Width = categoriesWidth;
+
+        UpdateCategoryMaxWidths(categoriesWidth);
     }
 
     private void UpdateCategoryMaxWidths(float maxWidth)
     {
         foreach (var node in CategoriesNode.Nodes)
         {
-            if (node is InventoryCategoryNode categoryNode && categoryNode.MaxWidth != maxWidth)
+            if (node is InventoryCategoryNodeBase categoryNode && categoryNode.MaxWidth != maxWidth)
             {
                 categoryNode.MaxWidth = maxWidth;
                 categoryNode.RecalculateSize();
@@ -412,7 +520,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         for (int i = 0; i < nodes.Count; i++)
         {
-            if (nodes[i] is not InventoryCategoryNode cat)
+            if (nodes[i] is not InventoryCategoryNodeBase cat)
                 continue;
 
             childCount++;
@@ -423,36 +531,68 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         if (childCount == 0)
         {
             ResizeWindow(MinWindowWidth, MinWindowHeight, recalcLayout: true);
+            UpdateScrollParameters();
             return;
         }
 
-        float requiredWidth = maxChildWidth + (ContentStartPosition.X * 2);
+        float footerSpace = HasFooter || HasSlotCounter ? FooterHeight + FooterTopSpacing : 0;
+
+        float requiredWidth = maxChildWidth + ScrollBarWidth + (ContentStartPosition.X * 2);
         float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
 
         if (SettingsButtonNode != null)
         {
-            SettingsButtonNode.X = finalWidth - 62f;
+            SettingsButtonNode.X = finalWidth - SettingsButtonOffset;
         }
 
         float contentWidth = finalWidth - (ContentStartPosition.X * 2);
+        float categoriesWidth = contentWidth - ScrollBarWidth;
 
-        float footerSpace = HasFooter || HasSlotCounter ?  FooterHeight + FooterTopSpacing : 0;
-        float gridBudget = Math.Max(0f, MaxWindowHeight - footerSpace);
-
-        CategoriesNode.Position = ContentStartPosition;
-        CategoriesNode.Size = new Vector2(contentWidth, gridBudget);
-
-        UpdateCategoryMaxWidths(contentWidth);
-
+        CategoriesNode.Width = categoriesWidth;
+        UpdateCategoryMaxWidths(categoriesWidth);
         CategoriesNode.RecalculateLayout();
 
         float requiredGridHeight = CategoriesNode.GetRequiredHeight();
-        float requiredContentHeight = requiredGridHeight + footerSpace;
 
-        float requiredWindowHeight = requiredContentHeight + ContentStartPosition.Y + ContentStartPosition.X;
+        float requiredContentHeight = requiredGridHeight + footerSpace;
+        float requiredWindowHeight = requiredContentHeight + ContentStartPosition.Y + ContentStartPosition.X + ContentHeightOffset;
         float finalHeight = Math.Clamp(requiredWindowHeight, MinWindowHeight, MaxWindowHeight);
 
         ResizeWindow(finalWidth, finalHeight, recalcLayout: false);
+
+        UpdateScrollParameters();
+    }
+
+    protected void UpdateScrollParameters()
+    {
+        if (ScrollableCategories == null) return;
+
+        float requiredHeight = CategoriesNode.GetRequiredHeight();
+        ScrollableCategories.ContentHeight = requiredHeight;
+
+        CategoryVirtualization.ViewportHeight = ScrollableCategories.Size.Y;
+        UpdateCategoryVisibility();
+    }
+
+    private void OnScrollValueChanged(int scrollPosition)
+    {
+        CategoryVirtualization.ScrollPosition = scrollPosition;
+    }
+
+    private void UpdateCategoryVisibility()
+    {
+        var nodes = CategoriesNode.Nodes;
+        CategoryVirtualization.SetItemCount(nodes.Count);
+
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i] is InventoryCategoryNodeBase cat)
+            {
+                CategoryVirtualization.SetItemLayout(i, cat.Y, cat.Height);
+            }
+        }
+
+        CategoryVirtualization.UpdateVisibility();
     }
 
     protected void ResizeWindow(float width, float height, bool recalcLayout)
@@ -464,10 +604,32 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             BackgroundDropTarget.Size = ContentSize;
         }
 
+        UpdateHeaderLayout();
         LayoutContent();
 
         if (recalcLayout)
             CategoriesNode.RecalculateLayout();
+
+        UpdateScrollParameters();
+    }
+
+    protected virtual void UpdateHeaderLayout()
+    {
+        AtkUnitBase* addon = this;
+        if (addon == null) return;
+
+        var header = CalculateHeaderLayout(addon);
+
+        if (SearchInputNode != null)
+        {
+            SearchInputNode.Position = header.SearchPosition;
+            SearchInputNode.Size = header.SearchSize;
+        }
+
+        if (SettingsButtonNode != null)
+        {
+            SettingsButtonNode.Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY);
+        }
     }
 
     protected void ResizeWindow(float width, float height)
@@ -507,6 +669,13 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     {
         ContextMenu = new ContextMenu();
 
+        System.AetherBagsAPI?.API.RaiseInventoryOpened();
+
+        if (ScrollableCategories != null)
+        {
+            ScrollableCategories.ScrollBarNode.OnValueChanged = OnScrollValueChanged;
+        }
+
         base.OnSetup(addon);
     }
 
@@ -526,12 +695,18 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
+        System.AetherBagsAPI?.API.RaiseInventoryClosed();
+
         ContextMenu?.Dispose();
         HoverSubscribed.Clear();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
         _deferredPopulationInProgress = false;
         _initialPopulationComplete = false;
+
+        SharedItemNodePool.Clear();
+        SharedCategoryNodePool.Clear();
+        CategoryVirtualization.ClearLayout();
 
         base.OnFinalize(addon);
     }

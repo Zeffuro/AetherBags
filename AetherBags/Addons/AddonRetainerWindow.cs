@@ -27,7 +27,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private readonly Vector3 _tintColor = new(8f / 255f, -8f / 255f, -4f / 255f);
 
-    protected override float MinWindowWidth => 400;
+    protected override float MinWindowWidth => 500;
     protected override float MaxWindowWidth => 700;
 
     private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
@@ -38,16 +38,20 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         WindowNode?.AddColor = _tintColor;
 
-        CategoriesNode = new WrappingGridNode<InventoryCategoryNodeBase>
+        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            HorizontalSpacing = CategorySpacing,
-            VerticalSpacing = CategorySpacing,
-            TopPadding = 4.0f,
-            BottomPadding = 4.0f,
+            ContentHeight = 0f,
+            AutoHideScrollBar = true,
         };
-        CategoriesNode.AttachNode(this);
+        ScrollableCategories.AttachNode(this);
+
+        CategoriesNode = ScrollableCategories.ContentNode;
+        CategoriesNode.HorizontalSpacing = CategorySpacing;
+        CategoriesNode.VerticalSpacing = CategorySpacing;
+        CategoriesNode.TopPadding = 4.0f;
+        CategoriesNode.BottomPadding = 4.0f;
 
         var header = CalculateHeaderLayout(addon);
 
@@ -90,7 +94,6 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         };
         _entrustDuplicatesButton.AttachNode(this);
 
-        // Slot counter
         _slotCounterNode = new TextNode
         {
             Position = new Vector2(Size.X - 10, 0),

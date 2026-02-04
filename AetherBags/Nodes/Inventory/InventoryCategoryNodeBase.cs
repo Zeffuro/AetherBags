@@ -17,4 +17,8 @@ public abstract class InventoryCategoryNodeBase : SimpleComponentNode
     /// Whether this category should be pinned in the layout.
     /// </summary>
     public virtual bool IsPinnedInConfig => false;
+
+    public abstract float? MaxWidth { get; set; }
+
+    public abstract void RecalculateSize();
 }

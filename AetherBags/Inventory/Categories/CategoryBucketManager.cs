@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
 using KamiToolKit.Classes;
@@ -61,32 +63,24 @@ public static class CategoryBucketManager
     {
         sortedScratch.Clear();
         sortedScratch.AddRange(userCategories);
-        sortedScratch.Sort((left, right) =>
-        {
-            int priority = left.Priority.CompareTo(right.Priority);
-            if (priority != 0) return priority;
+        sortedScratch.Sort(UserCategoryComparer.Instance);
 
-            int order = left.Order.CompareTo(right.Order);
-            if (order != 0) return order;
-
-            return string.Compare(left.Id, right.Id, StringComparison.OrdinalIgnoreCase);
-        });
+        var activeBuckets = new (uint key, CategoryBucket bucket, UserCategoryDefinition def)[sortedScratch.Count];
+        int activeCount = 0;
 
         for (int i = 0; i < sortedScratch.Count; i++)
         {
             UserCategoryDefinition category = sortedScratch[i];
 
-            if (!category.Enabled)
-                continue;
-
-            if (UserCategoryMatcher.IsCatchAll(category))
+            if (!category.Enabled || UserCategoryMatcher.IsCatchAll(category))
                 continue;
 
             uint bucketKey = MakeUserCategoryKey(category.Order);
+            ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, bucketKey, out bool exists);
 
-            if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket? bucket))
+            if (!exists)
             {
-                bucket = new CategoryBucket
+                bucketRef = new CategoryBucket
                 {
                     Key = bucketKey,
                     Category = new CategoryInfo
@@ -100,34 +94,63 @@ public static class CategoryBucketManager
                     FilteredItems = new List<ItemInfo>(capacity: 16),
                     Used = true,
                 };
-                bucketsByKey.Add(bucketKey, bucket);
             }
             else
             {
-                bucket.Used = true;
-                bucket.Category.Name = category.Name;
-                bucket.Category.Description = category.Description;
-                bucket.Category.Color = category.Color;
-                bucket.Category.IsPinned = category.Pinned;
+                bucketRef!.Used = true;
+                bucketRef.Category.Name = category.Name;
+                bucketRef.Category.Description = category.Description;
+                bucketRef.Category.Color = category.Color;
+                bucketRef.Category.IsPinned = category.Pinned;
             }
 
-            foreach (var itemKvp in itemInfoByKey)
+            activeBuckets[activeCount++] = (bucketKey, bucketRef!, category);
+        }
+
+        foreach (var itemKvp in itemInfoByKey)
+        {
+            ulong itemKey = itemKvp.Key;
+            if (claimedKeys.Contains(itemKey))
+                continue;
+
+            ItemInfo item = itemKvp.Value;
+
+            for (int i = 0; i < activeCount; i++)
             {
-                ulong itemKey = itemKvp.Key;
-                ItemInfo item = itemKvp.Value;
-
-                if (claimedKeys.Contains(itemKey))
-                    continue;
-
-                if (UserCategoryMatcher.Matches(item, category))
+                ref var entry = ref activeBuckets[i];
+                if (UserCategoryMatcher.Matches(item, entry.def))
                 {
-                    bucket.Items.Add(item);
+                    entry.bucket.Items.Add(item);
                     claimedKeys.Add(itemKey);
+                    break;
                 }
             }
+        }
 
-            if (bucket.Items.Count == 0)
-                bucket.Used = false;
+        for (int i = 0; i < activeCount; i++)
+        {
+            ref var entry = ref activeBuckets[i];
+            if (entry.bucket.Items.Count == 0)
+                entry.bucket.Used = false;
+        }
+    }
+
+    private sealed class UserCategoryComparer : IComparer<UserCategoryDefinition>
+    {
+        public static readonly UserCategoryComparer Instance = new();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare(UserCategoryDefinition? left, UserCategoryDefinition? right)
+        {
+            if (left is null || right is null) return 0;
+
+            int priority = left.Priority.CompareTo(right.Priority);
+            if (priority != 0) return priority;
+
+            int order = left.Order.CompareTo(right.Order);
+            if (order != 0) return order;
+
+            return string.Compare(left.Id, right.Id, StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -147,9 +170,11 @@ public static class CategoryBucketManager
 
             uint categoryKey = info.UiCategory.RowId;
 
-            if (!bucketsByKey.TryGetValue(categoryKey, out CategoryBucket? bucket))
+            ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, categoryKey, out bool exists);
+
+            if (!exists)
             {
-                bucket = new CategoryBucket
+                bucketRef = new CategoryBucket
                 {
                     Key = categoryKey,
                     Category = GetCategoryInfoCached(categoryKey, info),
@@ -157,14 +182,13 @@ public static class CategoryBucketManager
                     FilteredItems = new List<ItemInfo>(capacity: 16),
                     Used = true,
                 };
-                bucketsByKey.Add(categoryKey, bucket);
             }
             else
             {
-                bucket.Used = true;
+                bucketRef!.Used = true;
             }
 
-            bucket.Items.Add(info);
+            bucketRef!.Items.Add(info);
         }
     }
 
@@ -178,61 +202,76 @@ public static class CategoryBucketManager
         if (!System.IPC.AllaganTools.IsReady) return;
 
         var filters = System.IPC.AllaganTools.CachedSearchFilters;
-        var filterItems = System.IPC.AllaganTools.CachedFilterItems;
+        var itemToFilters = System.IPC.AllaganTools.ItemToFilters;
 
+        if (filters.Count == 0 || itemToFilters.Count == 0) return;
+
+        var filterKeyToIndex = new Dictionary<string, int>(filters.Count);
         int index = 0;
+        foreach (var filterKey in filters.Keys)
+        {
+            filterKeyToIndex[filterKey] = index++;
+        }
+
+        index = 0;
         foreach (var (filterKey, filterName) in filters)
         {
-            if (!filterItems. TryGetValue(filterKey, out var itemIds))
-            {
-                index++;
-                continue;
-            }
-
             uint bucketKey = MakeAllaganFilterKey(index);
+            ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, bucketKey, out bool exists);
 
-            if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket?  bucket))
+            if (!exists)
             {
-                bucket = new CategoryBucket
+                bucketRef = new CategoryBucket
                 {
                     Key = bucketKey,
                     Category = new CategoryInfo
                     {
                         Name = $"[AT] {filterName}",
-                        Description = $"Allagan Tools filter:  {filterName}",
+                        Description = $"Allagan Tools filter: {filterName}",
                         Color = ColorHelper.GetColor(32),
                     },
                     Items = new List<ItemInfo>(capacity: 16),
                     FilteredItems = new List<ItemInfo>(capacity: 16),
                     Used = true,
                 };
-                bucketsByKey. Add(bucketKey, bucket);
             }
             else
             {
-                bucket.Used = true;
-                bucket.Category.Name = $"[AT] {filterName}";
+                bucketRef!.Used = true;
+                bucketRef.Category.Name = $"[AT] {filterName}";
             }
 
-            foreach (var itemKvp in itemInfoByKey)
+            index++;
+        }
+
+        foreach (var itemKvp in itemInfoByKey)
+        {
+            ulong itemKey = itemKvp.Key;
+            if (claimedKeys.Contains(itemKey))
+                continue;
+
+            ItemInfo item = itemKvp.Value;
+
+            if (!itemToFilters.TryGetValue(item.Item.ItemId, out var filterKeys))
+                continue;
+
+            if (filterKeys.Count > 0 && filterKeyToIndex.TryGetValue(filterKeys[0], out int filterIndex))
             {
-                ulong itemKey = itemKvp.Key;
-                ItemInfo item = itemKvp.Value;
-
-                if (claimedKeys.Contains(itemKey))
-                    continue;
-
-                if (itemIds.ContainsKey(item.Item.ItemId))
+                uint bucketKey = MakeAllaganFilterKey(filterIndex);
+                if (bucketsByKey.TryGetValue(bucketKey, out var bucket))
                 {
                     bucket.Items.Add(item);
                     claimedKeys.Add(itemKey);
                 }
             }
+        }
 
-            if (bucket.Items.Count == 0)
+        index = 0;
+        foreach (var _ in filters)
+        {
+            uint bucketKey = MakeAllaganFilterKey(index++);
+            if (bucketsByKey.TryGetValue(bucketKey, out var bucket) && bucket.Items.Count == 0)
                 bucket.Used = false;
-
-            index++;
         }
     }
 
@@ -250,9 +289,11 @@ public static class CategoryBucketManager
 
         uint bucketKey = MakeBisBuddyKey();
 
-        if (!bucketsByKey.TryGetValue(bucketKey, out CategoryBucket? bucket))
+        ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, bucketKey, out bool exists);
+
+        if (!exists)
         {
-            bucket = new CategoryBucket
+            bucketRef = new CategoryBucket
             {
                 Key = bucketKey,
                 Category = new CategoryInfo
@@ -265,20 +306,21 @@ public static class CategoryBucketManager
                 FilteredItems = new List<ItemInfo>(capacity: 16),
                 Used = true,
             };
-            bucketsByKey.Add(bucketKey, bucket);
         }
         else
         {
-            bucket.Used = true;
+            bucketRef!.Used = true;
         }
+
+        var bucket = bucketRef!;
 
         foreach (var itemKvp in itemInfoByKey)
         {
             ulong itemKey = itemKvp.Key;
-            ItemInfo item = itemKvp.Value;
-
             if (claimedKeys.Contains(itemKey))
                 continue;
+
+            ItemInfo item = itemKvp.Value;
 
             if (bisItems.ContainsKey(item.Item.ItemId))
             {

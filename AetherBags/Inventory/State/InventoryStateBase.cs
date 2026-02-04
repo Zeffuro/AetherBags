@@ -5,6 +5,7 @@ using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
+using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AetherBags.Inventory.State;
@@ -87,38 +88,57 @@ public abstract class InventoryStateBase
             );
         }
 
-        if (allaganCategoriesEnabled)
+        bool useUnified = config.General.UseUnifiedExternalCategories;
+
+        if (useUnified)
         {
-            if (config.Categories.AllaganToolsFilterMode == PluginFilterMode.Categorize)
+            ExternalCategoryManager.BucketItems(ItemInfoByKey, BucketsByKey, ClaimedKeys);
+
+            if (allaganCategoriesEnabled && config.Categories.AllaganToolsFilterMode == PluginFilterMode.Highlight)
+                UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
+            else
+                HighlightState.ClearFilter(HighlightSource.AllaganTools);
+
+            if (bisCategoriesEnabled && config.Categories.BisBuddyMode == PluginFilterMode.Highlight)
+                UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
+            else
+                HighlightState.ClearFilter(HighlightSource.BiSBuddy);
+        }
+        else
+        {
+            if (allaganCategoriesEnabled)
             {
-                CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                if (config.Categories.AllaganToolsFilterMode == PluginFilterMode.Categorize)
+                {
+                    CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                    HighlightState.ClearFilter(HighlightSource.AllaganTools);
+                }
+                else
+                {
+                    UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
+                }
+            }
+            else
+            {
                 HighlightState.ClearFilter(HighlightSource.AllaganTools);
             }
+
+            if (bisCategoriesEnabled)
+            {
+                if (config.Categories.BisBuddyMode == PluginFilterMode.Categorize)
+                {
+                    CategoryBucketManager.BucketByBisBuddyItems(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
+                    HighlightState.ClearFilter(HighlightSource.BiSBuddy);
+                }
+                else
+                {
+                    UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
+                }
+            }
             else
             {
-                UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
-            }
-        }
-        else
-        {
-            HighlightState.ClearFilter(HighlightSource.AllaganTools);
-        }
-
-        if (bisCategoriesEnabled)
-        {
-            if (config.Categories.BisBuddyMode == PluginFilterMode.Categorize)
-            {
-                CategoryBucketManager.BucketByBisBuddyItems(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
                 HighlightState.ClearFilter(HighlightSource.BiSBuddy);
             }
-            else
-            {
-                UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
-            }
-        }
-        else
-        {
-            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
         }
 
         if (gameCategoriesEnabled)
@@ -203,6 +223,9 @@ public abstract class InventoryStateBase
     }
 
     public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(uint[] currencyIds)
+        => CurrencyState.GetCurrencyInfoList(currencyIds);
+
+    public static IReadOnlyList<CurrencyInfo> GetCurrencyInfoList(List<uint> currencyIds)
         => CurrencyState.GetCurrencyInfoList(currencyIds);
 
     public static void InvalidateCurrencyCaches()
