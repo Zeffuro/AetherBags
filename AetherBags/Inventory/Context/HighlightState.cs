@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace AetherBags.Inventory.Context;
 
@@ -8,6 +9,7 @@ public enum HighlightSource
     Search,
     AllaganTools,
     BiSBuddy,
+    Relationship,
 }
 
 public record HighlightEntry(uint ItemId, Vector3 Color);
@@ -40,6 +42,7 @@ public static class HighlightState
         _version++;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsInActiveFilters(uint itemId)
     {
         if (Filters.Count == 0) return true;
@@ -48,6 +51,7 @@ public static class HighlightState
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static HighlightEntry? GetHighlightEntry(uint itemId)
     {
         EnsureCacheValid();
@@ -88,6 +92,7 @@ public static class HighlightState
         _version++;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector3? GetLabelColor(uint itemId)
         => GetHighlightEntry(itemId)?.Color;
 
@@ -167,5 +172,17 @@ public static class HighlightState
         Labels.Remove(source);
         PerItemLabels.Remove(source);
         InvalidateCache();
+    }
+
+    public static void SetRelationshipHighlight(HashSet<uint>? relatedItemIds, Vector3? color)
+    {
+        if (relatedItemIds == null || relatedItemIds.Count == 0)
+        {
+            ClearLabel(HighlightSource.Relationship);
+            return;
+        }
+
+        var highlightColor = color ?? new Vector3(0.3f, 0.6f, 0.9f);
+        SetLabel(HighlightSource.Relationship, relatedItemIds, highlightColor);
     }
 }

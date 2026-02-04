@@ -41,6 +41,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             OnClick = isChecked =>
             {
                 config.CategoriesEnabled = isChecked;
+                System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
         };
@@ -92,8 +93,9 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             {
                 config.BisBuddyMode = selected;
                 if (selected == PluginFilterMode.Categorize)
-                    HighlightState.ClearFilter(HighlightSource.AllaganTools);
+                    HighlightState.ClearFilter(HighlightSource.BiSBuddy);
 
+                System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
         };
@@ -110,6 +112,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 config.BisBuddyEnabled = isChecked;
                 if (bbModeDropdown != null) bbModeDropdown.IsEnabled = isChecked;
                 if (isChecked) System.IPC.BisBuddy?.RefreshItems();
+                System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
         };
@@ -134,6 +137,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                     HighlightState.ClearFilter(HighlightSource.AllaganTools);
                 }
 
+                System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
         };
@@ -153,6 +157,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 config.AllaganToolsCategoriesEnabled = isChecked;
                 if (atModeDropdown != null) atModeDropdown.IsEnabled = isChecked;
                 if (isChecked) System.IPC?.AllaganTools?.RefreshFilters();
+                System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
         };

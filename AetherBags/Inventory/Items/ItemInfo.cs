@@ -1,8 +1,10 @@
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using AetherBags.Helpers;
 using AetherBags.Inventory.Context;
+using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
@@ -30,6 +32,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     private int _cachedHighlightVersion = -1;
     private float _cachedVisualAlpha;
     private Vector3 _cachedHighlightColor;
+    private bool _cachedIsRelationshipHighlighted;
 
     private ref readonly Item Row
     {
@@ -117,6 +120,15 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         }
     }
 
+    public bool IsRelationshipHighlighted
+    {
+        get
+        {
+            EnsureVisualStateCached();
+            return _cachedIsRelationshipHighlighted;
+        }
+    }
+
     private void EnsureVisualStateCached()
     {
         int currentVersion = HighlightState.Version;
@@ -127,6 +139,10 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         _cachedHighlightColor = System.Config.Categories.BisBuddyEnabled
             ? HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero
             : Vector3.Zero;
+
+        var entry = HighlightState.GetHighlightEntry(Item.ItemId);
+        _cachedIsRelationshipHighlighted = entry != null;
+
         _cachedHighlightVersion = currentVersion;
     }
 
@@ -160,6 +176,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public bool IsMainInventory => InventoryPage >= 0;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsRegexMatch(string searchTerms)
     {
         if (string.IsNullOrEmpty(searchTerms))
@@ -171,22 +188,23 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
         if (re.IsMatch(Name)) return true;
 
-        if (re.IsMatch(Description)) return true;
-
         if (re.IsMatch(LevelString)) return true;
         if (re.IsMatch(ItemLevelString)) return true;
+
+        if (ExternalCategoryManager.MatchesSearchTag(Item.ItemId, searchTerms)) return true;
+
+        if (re.IsMatch(Description)) return true;
 
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsRegexMatch(Regex re)
     {
         if (re.IsMatch(Name)) return true;
-        if (re.IsMatch(Description)) return true;
-
         if (re.IsMatch(LevelString)) return true;
         if (re.IsMatch(ItemLevelString)) return true;
-
+        if (re.IsMatch(Description)) return true;
         return false;
     }
 

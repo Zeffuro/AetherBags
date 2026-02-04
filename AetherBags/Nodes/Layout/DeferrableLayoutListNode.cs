@@ -15,20 +15,75 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
     private int _deferRecalcDepth;
     private bool _pendingRecalc;
 
-    /// <summary>
-    /// Hide and detach a node from the UI tree without disposing it.
-    /// Disposal happens later when KamiToolKit cleans up detached nodes.
-    /// </summary>
-    protected static void SafeDetachNode(NodeBase node)
+    private readonly Dictionary<Type, Stack<NodeBase>> _nodePoolByType = new();
+    private const int MaxPoolSizePerType = 64;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private TU? TryRentFromPool<TU>(SharedNodePool<TU>? externalPool) where TU : NodeBase
+    {
+        if (externalPool != null)
+        {
+            return externalPool.TryRent();
+        }
+
+        if (_nodePoolByType.TryGetValue(typeof(TU), out var pool) && pool.Count > 0)
+        {
+            var node = (TU)pool.Pop();
+            node.IsVisible = true;
+            return node;
+        }
+        return null;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool TryReturnToPool<TU>(TU node, SharedNodePool<TU>? externalPool, Action<TU>? resetAction) where TU : NodeBase
+    {
+        if (externalPool != null)
+        {
+            resetAction?.Invoke(node);
+            return externalPool.TryReturn(node);
+        }
+
+        var type = typeof(TU);
+        if (!_nodePoolByType.TryGetValue(type, out var pool))
+        {
+            pool = new Stack<NodeBase>(16);
+            _nodePoolByType[type] = pool;
+        }
+
+        if (pool.Count >= MaxPoolSizePerType)
+            return false;
+
+        resetAction?.Invoke(node);
+        node.IsVisible = false;
+        node.DetachNode();
+        pool.Push(node);
+        return true;
+    }
+
+    private void DisposePool()
+    {
+        foreach (var pool in _nodePoolByType.Values)
+        {
+            while (pool.Count > 0)
+            {
+                var node = pool.Pop();
+                SafeDisposeNode(node);
+            }
+        }
+        _nodePoolByType.Clear();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected static void SafeDisposeNode(NodeBase node)
     {
         try
         {
-            node.IsVisible = false;
-            node.DetachNode();
+            node.Dispose();
         }
         catch (Exception ex)
         {
-            Services.Logger.Error(ex, $"[SafeDetachNode] Error detaching {node.GetType().Name}");
+            Services.Logger.Error(ex, $"[SafeDisposeNode] Error disposing {node.GetType().Name}");
         }
     }
 
@@ -137,7 +192,7 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         if (!NodeList.Contains(node)) return;
 
         NodeList.Remove(node);
-        SafeDetachNode(node);
+        SafeDisposeNode(node);
 
         RecalculateLayout();
     }
@@ -161,13 +216,16 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
             {
                 var node = NodeList[i];
                 NodeList.RemoveAt(i);
-                SafeDetachNode(node);
+                SafeDisposeNode(node);
             }
         }
         finally
         {
             _suppressRecalculateLayout = false;
         }
+
+        DisposePool();
+
         RecalculateLayout();
     }
 
@@ -248,13 +306,14 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         _dataKeysScratch = set;
     }
 
-
     public bool SyncWithListDataByKey<T, TU, TKey>(
         IReadOnlyList<T> dataList,
         Func<T, TKey> getKeyFromData,
         Func<TU, TKey> getKeyFromNode,
         Action<TU, T> updateNode,
         CreateNewNode<T, TU> createNodeMethod,
+        Action<TU>? resetNodeForReuse = null,
+        SharedNodePool<TU>? externalPool = null,
         IEqualityComparer<TKey>? keyComparer = null) where TU : NodeBase where TKey : notnull
     {
         keyComparer ??= EqualityComparer<TKey>.Default;
@@ -295,9 +354,13 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
             {
                 for (int i = 0; i < toRemove.Count; i++)
                 {
-                    var node = toRemove[i];
+                    var node = (TU)toRemove[i];
                     NodeList.Remove(node);
-                    SafeDetachNode(node);
+
+                    if (!TryReturnToPool(node, externalPool, resetNodeForReuse))
+                    {
+                        SafeDisposeNode(node);
+                    }
                 }
             }
             finally
@@ -345,9 +408,20 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
                 }
                 else
                 {
-                    var newNode = createNodeMethod(data);
+                    TU newNode;
+                    var pooledNode = TryRentFromPool(externalPool);
+                    if (pooledNode != null)
+                    {
+                        newNode = pooledNode;
+                        newNode.AttachNode(this);
+                    }
+                    else
+                    {
+                        newNode = createNodeMethod(data);
+                        newNode.AttachNode(this);
+                    }
+
                     NodeList.Add(newNode);
-                    newNode.AttachNode(this);
                     updateNode(newNode, data);
                     desired.Add(newNode);
                     structureChanged = true;
@@ -425,6 +499,15 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         return structureChanged || orderChanged;
     }
 
+    public bool SyncWithListDataByKey<T, TU, TKey>(
+        IReadOnlyList<T> dataList,
+        Func<T, TKey> getKeyFromData,
+        Func<TU, TKey> getKeyFromNode,
+        Action<TU, T> updateNode,
+        CreateNewNode<T, TU> createNodeMethod,
+        IEqualityComparer<TKey>? keyComparer) where TU : NodeBase where TKey : notnull
+        => SyncWithListDataByKey(dataList, getKeyFromData, getKeyFromNode, updateNode, createNodeMethod, null, null, keyComparer);
+
     public bool SyncWithListData<T, TU>(
         IEnumerable<T> dataList,
         GetDataFromNode<T?, TU> getDataFromNode,
@@ -455,7 +538,7 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
                 if (nodeData is null || !dataSet.Contains(nodeData))
                 {
                     NodeList.Remove(tu);
-                    SafeDetachNode(tu);
+                    SafeDisposeNode(tu);
                     anythingChanged = true;
                     continue;
                 }

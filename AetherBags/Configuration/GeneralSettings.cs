@@ -19,6 +19,7 @@ public class GeneralSettings
     public bool HideGameRetainer { get; set; } = false;
     public bool ShowCategoryItemCount { get; set; } = false;
     public bool LinkItemEnabled { get; set; } = false;
+    public bool UseUnifiedExternalCategories { get; set; } = false;
 }
 
 public enum InventoryStackMode : byte

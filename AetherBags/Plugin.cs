@@ -6,6 +6,7 @@ using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using AetherBags.IPC;
+using AetherBags.IPC.AetherBagsAPI;
 using AetherBags.Monitoring;
 using Dalamud.Plugin;
 using KamiToolKit;
@@ -29,6 +30,8 @@ public class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Initialize(pluginInterface);
 
         System.IPC = new IPCService();
+        System.IPC.UpdateUnifiedCategorySupport(System.Config.General.UseUnifiedExternalCategories);
+        ItemContextMenuHandler.Initialize();
         System.LootedItemsTracker = new LootedItemsTracker();
 
         System.AddonInventoryWindow = new AddonInventoryWindow
@@ -62,6 +65,8 @@ public class Plugin : IDalamudPlugin
         Services.PluginInterface.UiBuilder.OpenMainUi += System.AddonInventoryWindow.Toggle;
         Services.PluginInterface.UiBuilder.OpenConfigUi += System.AddonConfigurationWindow.Toggle;
 
+        System.AetherBagsAPI = new AetherBagsIPCProvider();
+
         _commandHandler = new CommandHandler();
 
         Services.ClientState.Login += OnLogin;
@@ -78,10 +83,12 @@ public class Plugin : IDalamudPlugin
     public void Dispose()
     {
         InventoryAddonContextMenu.Close();
+        ItemContextMenuHandler.Dispose();
         _inventoryHooks.Dispose();
         inventoryMonitor.Dispose();
 
         System.LootedItemsTracker.Dispose();
+        System.AetherBagsAPI?.Dispose();
         System.IPC.Dispose();
         HighlightState.ClearAll();
 
@@ -97,6 +104,7 @@ public class Plugin : IDalamudPlugin
     private void OnLogin()
     {
         System.Config = Util.LoadConfigOrDefault();
+        System.IPC.UpdateUnifiedCategorySupport(System.Config.General.UseUnifiedExternalCategories);
         System.LootedItemsTracker.Enable();
 
         System.AddonInventoryWindow.DebugOpen();

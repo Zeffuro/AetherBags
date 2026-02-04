@@ -48,8 +48,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
 
         if (!config.Enabled) return;
 
-        //IReadOnlyList<CurrencyInfo> currencyInfoList = GetCurrencyInfoList([1, 28, 0xFFFF_FFFE, 0xFFFF_FFFD]);
-        IReadOnlyList<CurrencyInfo> currencyInfoList = GetCurrencyInfoList(config.DisplayedCurrencies.ToArray());
+        IReadOnlyList<CurrencyInfo> currencyInfoList = GetCurrencyInfoList(config.DisplayedCurrencies);
         _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
             dataList: currencyInfoList,
             getKeyFromData: currencyInfo => currencyInfo.ItemId,

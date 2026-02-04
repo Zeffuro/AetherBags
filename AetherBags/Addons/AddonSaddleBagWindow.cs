@@ -22,7 +22,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     private readonly Vector3 _tintColor = new (-16f / 255f, -4f / 255f, 8f / 255f);
 
-    protected override float MinWindowWidth => 400;
+    protected override float MinWindowWidth => 500;
     protected override float MaxWindowWidth => 600;
 
     protected override void OnSetup(AtkUnitBase* addon)
@@ -31,16 +31,20 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         WindowNode?.AddColor = _tintColor;
 
-        CategoriesNode = new WrappingGridNode<InventoryCategoryNodeBase>
+        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            HorizontalSpacing = CategorySpacing,
-            VerticalSpacing = CategorySpacing,
-            TopPadding = 4.0f,
-            BottomPadding = 4.0f,
+            ContentHeight = 0f,
+            AutoHideScrollBar = true,
         };
-        CategoriesNode.AttachNode(this);
+        ScrollableCategories.AttachNode(this);
+
+        CategoriesNode = ScrollableCategories.ContentNode;
+        CategoriesNode.HorizontalSpacing = CategorySpacing;
+        CategoriesNode.VerticalSpacing = CategorySpacing;
+        CategoriesNode.TopPadding = 4.0f;
+        CategoriesNode.BottomPadding = 4.0f;
 
         var header = CalculateHeaderLayout(addon);
 
