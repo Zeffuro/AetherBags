@@ -111,7 +111,10 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             {
                 config.BisBuddyEnabled = isChecked;
                 if (bbModeDropdown != null) bbModeDropdown.IsEnabled = isChecked;
-                if (isChecked) System.IPC.BisBuddy?.RefreshItems();
+                if (isChecked)
+                    System.IPC.BisBuddy?.RefreshItems();
+                else
+                    HighlightState.ClearLabel(HighlightSource.BiSBuddy);
                 System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
@@ -156,7 +159,10 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             {
                 config.AllaganToolsCategoriesEnabled = isChecked;
                 if (atModeDropdown != null) atModeDropdown.IsEnabled = isChecked;
-                if (isChecked) System.IPC?.AllaganTools?.RefreshFilters();
+                if (isChecked)
+                    System.IPC?.AllaganTools?.RefreshFilters();
+                else
+                    HighlightState.ClearLabel(HighlightSource.AllaganTools);
                 System.IPC?.RefreshExternalSources();
                 RefreshInventory();
             }
