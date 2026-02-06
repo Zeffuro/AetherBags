@@ -56,6 +56,8 @@ public static class InventorySourceDefinitions
     {
         InventorySourceType.MainBags => MainBags,
         InventorySourceType.SaddleBag => SaddleBag,
+        InventorySourceType.PremiumSaddleBag => PremiumSaddleBag,
+        InventorySourceType.AllSaddleBags => AllSaddleBags,
         InventorySourceType.Retainer => Retainer,
         _ => MainBags,
     };
