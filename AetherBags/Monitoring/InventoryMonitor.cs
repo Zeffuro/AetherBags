@@ -28,6 +28,7 @@ public static unsafe class DragDropState
 
 public class InventoryMonitor : IDisposable
 {
+
     public InventoryMonitor()
     {
         var bags = new[] { "Inventory", "InventoryLarge", "InventoryExpansion" };
@@ -40,8 +41,6 @@ public class InventoryMonitor : IDisposable
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, bags, OnInventoryPreFinalize);
-
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreHide, bags, OnInventoryPreHide);
 
         // PreRefresh Handlers
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
@@ -70,14 +69,6 @@ public class InventoryMonitor : IDisposable
     private void OnInventoryPreFinalize(AddonEvent type, AddonArgs args)
     {
         System.AddonInventoryWindow.Close();
-    }
-
-    private void OnInventoryPreHide(AddonEvent type, AddonArgs args)
-    {
-        if (System.Config.General.OpenWithGameInventory)
-        {
-            System.AddonInventoryWindow.Close();
-        }
     }
 
     private unsafe void OpenInventories(string name)
@@ -201,10 +192,14 @@ public class InventoryMonitor : IDisposable
 
         if (config.OpenWithGameInventory)
         {
-            var addon = RaptureAtkUnitManager.Instance()->GetAddonByName(args.AddonName);
-            bool isCurrentlyVisible = addon != null && addon->IsVisible;
+            AtkValue* value1 = (AtkValue*)atkValues[1].Address;
+            int openTitleId = value1->Int;
 
-            if (!isCurrentlyVisible)
+            if (openTitleId == 0)
+            {
+                System.AddonInventoryWindow.Toggle();
+            }
+            else
             {
                 System.AddonInventoryWindow.Open();
             }
@@ -250,6 +245,6 @@ public class InventoryMonitor : IDisposable
     public void Dispose()
     {
         Services.GameInventory.InventoryChangedRaw -= OnInventoryChangedRaw;
-        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, OnInventoryPreHide, InventoryPreRefreshHandler);
+        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
     }
 }
