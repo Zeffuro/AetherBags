@@ -179,8 +179,9 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
+        IsSetupComplete = false;
         _lootedCategoryNode?.Dispose();
-        
+
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
         ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
