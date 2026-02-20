@@ -29,7 +29,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected readonly HashSet<InventoryCategoryNode> HoverSubscribed = new();
 
     protected DragDropNode BackgroundDropTarget = null!;
-    protected ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>> ScrollableCategories = null!;
+    protected InventoryScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>> ScrollableCategories = null!;
     protected WrappingGridNode<InventoryCategoryNodeBase> CategoriesNode = null!;
     protected TextInputWithButtonNode SearchInputNode = null!;
     protected InventoryFooterNode FooterNode = null!;

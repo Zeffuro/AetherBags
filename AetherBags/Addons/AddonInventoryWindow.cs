@@ -25,7 +25,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         InitializeBackgroundDropTarget();
 
-        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
+        ScrollableCategories = new InventoryScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
@@ -179,6 +179,8 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override void OnFinalize(AtkUnitBase* addon)
     {
+        _lootedCategoryNode?.Dispose();
+        
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
         ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
@@ -188,8 +190,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         }
 
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
-
-        _lootedCategoryNode?.Dispose();
 
         IsSetupComplete = false;
         base.OnFinalize(addon);
