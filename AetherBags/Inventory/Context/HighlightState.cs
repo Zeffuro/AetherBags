@@ -182,7 +182,6 @@ public static class HighlightState
             return;
         }
 
-        var highlightColor = color ?? new Vector3(0.3f, 0.6f, 0.9f);
-        SetLabel(HighlightSource.Relationship, relatedItemIds, highlightColor);
+        SetLabel(HighlightSource.Relationship, relatedItemIds, color ?? Vector3.Zero);
     }
 }

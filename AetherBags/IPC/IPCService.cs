@@ -8,6 +8,7 @@ public class IPCService : IDisposable
     public AllaganToolsIPC AllaganTools { get; } = new();
     public WotsItIPC WotsIt { get; } = new();
     public BisBuddyIPC BisBuddy { get; } = new();
+    public TestExternalSource TestSource { get; } = new();
 
     private bool _unifiedEnabled;
 
@@ -45,10 +46,19 @@ public class IPCService : IDisposable
             BisBuddy.DisableExternalCategorySupport();
     }
 
+    public void ToggleTestSource()
+    {
+        if (TestSource.IsReady)
+            TestSource.Disable();
+        else
+            TestSource.Enable();
+    }
+
     public void Dispose()
     {
         AllaganTools.Dispose();
         WotsIt.Dispose();
         BisBuddy.Dispose();
+        TestSource.Dispose();
     }
 }
