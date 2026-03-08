@@ -31,7 +31,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         WindowNode?.AddColor = _tintColor;
 
-        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
+        ScrollableCategories = new InventoryScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,

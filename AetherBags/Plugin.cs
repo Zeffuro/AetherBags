@@ -57,7 +57,7 @@ public class Plugin : IDalamudPlugin
 
         System.AddonConfigurationWindow = new AddonConfigurationWindow
         {
-            InternalName = "AetherBags Config",
+            InternalName = "AetherBags_Config",
             Title = "AetherBags Config",
             Size = new Vector2(640, 512),
         };

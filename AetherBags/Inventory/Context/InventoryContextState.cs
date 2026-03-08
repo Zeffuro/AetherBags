@@ -120,15 +120,32 @@ public static unsafe class InventoryContextState
         var inventoryManager = InventoryManager.Instance();
         if (inventoryManager == null) return;
 
-        var blockedContainer = inventoryManager->GetInventoryContainer(InventoryType.BlockedItems);
-        if (blockedContainer == null) return;
+        ScanBlockedContainer(inventoryManager, InventoryType.BlockedItems);
+        ScanBlockedContainer(inventoryManager, InventoryType.MailEdit);
+    }
 
-        for (int i = 0; i < blockedContainer->Size; i++)
+    private static void ScanBlockedContainer(InventoryManager* inventoryManager, InventoryType type)
+    {
+        try
         {
-            ref var item = ref blockedContainer->Items[i];
-            if (item.ItemId == 0) continue;
+            var container = inventoryManager->GetInventoryContainer(type);
+            if (container == null) return;
+            if (container->GetSize() == 0) return;
+            if (!container->IsLoaded) return;
+            if (container->Items == null) return;
 
-            BlockedSlots.Add((item.Container, item.Slot));
+            for (int i = 0; i < container->GetSize(); i++)
+            {
+                var slot = container->GetInventorySlot(i);
+                if (slot == null) continue;
+                if (slot->GetItemId() == 0) continue;
+
+                BlockedSlots.Add((slot->Container, slot->Slot));
+            }
+        }
+        catch
+        {
+            // Container became invalid during teardown
         }
     }
 

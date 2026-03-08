@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using AetherBags.Helpers;
 using AetherBags.Inventory.Items;
+using AetherBags.IPC.ExternalCategorySystem;
 
 namespace AetherBags.Inventory.Categories;
 
@@ -44,6 +45,11 @@ public static class InventoryFilter
                 else
                 {
                     isMatch = info.Name.Contains(filterString, StringComparison.OrdinalIgnoreCase) || info.DescriptionContains(filterString);
+                }
+
+                if (!isMatch)
+                {
+                    isMatch = ExternalCategoryManager.MatchesSearchTag(info.Item.ItemId, filterString);
                 }
 
                 if (isMatch != invert)

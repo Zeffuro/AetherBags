@@ -38,7 +38,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         WindowNode?.AddColor = _tintColor;
 
-        ScrollableCategories = new ScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
+        ScrollableCategories = new InventoryScrollingAreaNode<WrappingGridNode<InventoryCategoryNodeBase>>
         {
             Position = ContentStartPosition,
             Size = ContentSize,

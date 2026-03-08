@@ -229,6 +229,21 @@ public abstract class DeferrableLayoutListNode : SimpleComponentNode
         RecalculateLayout();
     }
 
+    public void ClearListOnly()
+    {
+        _suppressRecalculateLayout = true;
+        try
+        {
+            NodeList.Clear();
+        }
+        finally
+        {
+            _suppressRecalculateLayout = false;
+        }
+
+        RecalculateLayout();
+    }
+
     public delegate TU CreateNewNode<in T, out TU>(T data) where TU : NodeBase;
 
     public delegate T GetDataFromNode<out T, in TU>(TU node) where TU : NodeBase;
