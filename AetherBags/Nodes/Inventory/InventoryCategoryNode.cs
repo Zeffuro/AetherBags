@@ -7,6 +7,7 @@ using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
+using AetherBags.IPC.ExternalCategorySystem;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -368,9 +369,26 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
         node.IconId = item.IconId;
         node.Alpha = data.VisualAlpha;
-        node.AddColor = data.HighlightOverlayColor;
         node.IsDraggable = !data.IsSlotBlocked;
         node.IconNode.IconExtras.AntsNode.IsVisible = data.IsRelationshipHighlighted;
+        if (data.IsRelationshipHighlighted)
+        {
+            node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
+        }
+        else
+        {
+            node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
+        }
+
+        Vector3? decorationColor = null;
+        if (System.Config.General.UseUnifiedExternalCategories)
+        {
+            decorationColor = ExternalCategoryManager.GetItemOverlayColor(item.ItemId);
+        }
+        var finalColor = decorationColor ?? data.HighlightOverlayColor;
+        // Set color on IconNode, not the container - the icon image is inside IconNode
+        node.IconNode.AddColor = finalColor;
+
         node.Payload = new DragDropPayload
         {
             Type = DragDropType.Item,
@@ -417,21 +435,38 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             var info = itemNode.ItemInfo;
             float newAlpha = info.VisualAlpha;
-            Vector3 newColor = info.HighlightOverlayColor;
             bool newDraggable = !info.IsSlotBlocked;
             bool newAntsVisible = info.IsRelationshipHighlighted;
+
+            // Get overlay color - prefer external decoration color, fallback to highlight
+            Vector3? decorationColor = null;
+            if (System.Config.General.UseUnifiedExternalCategories)
+            {
+                decorationColor = ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId);
+            }
+            Vector3 newColor = decorationColor ?? info.HighlightOverlayColor;
 
             if (!NearlyEqual(itemNode.Alpha, newAlpha))
                 itemNode.Alpha = newAlpha;
 
-            if (itemNode.AddColor != newColor)
-                itemNode.AddColor = newColor;
+            if (itemNode.IconNode.AddColor != newColor)
+                itemNode.IconNode.AddColor = newColor;
 
             if (itemNode.IsDraggable != newDraggable)
                 itemNode.IsDraggable = newDraggable;
 
             if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != newAntsVisible)
+            {
                 itemNode.IconNode.IconExtras.AntsNode.IsVisible = newAntsVisible;
+                if (newAntsVisible)
+                {
+                    itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
+                }
+                else
+                {
+                    itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
+                }
+            }
         }
     }
 

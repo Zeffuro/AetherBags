@@ -64,6 +64,7 @@ public static class ExternalCategoryManager
         if (currentVersion == _lastCombinedVersion && CategoryCache.Count > 0)
             return;
 
+        Services.Logger.DebugOnly($"[ExternalCategoryManager] Rebuilding cache, version {_lastCombinedVersion} -> {currentVersion}, sources={Sources.Count}");
         _lastCombinedVersion = currentVersion;
         CategoryCache.Clear();
         DecorationCache.Clear();
@@ -71,11 +72,13 @@ public static class ExternalCategoryManager
 
         foreach (var source in Sources)
         {
+            Services.Logger.DebugOnly($"[ExternalCategoryManager] Source {source.SourceName}: IsReady={source.IsReady}, Caps={source.Capabilities}");
             if (!source.IsReady) continue;
 
             if (source.Capabilities.HasFlag(SourceCapabilities.Categories))
             {
                 var categories = source.GetCategoryAssignments();
+                Services.Logger.DebugOnly($"[ExternalCategoryManager] Categories from {source.SourceName}: {categories?.Count ?? 0}");
                 if (categories != null)
                 {
                     foreach (var (itemId, assignment) in categories)
@@ -89,6 +92,7 @@ public static class ExternalCategoryManager
                 source.Capabilities.HasFlag(SourceCapabilities.Badges))
             {
                 var decorations = source.GetItemDecorations();
+                Services.Logger.DebugOnly($"[ExternalCategoryManager] Decorations from {source.SourceName}: {decorations?.Count ?? 0}");
                 if (decorations != null)
                 {
                     foreach (var (itemId, decoration) in decorations)
@@ -122,6 +126,8 @@ public static class ExternalCategoryManager
                 }
             }
         }
+
+        Services.Logger.DebugOnly($"[ExternalCategoryManager] Cache built: Categories={CategoryCache.Count}, Decorations={DecorationCache.Count}");
     }
 
     private static ItemDecoration MergeDecorations(ItemDecoration existing, ItemDecoration incoming, ConflictBehavior behavior)
@@ -199,16 +205,34 @@ public static class ExternalCategoryManager
     public static ItemDecoration? GetDecoration(uint itemId)
     {
         RebuildCacheIfNeeded();
-        return DecorationCache.TryGetValue(itemId, out var dec) ? dec : null;
+        var found = DecorationCache.TryGetValue(itemId, out var dec);
+        if (found)
+        {
+            Services.Logger.DebugOnly($"[GetDecoration] Found decoration for {itemId}: Badge={dec.Badge.HasValue}, Border={dec.Border}, Overlay={dec.OverlayColor}");
+            // Extra detail for badge items
+            if (dec.Badge.HasValue)
+            {
+                Services.Logger.DebugOnly($"[GetDecoration] Badge details for {itemId}: IconId={dec.Badge.Value.IconId}, Position={dec.Badge.Value.Position}");
+            }
+        }
+        return found ? dec : null;
     }
 
     public static Vector3? GetItemOverlayColor(uint itemId)
     {
+        RebuildCacheIfNeeded();
+
         if (CategoryCache.TryGetValue(itemId, out var assignment))
+        {
+            Services.Logger.DebugOnly($"[GetItemOverlayColor] Item {itemId}: Found in CategoryCache, returning {assignment.ItemOverlayColor}");
             return assignment.ItemOverlayColor;
+        }
 
         if (DecorationCache.TryGetValue(itemId, out var decoration))
+        {
+            Services.Logger.DebugOnly($"[GetItemOverlayColor] Item {itemId}: Found in DecorationCache, returning {decoration.OverlayColor}");
             return decoration.OverlayColor;
+        }
 
         return null;
     }

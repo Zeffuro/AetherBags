@@ -4,6 +4,7 @@ using AetherBags.Addons;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Items;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Command;
 
 namespace AetherBags.Commands;
@@ -105,6 +106,15 @@ public class CommandHandler : IDisposable
                 PrintHelp();
                 break;
 
+            case "test":
+                HandleTestSource(subArgs);
+                break;
+
+            case "list":
+            case "items":
+                ListInventoryItems(subArgs);
+                break;
+
             default:
                 PrintChat($"Unknown command: {subCommand}. Use '/ab help' for available commands.");
                 break;
@@ -165,6 +175,137 @@ public class CommandHandler : IDisposable
         ImportExportResetHelper.TryExportConfigToClipboard(System.Config);
     }
 
+    private void ListInventoryItems(string args)
+    {
+        if (!System.AddonInventoryWindow.IsOpen)
+        {
+            PrintChat("Open your inventory first.");
+            return;
+        }
+
+        var categories = System.AddonInventoryWindow.GetVisibleCategories();
+        if (categories == null || categories.Count == 0)
+        {
+            PrintChat("No items found.");
+            return;
+        }
+
+        var subCmd = args.Trim().ToLowerInvariant();
+
+        if (subCmd == "ids" || subCmd == "copy")
+        {
+            var ids = new List<uint>();
+            foreach (var category in categories)
+            {
+                foreach (var item in category.Items)
+                {
+                    if (!ids.Contains(item.Item.ItemId))
+                        ids.Add(item.Item.ItemId);
+                }
+            }
+            var idsString = string.Join(", ", ids);
+            ImGui.SetClipboardText(idsString);
+            PrintChat($"Copied {ids.Count} unique item IDs to clipboard.");
+            return;
+        }
+
+        if (subCmd == "full" || subCmd == "all")
+        {
+            var lines = new List<string>();
+            foreach (var category in categories)
+            {
+                foreach (var item in category.Items)
+                {
+                    lines.Add($"{item.Item.ItemId}: {item.Name} x{item.ItemCount}");
+                }
+            }
+            var fullText = string.Join("\n", lines);
+            ImGui.SetClipboardText(fullText);
+            PrintChat($"Copied {lines.Count} items to clipboard.");
+            return;
+        }
+
+        int limit = 20;
+        if (!string.IsNullOrWhiteSpace(args) && int.TryParse(args.Trim(), out int parsed))
+        {
+            limit = parsed;
+        }
+
+        PrintChat($"Listing up to {limit} items (use '/ab list ids' to copy all IDs):");
+
+        int count = 0;
+        foreach (var category in categories)
+        {
+            foreach (var item in category.Items)
+            {
+                if (count >= limit) break;
+                PrintChat($"  {item.Item.ItemId}: {item.Name} x{item.ItemCount}");
+                count++;
+            }
+            if (count >= limit) break;
+        }
+
+        PrintChat($"Shown {count} items. Total categories: {categories.Count}");
+    }
+
+    private void HandleTestSource(string args)
+    {
+        var testSource = System.IPC?.TestSource;
+        if (testSource == null)
+        {
+            PrintChat("Test source not available.");
+            return;
+        }
+
+        var subCmd = args.Trim().ToLowerInvariant();
+
+        switch (subCmd)
+        {
+            case "":
+            case "toggle":
+                if (testSource.IsReady)
+                {
+                    testSource.Disable();
+                    PrintChat("Test source disabled.");
+                }
+                else
+                {
+                    testSource.Enable();
+                    PrintChat("Test source enabled. Search 'test' to find items.");
+                }
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+                break;
+
+            case "on":
+            case "enable":
+                testSource.Enable();
+                PrintChat("Test source enabled. Search 'test' to find items.");
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+                break;
+
+            case "off":
+            case "disable":
+                testSource.Disable();
+                PrintChat("Test source disabled.");
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+                break;
+
+            case "refresh":
+                testSource.Refresh();
+                PrintChat("Test source refreshed.");
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+                break;
+
+            case "status":
+                PrintChat($"Test source is {(testSource.IsReady ? "enabled" : "disabled")}.");
+                break;
+
+            default:
+                PrintChat("Usage: /ab test [toggle|on|off|refresh|status]");
+                break;
+        }
+    }
+
     private void PrintHelp()
     {
         var helpText = @"AetherBags Commands:
@@ -178,6 +319,7 @@ public class CommandHandler : IDisposable
   /ab import-sk    - Import from SortaKinda clipboard
   /ab export       - Export config to clipboard
   /ab reset        - Reset config to default
+  /ab test         - Toggle test external source
   /ab help         - Show this help message";
 
         PrintChat(helpText);
