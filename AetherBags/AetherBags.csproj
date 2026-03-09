@@ -10,7 +10,7 @@
         <Punchline>Never think too hard about your bags again!</Punchline>
         <Description>This plugin replaces your inventory with it's own categorified inventory addon.</Description>
         <RepoUrl>https://github.com/Zeffuro/AetherBags</RepoUrl>
-        <Tags>ui</Tags>
+        <Tags>inventory;bags;organization;categories;filters;sorting;qol;ui</Tags>
         <AcceptsFeedback>true</AcceptsFeedback>
     </PropertyGroup>
 

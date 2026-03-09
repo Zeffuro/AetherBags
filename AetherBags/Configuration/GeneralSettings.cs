@@ -18,7 +18,8 @@ public class GeneralSettings
     public bool OpenRetainerWithGameInventory { get; set; } = true;
     public bool HideGameRetainer { get; set; } = false;
     public bool ShowCategoryItemCount { get; set; } = false;
-    public bool LinkItemEnabled { get; set; } = false;
+    public bool LinkItemEnabled { get; set; } = true;
+    public bool AnimationEnabled { get; set; } = false;
     public bool UseUnifiedExternalCategories { get; set; } = false;
 }
 

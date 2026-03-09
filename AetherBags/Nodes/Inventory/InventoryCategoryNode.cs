@@ -361,6 +361,8 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     private void ApplyItemDataToNode(InventoryDragDropNode node, ItemInfo data)
     {
+        var config = System.Config.General;
+
         InventoryItem item = data.Item;
         InventoryMappedLocation visualLocation = data.VisualLocation;
 
@@ -371,7 +373,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         node.Alpha = data.VisualAlpha;
         node.IsDraggable = !data.IsSlotBlocked;
         node.IconNode.IconExtras.AntsNode.IsVisible = data.IsRelationshipHighlighted;
-        if (data.IsRelationshipHighlighted)
+        if (data.IsRelationshipHighlighted && config.AnimationEnabled)
         {
             node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
         }
@@ -381,7 +383,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
 
         Vector3? decorationColor = null;
-        if (System.Config.General.UseUnifiedExternalCategories)
+        if (config.UseUnifiedExternalCategories)
         {
             decorationColor = ExternalCategoryManager.GetItemOverlayColor(item.ItemId);
         }
@@ -410,7 +412,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         OnPayloadAccepted(n, acceptedPayload, node.ItemInfo);
     }
 
-    private unsafe void OnNodeRollOver(DragDropNode n)
+    private void OnNodeRollOver(DragDropNode n)
     {
         if (n is not InventoryDragDropNode node) return;
         BeginHeaderHover();
@@ -427,6 +429,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     public void RefreshNodeVisuals()
     {
+        var config = System.Config.General;
         var nodes = _itemGridNode.Nodes;
         for (int i = 0; i < nodes.Count; i++)
         {
@@ -440,7 +443,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             // Get overlay color - prefer external decoration color, fallback to highlight
             Vector3? decorationColor = null;
-            if (System.Config.General.UseUnifiedExternalCategories)
+            if (config.UseUnifiedExternalCategories)
             {
                 decorationColor = ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId);
             }
@@ -456,17 +459,12 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
                 itemNode.IsDraggable = newDraggable;
 
             if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != newAntsVisible)
-            {
                 itemNode.IconNode.IconExtras.AntsNode.IsVisible = newAntsVisible;
-                if (newAntsVisible)
-                {
-                    itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
-                }
-                else
-                {
-                    itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
-                }
-            }
+
+            if (newAntsVisible && config.AnimationEnabled)
+                itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
+            else
+                itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
         }
     }
 

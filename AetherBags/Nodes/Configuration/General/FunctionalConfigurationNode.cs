@@ -134,6 +134,20 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(linkItemCheckBox);
 
+        var animationCheckBox = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Enable Animation",
+            IsChecked = config.AnimationEnabled,
+            OnClick = isChecked =>
+            {
+                config.AnimationEnabled = isChecked;
+                InventoryOrchestrator.RefreshHighlights();
+            }
+        };
+        AddNode(animationCheckBox);
+
         AddNode(new ResNode
         {
             Height = 6
