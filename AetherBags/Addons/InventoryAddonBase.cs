@@ -50,6 +50,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected readonly VirtualizationState CategoryVirtualization = new() { BufferSize = 200f };
 
+    protected readonly Debouncer SearchDebouncer = new(System.Config.General.SearchDelay);
+
     protected virtual float MinWindowWidth => 600;
     protected virtual float MaxWindowWidth => 800;
     protected virtual float MinWindowHeight => 200;
@@ -699,6 +701,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         ContextMenu?.Dispose();
         HoverSubscribed.Clear();
+        SearchDebouncer.Dispose();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
         _deferredPopulationInProgress = false;

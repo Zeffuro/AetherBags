@@ -59,7 +59,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => ItemRefresh(),
+            OnInputReceived = _ => SearchDebouncer.Run(() => Services.Framework.RunOnTick(ItemRefresh)),
             OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);

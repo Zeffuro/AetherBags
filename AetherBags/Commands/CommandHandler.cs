@@ -6,6 +6,7 @@ using AetherBags.Inventory;
 using AetherBags.Inventory.Items;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Command;
+using FFXIVClientStructs.FFXIV.Client.UI;
 
 namespace AetherBags.Commands;
 
@@ -60,11 +61,6 @@ public class CommandHandler : IDisposable
                 System.AddonInventoryWindow.Close();
                 break;
 
-            case "refresh":
-                InventoryOrchestrator.RefreshAll(updateMaps: true);
-                PrintChat("Inventory refreshed.");
-                break;
-
             case "search":
                 HandleSearch(subArgs);
                 break;
@@ -93,21 +89,13 @@ public class CommandHandler : IDisposable
                 PrintInventoryStats();
                 break;
 
-            case "saddle":
-                System.AddonSaddleBagWindow.Toggle();
-                break;
-
-            case "retainer":
-                System.AddonRetainerWindow.Toggle();
+            case "debug":
+                HandleDebug(subArgs);
                 break;
 
             case "help":
             case "?":
                 PrintHelp();
-                break;
-
-            case "test":
-                HandleTestSource(subArgs);
                 break;
 
             case "list":
@@ -117,6 +105,48 @@ public class CommandHandler : IDisposable
 
             default:
                 PrintChat($"Unknown command: {subCommand}. Use '/ab help' for available commands.");
+                break;
+        }
+    }
+
+    private void HandleDebug(string args)
+    {
+        if (System.Config?.General?.DebugEnabled != true)
+        {
+            PrintChat("Debug commands are disabled. Enable 'General.DebugEnabled' in your config to use debug commands.");
+            return;
+        }
+
+        var parts = args.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var cmd = parts.Length > 0 ? parts[0].ToLowerInvariant() : string.Empty;
+        var subArgs = parts.Length > 1 ? parts[1] : string.Empty;
+
+        switch (cmd)
+        {
+            case "":
+            case "help":
+                PrintChat("Debug commands:\n  /ab debug saddle       - Toggle saddlebag window\n  /ab debug retainer      - Toggle retainer window\n  /ab debug test [arg]    - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug help          - Show this message");
+                break;
+
+            case "saddle":
+                System.AddonSaddleBagWindow.Toggle();
+                break;
+
+            case "retainer":
+                System.AddonRetainerWindow.Toggle();
+                break;
+
+            case "test":
+                HandleTestSource(subArgs);
+                break;
+
+            case "refresh":
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+                PrintChat("Inventory refreshed.");
+                break;
+
+            default:
+                PrintChat($"Unknown debug command: {cmd}. Use '/ab debug help' for debug commands.");
                 break;
         }
     }
@@ -192,7 +222,7 @@ public class CommandHandler : IDisposable
 
         var subCmd = args.Trim().ToLowerInvariant();
 
-        if (subCmd == "ids" || subCmd == "copy")
+        if (subCmd is "ids" or "copy")
         {
             var ids = new List<uint>();
             foreach (var category in categories)
@@ -209,7 +239,7 @@ public class CommandHandler : IDisposable
             return;
         }
 
-        if (subCmd == "full" || subCmd == "all")
+        if (subCmd is "full" or "all")
         {
             var lines = new List<string>();
             foreach (var category in categories)
@@ -308,21 +338,40 @@ public class CommandHandler : IDisposable
 
     private void PrintHelp()
     {
-        var helpText = @"AetherBags Commands:
-  /ab              - Toggle inventory window
-  /ab config       - Toggle configuration window
-  /ab show         - Open inventory window
-  /ab hide         - Close inventory window
-  /ab refresh      - Force refresh inventory
-  /ab search <term> - Open and search for items
-  /ab import       - Import config from clipboard (hold Shift)
-  /ab import-sk    - Import from SortaKinda clipboard
-  /ab export       - Export config to clipboard
-  /ab reset        - Reset config to default
-  /ab test         - Toggle test external source
-  /ab help         - Show this help message";
+        var commands = new (string Command, string Description)[]
+        {
+            ("/ab", "Toggle inventory window"),
+            ("/ab config", "Open configuration window"),
+            ("/ab show", "Open inventory window"),
+            ("/ab hide", "Close inventory window"),
 
-        PrintChat(helpText);
+            ("/ab search <term>", "Open inventory and search for items"),
+
+            ("/ab list", "List items currently visible in inventory"),
+            ("/ab list <n>", "List first N items"),
+            ("/ab list ids", "Copy unique item IDs to clipboard"),
+            ("/ab list full", "Copy full item list to clipboard"),
+
+            ("/ab stats", "Show inventory statistics"),
+
+            ("/ab import", "Import config from clipboard (hold Shift)"),
+            ("/ab import-sk", "Import SortaKinda clipboard config"),
+            ("/ab export", "Export config to clipboard"),
+            ("/ab reset", "Reset config to default"),
+
+            ("/ab help", "Show this help message"),
+        };
+
+        var lines = new List<string> { "AetherBags Commands:" };
+
+        foreach (var (cmd, desc) in commands)
+            lines.Add($"  {cmd}  - {desc}");
+
+        lines.Add(System.Config?.General?.DebugEnabled == true
+            ? "  /ab debug [saddle|retainer|test|refresh]  - Debug commands"
+            : "  /ab debug  - Debug-only commands (enable in config)");
+
+        PrintChat(string.Join("\n", lines));
     }
 
     private static void PrintChat(string message)

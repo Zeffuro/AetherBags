@@ -182,20 +182,12 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         if (string.IsNullOrEmpty(searchTerms))
             return true;
 
-        var re = RegexCache.GetOrCreate(searchTerms);
+        var re = RegexCache.GetOrCreate(searchTerms, compiled: false);
         if (re == null)
             return false;
 
-        if (re.IsMatch(Name)) return true;
-
-        if (re.IsMatch(LevelString)) return true;
-        if (re.IsMatch(ItemLevelString)) return true;
-
         if (ExternalCategoryManager.MatchesSearchTag(Item.ItemId, searchTerms)) return true;
-
-        if (re.IsMatch(Description)) return true;
-
-        return false;
+        return IsRegexMatch(re);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -19,8 +19,19 @@ public static class InventoryFilter
         if (string.IsNullOrEmpty(filterString))
             return allCategories;
 
-        Regex? re = RegexCache.GetOrCreate(filterString);
-        bool regexValid = re != null;
+        Regex? re = null;
+        bool regexValid;
+        bool treatAsRegex = Util.LooksLikeRegex(filterString);
+
+        if (treatAsRegex)
+        {
+            re = RegexCache.GetOrCreate(filterString, compiled: false);
+            regexValid = re != null;
+        }
+        else
+        {
+            regexValid = false;
+        }
 
         filteredCategories.Clear();
 
@@ -44,7 +55,16 @@ public static class InventoryFilter
                 }
                 else
                 {
-                    isMatch = info.Name.Contains(filterString, StringComparison.OrdinalIgnoreCase) || info.DescriptionContains(filterString);
+                    if (info.Name.Contains(filterString, StringComparison.OrdinalIgnoreCase) ||
+                        info.DescriptionContains(filterString) ||
+                        ExternalCategoryManager.MatchesSearchTag(info.Item.ItemId, filterString))
+                    {
+                        isMatch = true;
+                    }
+                    else
+                    {
+                        isMatch = false;
+                    }
                 }
 
                 if (!isMatch)

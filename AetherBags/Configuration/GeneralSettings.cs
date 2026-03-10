@@ -20,6 +20,7 @@ public class GeneralSettings
     public bool ShowCategoryItemCount { get; set; } = false;
     public bool LinkItemEnabled { get; set; } = true;
     public bool AnimationEnabled { get; set; } = false;
+    public int SearchDelay { get; set; } = 150;
     public bool UseUnifiedExternalCategories { get; set; } = false;
 }
 

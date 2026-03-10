@@ -10,26 +10,40 @@ internal static class RegexCache
 {
     private const int MaxCacheSize = 128;
     private static readonly ConcurrentDictionary<string, Regex> Cache = new();
+    private static readonly ConcurrentQueue<string> Order = new();
 
     /// <summary>
-    /// Gets or creates a compiled Regex for the given pattern with case-insensitive matching.
+    /// Gets or creates a Regex for the given pattern with case-insensitive matching.
     /// Returns null if the pattern is invalid.
+    /// The 'compiled' parameter controls whether the Regex is compiled for faster execution at the cost of longer initial compilation time and higher memory usage.
+    /// Use with caution and consider the expected usage patterns.
     /// </summary>
-    public static Regex? GetOrCreate(string pattern)
+    public static Regex? GetOrCreate(string pattern, bool compiled = false)
     {
         if (string.IsNullOrEmpty(pattern))
             return null;
 
-        if (Cache.TryGetValue(pattern, out var cached))
+        string key = pattern + '\0' + (compiled ? "C" : "I");
+
+        if (Cache.TryGetValue(key, out var cached))
             return cached;
 
         try
         {
-            var regex = new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            var options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+            if (compiled)
+                options |= RegexOptions.Compiled;
 
-            if (Cache.Count < MaxCacheSize)
+            var regex = new Regex(pattern, options);
+
+            if (Cache.TryAdd(key, regex))
             {
-                Cache.TryAdd(pattern, regex);
+                Order.Enqueue(key);
+
+                while (Cache.Count > MaxCacheSize && Order.TryDequeue(out var oldest))
+                {
+                    Cache.TryRemove(oldest, out _);
+                }
             }
 
             return regex;
