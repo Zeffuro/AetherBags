@@ -43,6 +43,9 @@ public class CurrencyNode : SimpleComponentNode
             _countNode.String = value.Amount.ToString("N0", CultureInfo.InvariantCulture);
             _countNode.Position = new Vector2(_iconImageNode.Bounds.Right + 2f, 0f);
 
+            Vector2 textSize = _countNode.GetTextDrawSize(considerScale: false);
+            Size = new Vector2(_iconImageNode.Size.X + 2f + textSize.X, 28f);
+
             // Limit > Capped > Normal
             var config = System.Config.Currency;
 
@@ -53,6 +56,8 @@ public class CurrencyNode : SimpleComponentNode
                 isLimited ? config.LimitColor :
                 isCapped ? config.CappedColor :
                 config.DefaultColor;
+
+            TextTooltip = value.Name;
         }
     }
 }

@@ -3,6 +3,7 @@ using Lumina.Excel.Sheets;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Currency;
 
@@ -70,6 +71,7 @@ public static unsafe class CurrencyState
                 MaxAmount = staticInfo.MaxAmount,
                 ItemId = staticInfo.ItemId,
                 IconId = staticInfo.IconId,
+                Name = staticInfo.Name,
                 LimitReached = amount >= staticInfo.MaxAmount,
                 IsCapped = isCapped
             });
@@ -101,34 +103,6 @@ public static unsafe class CurrencyState
 
         return (limitedId, nonLimitedId);
     }
-
-    /*
-    private static uint? GetLimitedTomestoneItemIdCached()
-    {
-        if (_cachedLimitedTomestoneItemId.HasValue)
-            return _cachedLimitedTomestoneItemId.Value;
-
-        uint? itemId = Services.DataManager.GetExcelSheet<TomestonesItem>()
-            .FirstOrDefault(t => t.Tomestones.RowId == 3)
-            .Item.RowId;
-
-        _cachedLimitedTomestoneItemId = itemId;
-        return itemId;
-    }
-
-    private static uint? GetNonLimitedTomestoneItemIdCached()
-    {
-        if (_cachedNonLimitedTomestoneItemId.HasValue)
-            return _cachedNonLimitedTomestoneItemId.Value;
-
-        uint? itemId = Services.DataManager.GetExcelSheet<TomestonesItem>()
-            .FirstOrDefault(t => t.Tomestones.RowId == 2)
-            .Item.RowId;
-
-        _cachedNonLimitedTomestoneItemId = itemId;
-        return itemId;
-    }
-    */
 
     private static uint? GetLimitedTomestoneItemIdCached()
         => _cachedLimitedTomestoneItemId ??= GetCurrentTomestoneIds().Limited;
@@ -171,6 +145,7 @@ public static unsafe class CurrencyState
             ItemId = itemId,
             IconId = item.Icon,
             MaxAmount = item.StackSize,
+            Name = item.Name
         };
 
         CurrencyStaticByItemIdCache[itemId] = info;
@@ -182,6 +157,7 @@ public static unsafe class CurrencyState
         public uint ItemId;
         public uint IconId;
         public uint MaxAmount;
+        public ReadOnlySeString Name;
     }
 
     private record CurrencyItem(uint ItemId, bool IsLimited);
