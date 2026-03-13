@@ -156,7 +156,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             if (addon != null)
             {
                 addon->IsVisible = true;
-                addon->Close(true);
+                addon->Hide2();
             }
         }
     }
