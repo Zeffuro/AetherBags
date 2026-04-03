@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -21,22 +20,23 @@ namespace AetherBags.Nodes.Inventory;
 public class InventoryCategoryNode : InventoryCategoryNodeBase
 {
     private const uint CategoryNodeKeyBase = 0x10000000;
-
-    public override uint Key => CategoryNodeKeyBase | CategorizedInventory.Key;
-    private readonly CollisionNode _hoverCollisionNode;
-    private readonly TextNode _categoryNameTextNode;
-    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
-
     private const float ExpectedItemWidth = 42;
     private const float ExpectedItemHeight = 46;
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
+
+    public override uint Key => CategoryNodeKeyBase | CategorizedInventory.Key;
+
+    private readonly CollisionNode _hoverCollisionNode;
+    private readonly TextNode _categoryNameTextNode;
+    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
     private float? _fixedWidth;
     private float? _maxWidth;
     private int _hoverRefs;
     private bool _headerSuppressed;
     private bool _headerExpanded;
+    private bool _collapsePending;
     private float _baseHeaderWidth = 96f;
     private string _fullHeaderText = string.Empty;
 
@@ -45,133 +45,19 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private ulong _lastItemsHash;
     private int _lastItemsPerLine;
     private bool _itemsNeedPopulation;
+    private CategorizedInventory _categorizedInventory;
 
     public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
-
     public bool NeedsItemPopulation => _itemsNeedPopulation;
     public Action? OnRefreshRequested { get; set; }
     public Action? OnDragEnd { get; set; }
-
     public SharedNodePool<InventoryDragDropNode>? SharedItemPool { get; set; }
-
-    public InventoryCategoryNode()
-    {
-        _hoverCollisionNode = new CollisionNode
-        {
-            Size = new Vector2(240, 108),
-            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.EmitsEvents,
-        };
-        _hoverCollisionNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
-        _hoverCollisionNode.AddEvent(AtkEventType.MouseOut, EndHeaderHover);
-        _hoverCollisionNode.AttachNode(this);
-
-        _categoryNameTextNode = new TextNode
-        {
-            Size = new Vector2(96, 16),
-            AlignmentType = AlignmentType.Left,
-        };
-
-        _categoryNameTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
-        _categoryNameTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
-
-        _categoryNameTextNode.AddNodeFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
-        _categoryNameTextNode.AttachNode(this);
-
-        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
-        {
-            Position = new Vector2(0, HeaderHeight),
-            Size = new Vector2(240, 92),
-            FillRowsFirst = true,
-            ItemsPerLine = 10,
-            HorizontalPadding = 5,
-            VerticalPadding = 2,
-        };
-
-        _itemGridNode.NodeFlags |= NodeFlags.EmitsEvents;
-        _itemGridNode.AttachNode(this);
-    }
-
-    private CategorizedInventory _categorizedInventory;
+    public override bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
 
     public CategorizedInventory CategorizedInventory
     {
         get => _categorizedInventory;
         set => SetCategoryData(value, _itemGridNode.ItemsPerLine);
-    }
-
-    public void SetCategoryData(CategorizedInventory data, int itemsPerLine, bool deferItemCreation = false)
-    {
-        bool categoryChanged = data.Key != _lastCategoryKey;
-        bool itemsPerLineChanged = itemsPerLine != _lastItemsPerLine;
-
-        ulong itemsHash = ComputeItemsHash(CollectionsMarshal.AsSpan(data.Items));
-        bool itemsChanged = data.Items.Count != _lastItemCount || itemsHash != _lastItemsHash;
-
-        _lastCategoryKey = data.Key;
-        _lastItemCount = data.Items.Count;
-        _lastItemsHash = itemsHash;
-        _lastItemsPerLine = itemsPerLine;
-
-        _categorizedInventory = data;
-
-        _fullHeaderText = System.Config.General.ShowCategoryItemCount
-            ? $"{data.Category.Name} ({data.Items.Count})"
-            : data.Category.Name;
-
-        _categoryNameTextNode.String = _fullHeaderText;
-        _categoryNameTextNode.TextColor = data.Category.Color;
-        _categoryNameTextNode.TextTooltip = data.Category.Description;
-
-        if (itemsChanged || categoryChanged)
-        {
-            _itemGridNode.ItemsPerLine = itemsPerLine;
-
-            if (deferItemCreation)
-            {
-                _itemsNeedPopulation = true;
-            }
-            else
-            {
-                using (_itemGridNode.DeferRecalculateLayout())
-                {
-                    UpdateItemGrid();
-                }
-                _itemsNeedPopulation = false;
-            }
-        }
-        else if (itemsPerLineChanged)
-        {
-            _itemGridNode.ItemsPerLine = itemsPerLine;
-        }
-
-        if (categoryChanged || itemsChanged || itemsPerLineChanged)
-        {
-            RecalculateSize();
-        }
-    }
-
-    public void PopulateItems()
-    {
-        if (!_itemsNeedPopulation)
-            return;
-
-        using (_itemGridNode.DeferRecalculateLayout())
-        {
-            UpdateItemGrid();
-        }
-        _itemsNeedPopulation = false;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ulong ComputeItemsHash(ReadOnlySpan<ItemInfo> items)
-    {
-        ulong hash = 14695981039346656037UL;  // FNV-1a offset basis
-        foreach (var item in items)
-        {
-            hash ^= item.Key;
-            hash *= 1099511628211UL; // FNV-1a prime
-        }
-        return hash;
     }
 
     public int ItemsPerLine
@@ -202,78 +88,177 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         set => _maxWidth = value;
     }
 
-    public override bool IsPinnedInConfig => CategorizedInventory.Category?.IsPinned ?? false;
+    public InventoryCategoryNode()
+    {
+        _hoverCollisionNode = new CollisionNode
+        {
+            Size = new Vector2(240, 108),
+            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.EmitsEvents,
+        };
+        _hoverCollisionNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
+        _hoverCollisionNode.AddEvent(AtkEventType.MouseOut, EndHeaderHover);
+        _hoverCollisionNode.AttachNode(this);
+
+        _categoryNameTextNode = new TextNode
+        {
+            Size = new Vector2(96, 16),
+            AlignmentType = AlignmentType.Left,
+        };
+        _categoryNameTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
+        _categoryNameTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
+        _categoryNameTextNode.AddNodeFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
+        _categoryNameTextNode.AttachNode(this);
+
+        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
+        {
+            Position = new Vector2(0, HeaderHeight),
+            Size = new Vector2(240, 92),
+            FillRowsFirst = true,
+            ItemsPerLine = 10,
+            HorizontalPadding = 5,
+            VerticalPadding = 2,
+        };
+        _itemGridNode.NodeFlags |= NodeFlags.EmitsEvents;
+        _itemGridNode.AttachNode(this);
+    }
+
+    #region Data
+
+    public void SetCategoryData(CategorizedInventory data, int itemsPerLine, bool deferItemCreation = false)
+    {
+        bool categoryChanged = data.Key != _lastCategoryKey;
+        bool itemsPerLineChanged = itemsPerLine != _lastItemsPerLine;
+        ulong itemsHash = ComputeItemsHash(CollectionsMarshal.AsSpan(data.Items));
+        bool itemsChanged = data.Items.Count != _lastItemCount || itemsHash != _lastItemsHash;
+
+        _lastCategoryKey = data.Key;
+        _lastItemCount = data.Items.Count;
+        _lastItemsHash = itemsHash;
+        _lastItemsPerLine = itemsPerLine;
+        _categorizedInventory = data;
+
+        _fullHeaderText = System.Config.General.ShowCategoryItemCount
+            ? $"{data.Category.Name} ({data.Items.Count})"
+            : data.Category.Name;
+
+        _categoryNameTextNode.String = _fullHeaderText;
+        _categoryNameTextNode.TextColor = data.Category.Color;
+        _categoryNameTextNode.TextTooltip = data.Category.Description;
+
+        if (itemsChanged || categoryChanged)
+        {
+            _itemGridNode.ItemsPerLine = itemsPerLine;
+            if (deferItemCreation)
+                _itemsNeedPopulation = true;
+            else
+            {
+                using (_itemGridNode.DeferRecalculateLayout()) UpdateItemGrid();
+                _itemsNeedPopulation = false;
+            }
+        }
+        else if (itemsPerLineChanged)
+            _itemGridNode.ItemsPerLine = itemsPerLine;
+
+        if (categoryChanged || itemsChanged || itemsPerLineChanged)
+            RecalculateSize();
+    }
+
+    public void PopulateItems()
+    {
+        if (!_itemsNeedPopulation) return;
+        using (_itemGridNode.DeferRecalculateLayout()) UpdateItemGrid();
+        _itemsNeedPopulation = false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong ComputeItemsHash(ReadOnlySpan<ItemInfo> items)
+    {
+        ulong hash = 14695981039346656037UL;
+        foreach (var item in items) { hash ^= item.Key; hash *= 1099511628211UL; }
+        return hash;
+    }
+
+    #endregion
+
+    #region Header Hover
 
     public void BeginHeaderHover()
     {
         _hoverRefs++;
+        _collapsePending = false;
         if (_hoverRefs != 1) return;
 
         _headerExpanded = true;
-        ApplyHeaderVisualStateAndSize();
+        ApplyHeaderVisualState();
         HeaderHoverChanged?.Invoke(this, true);
     }
 
     public void EndHeaderHover()
     {
         if (_hoverRefs <= 0) return;
-
         _hoverRefs--;
         if (_hoverRefs != 0) return;
 
-        _headerExpanded = false;
-        ApplyHeaderVisualStateAndSize();
-        HeaderHoverChanged?.Invoke(this, false);
+        _collapsePending = true;
+        Services.Framework.RunOnTick(() =>
+        {
+            if (!_collapsePending) return;
+            _collapsePending = false;
+            _headerExpanded = false;
+            ApplyHeaderVisualState();
+            HeaderHoverChanged?.Invoke(this, false);
+        });
     }
 
     public void SetHeaderSuppressed(bool suppressed)
     {
         if (_headerSuppressed == suppressed) return;
         _headerSuppressed = suppressed;
-        ApplyHeaderVisualStateAndSize();
+        ApplyHeaderVisualState();
     }
 
-    private void ApplyHeaderVisualStateAndSize()
+    public float GetExpandedHeaderWidth()
     {
-        _categoryNameTextNode.IsVisible = ! _headerSuppressed;
-        if (_headerSuppressed)
-            return;
+        if (string.IsNullOrEmpty(_fullHeaderText)) return _baseHeaderWidth;
+        Vector2 drawSize = _categoryNameTextNode.GetTextDrawSize(_fullHeaderText);
+        return MathF.Max(_baseHeaderWidth, drawSize.X + 4f);
+    }
 
-        var flags = _categoryNameTextNode.TextFlags;
-        flags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
+    private void ApplyHeaderVisualState()
+    {
+        _categoryNameTextNode.IsVisible = !_headerSuppressed;
+        if (_headerSuppressed) { _categoryNameTextNode.Position = Vector2.Zero; return; }
+
+        var flags = _categoryNameTextNode.TextFlags & ~(TextFlags.WordWrap | TextFlags.MultiLine);
 
         if (_headerExpanded)
         {
             flags &= ~(TextFlags.OverflowHidden | TextFlags.Ellipsis);
             _categoryNameTextNode.TextFlags = flags;
-
-            if (! string.IsNullOrEmpty(_fullHeaderText))
-                _categoryNameTextNode.String = _fullHeaderText;
+            if (!string.IsNullOrEmpty(_fullHeaderText)) _categoryNameTextNode.String = _fullHeaderText;
 
             Vector2 drawSize = _categoryNameTextNode.GetTextDrawSize();
-            float expandedWidth = MathF.Max(_baseHeaderWidth, drawSize.X + 4f);
-            _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = expandedWidth };
+            _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = MathF.Max(_baseHeaderWidth, drawSize.X + 4f) };
+            _categoryNameTextNode.Position = new Vector2(0, 1);
         }
         else
         {
             _categoryNameTextNode.Size = _categoryNameTextNode.Size with { X = _baseHeaderWidth };
-
-            if (!string.IsNullOrEmpty(_fullHeaderText))
-                _categoryNameTextNode.String = _fullHeaderText;
-
-            flags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
-            _categoryNameTextNode.TextFlags = flags;
+            _categoryNameTextNode.Position = Vector2.Zero;
+            if (!string.IsNullOrEmpty(_fullHeaderText)) _categoryNameTextNode.String = _fullHeaderText;
+            _categoryNameTextNode.TextFlags = flags | TextFlags.OverflowHidden | TextFlags.Ellipsis;
         }
     }
+
+    #endregion
+
+    #region Layout
 
     public override void RecalculateSize()
     {
         int itemCount = CategorizedInventory.Items.Count;
-
-        float cellW = ExpectedItemWidth;
-        float cellH = ExpectedItemHeight;
-        float hPad = _itemGridNode.HorizontalPadding;
-        float vPad = _itemGridNode.VerticalPadding;
+        float cellW = ExpectedItemWidth, cellH = ExpectedItemHeight;
+        float hPad = _itemGridNode.HorizontalPadding, vPad = _itemGridNode.VerticalPadding;
 
         if (itemCount == 0)
         {
@@ -284,46 +269,37 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             _baseHeaderWidth = width;
             _itemGridNode.Position = new Vector2(0, HeaderHeight);
             _itemGridNode.Size = new Vector2(width, 0);
-            ApplyHeaderVisualStateAndSize();
+            ApplyHeaderVisualState();
             return;
         }
 
         int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
-
-        float minUsableWidth = cellW;
-        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= minUsableWidth)
+        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= cellW)
         {
-            int maxColumns = (int)MathF.Floor((_maxWidth.Value + hPad) / (cellW + hPad));
-            maxColumns = Math.Max(1, maxColumns);
-
-            float widthNeeded = maxColumns * cellW + (maxColumns - 1) * hPad;
-            if (widthNeeded > _maxWidth.Value && maxColumns > 1)
-                maxColumns--;
-
+            int maxColumns = Math.Max(1, (int)MathF.Floor((_maxWidth.Value + hPad) / (cellW + hPad)));
+            if (maxColumns * cellW + (maxColumns - 1) * hPad > _maxWidth.Value && maxColumns > 1) maxColumns--;
             itemsPerLine = Math.Min(itemsPerLine, maxColumns);
         }
 
         int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
         int actualColumns = Math.Min(itemCount, itemsPerLine);
-
         float calculatedWidth = _fixedWidth ?? Math.Max(MinWidth, actualColumns * cellW + (actualColumns - 1) * hPad);
-
-        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= minUsableWidth)
+        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= cellW)
             calculatedWidth = Math.Min(calculatedWidth, _maxWidth.Value);
 
         float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
-
         Size = new Vector2(calculatedWidth, height);
         _hoverCollisionNode.Size = Size;
         _itemGridNode.Position = new Vector2(0, HeaderHeight);
         _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
-
-        if (_itemGridNode.ItemsPerLine != itemsPerLine)
-            _itemGridNode.ItemsPerLine = itemsPerLine;
+        if (_itemGridNode.ItemsPerLine != itemsPerLine) _itemGridNode.ItemsPerLine = itemsPerLine;
         _baseHeaderWidth = calculatedWidth;
-
-        ApplyHeaderVisualStateAndSize();
+        ApplyHeaderVisualState();
     }
+
+    #endregion
+
+    #region Items
 
     private void UpdateItemGrid()
     {
@@ -331,21 +307,10 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             dataList: CategorizedInventory.Items,
             getKeyFromData: item => item.Key,
             getKeyFromNode: node => node.ItemInfo?.Key ?? 0,
-            updateNode: UpdateInventoryDragDropNode,
+            updateNode: (node, data) => { node.ItemInfo = data; ApplyItemDataToNode(node, data); },
             createNodeMethod: CreateInventoryDragDropNode,
-            resetNodeForReuse: ResetDragDropNodeForReuse,
+            resetNodeForReuse: static node => node.ResetForReuse(),
             externalPool: SharedItemPool);
-    }
-
-    private void UpdateInventoryDragDropNode(InventoryDragDropNode node, ItemInfo data)
-    {
-        node.ItemInfo = data;
-        ApplyItemDataToNode(node, data);
-    }
-
-    private static void ResetDragDropNodeForReuse(InventoryDragDropNode node)
-    {
-        node.ResetForReuse();
     }
 
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
@@ -356,14 +321,13 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             IsVisible = true,
             AcceptedType = DragDropType.Item,
             IsClickable = true,
-            OnDiscard = OnNodeDiscard,
+            OnDiscard = n => { if (n is InventoryDragDropNode dn) OnDiscard(n, dn.ItemInfo); },
             OnEnd = _ => OnDragEnd?.Invoke(),
-            OnPayloadAccepted = OnNodePayloadAccepted,
+            OnPayloadAccepted = (n, p) => { if (n is InventoryDragDropNode dn) OnPayloadAccepted(n, p, dn.ItemInfo); },
             OnRollOver = OnNodeRollOver,
             OnRollOut = OnNodeRollOut,
             ItemInfo = data
         };
-
         ApplyItemDataToNode(node, data);
         return node;
     }
@@ -371,65 +335,42 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private void ApplyItemDataToNode(InventoryDragDropNode node, ItemInfo data)
     {
         var config = System.Config.General;
-
         InventoryItem item = data.Item;
-        InventoryMappedLocation visualLocation = data.VisualLocation;
-
-        var visualInvType = InventoryType.GetInventoryTypeFromContainerId(visualLocation.Container);
-        int absoluteIndex = visualInvType.GetInventoryStartIndex + visualLocation.Slot;
+        InventoryMappedLocation vis = data.VisualLocation;
+        var visInvType = InventoryType.GetInventoryTypeFromContainerId(vis.Container);
 
         node.IconId = item.IconId;
         node.Alpha = data.VisualAlpha;
         node.IsDraggable = !data.IsSlotBlocked;
         node.IconNode.IconExtras.AntsNode.IsVisible = data.IsRelationshipHighlighted;
-        if (data.IsRelationshipHighlighted && config.AnimationEnabled)
-        {
-            node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
-        }
-        else
-        {
-            node.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
-        }
 
-        Vector3? decorationColor = null;
-        if (config.UseUnifiedExternalCategories)
-        {
-            decorationColor = ExternalCategoryManager.GetItemOverlayColor(item.ItemId);
-        }
-        var finalColor = decorationColor ?? data.HighlightOverlayColor;
-        // Set color on IconNode, not the container - the icon image is inside IconNode
-        node.IconNode.AddColor = finalColor;
+        if (data.IsRelationshipHighlighted && config.AnimationEnabled)
+            node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
+        else
+            node.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
+
+        Vector3? deco = config.UseUnifiedExternalCategories ? ExternalCategoryManager.GetItemOverlayColor(item.ItemId) : null;
+        node.IconNode.AddColor = deco ?? data.HighlightOverlayColor;
 
         node.Payload = new DragDropPayload
         {
             Type = DragDropType.Item,
-            Int1 = visualLocation.Container,
-            Int2 = visualLocation.Slot,
-            ReferenceIndex = (short)absoluteIndex
+            Int1 = vis.Container,
+            Int2 = vis.Slot,
+            ReferenceIndex = (short)(visInvType.GetInventoryStartIndex + vis.Slot)
         };
-    }
-
-    private void OnNodeDiscard(DragDropNode n)
-    {
-        if (n is not InventoryDragDropNode node) return;
-        OnDiscard(n, node.ItemInfo);
-    }
-
-    private void OnNodePayloadAccepted(DragDropNode n, DragDropPayload acceptedPayload)
-    {
-        if (n is not InventoryDragDropNode node) return;
-        OnPayloadAccepted(n, acceptedPayload, node.ItemInfo);
     }
 
     private void OnNodeRollOver(DragDropNode n)
     {
+        BeginHeaderHover();
         if (n is not InventoryDragDropNode node) return;
-        var item = node.ItemInfo.Item;
-        n.ShowInventoryItemTooltip(item.Container, item.Slot);
+        n.ShowInventoryItemTooltip(node.ItemInfo.Item.Container, node.ItemInfo.Item.Slot);
     }
 
     private unsafe void OnNodeRollOut(DragDropNode n)
     {
+        EndHeaderHover();
         ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(n)->Id;
         AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
     }
@@ -440,43 +381,23 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         var nodes = _itemGridNode.Nodes;
         for (int i = 0; i < nodes.Count; i++)
         {
-            if (nodes[i] is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null)
-                continue;
-
+            if (nodes[i] is not InventoryDragDropNode itemNode || itemNode.ItemInfo == null) continue;
             var info = itemNode.ItemInfo;
-            float newAlpha = info.VisualAlpha;
-            bool newDraggable = !info.IsSlotBlocked;
-            bool newAntsVisible = info.IsRelationshipHighlighted;
 
-            // Get overlay color - prefer external decoration color, fallback to highlight
-            Vector3? decorationColor = null;
-            if (config.UseUnifiedExternalCategories)
-            {
-                decorationColor = ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId);
-            }
-            Vector3 newColor = decorationColor ?? info.HighlightOverlayColor;
+            if (MathF.Abs(itemNode.Alpha - info.VisualAlpha) > 0.001f) itemNode.Alpha = info.VisualAlpha;
 
-            if (!NearlyEqual(itemNode.Alpha, newAlpha))
-                itemNode.Alpha = newAlpha;
+            Vector3? deco = config.UseUnifiedExternalCategories ? ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId) : null;
+            Vector3 color = deco ?? info.HighlightOverlayColor;
+            if (itemNode.IconNode.AddColor != color) itemNode.IconNode.AddColor = color;
 
-            if (itemNode.IconNode.AddColor != newColor)
-                itemNode.IconNode.AddColor = newColor;
+            if (itemNode.IsDraggable != !info.IsSlotBlocked) itemNode.IsDraggable = !info.IsSlotBlocked;
 
-            if (itemNode.IsDraggable != newDraggable)
-                itemNode.IsDraggable = newDraggable;
-
-            if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != newAntsVisible)
-                itemNode.IconNode.IconExtras.AntsNode.IsVisible = newAntsVisible;
-
-            if (newAntsVisible && config.AnimationEnabled)
-                itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
-            else
-                itemNode.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
+            bool ants = info.IsRelationshipHighlighted;
+            if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != ants) itemNode.IconNode.IconExtras.AntsNode.IsVisible = ants;
+            if (ants && config.AnimationEnabled) itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
+            else itemNode.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool NearlyEqual(float a, float b) => MathF.Abs(a - b) < 0.001f;
 
     private unsafe void OnDiscard(DragDropNode node, ItemInfo item)
     {
@@ -488,7 +409,6 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         try
         {
-            // KTK clears node.Payload before invoking this, so setting it manually again
             var nodePayload = new DragDropPayload
             {
                 Type = DragDropType.Item,
@@ -497,34 +417,24 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
                 ReferenceIndex = (short)(targetItemInfo.Item.Container.GetInventoryStartIndex + targetItemInfo.VisualLocation.Slot)
             };
 
-            Services.Logger.DebugOnly($"[OnPayload] ACCEPTED payload: Type={acceptedPayload.Type} Int1={acceptedPayload.Int1} Int2={acceptedPayload.Int2} Ref={acceptedPayload.ReferenceIndex}");
-            Services.Logger.DebugOnly($"[OnPayload] NODE payload: Type={nodePayload.Type} Int1={nodePayload.Int1} Int2={nodePayload.Int2} Ref={nodePayload.ReferenceIndex}");
-
-            if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload)
-            {
-                Services.Logger.Warning($"[OnPayload] Invalid payload type: Accepted={acceptedPayload.Type} Node={nodePayload.Type}");
-                return;
-            }
+            if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload) return;
 
             if (acceptedPayload.IsSameBaseContainer(nodePayload))
             {
-                Services.Logger.DebugOnly("[OnPayload] Source and target are in the same base container, skipping move.");
                 node.IconId = targetItemInfo.IconId;
                 node.Payload = nodePayload;
                 return;
             }
 
-            var sourceCopy = acceptedPayload;
-            var targetCopy = nodePayload;
-
-            InventoryMoveHelper.HandleItemMovePayload(sourceCopy, targetCopy);
+            InventoryMoveHelper.HandleItemMovePayload(acceptedPayload, nodePayload);
             OnRefreshRequested?.Invoke();
         }
-        catch (Exception ex)
-        {
-            Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance");
-        }
+        catch (Exception ex) { Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance"); }
     }
+
+    #endregion
+
+    #region Reset / Pool
 
     public void ResetForReuse()
     {
@@ -533,18 +443,18 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _lastItemsHash = 0;
         _lastItemsPerLine = 0;
         _itemsNeedPopulation = false;
-
         _hoverRefs = 0;
         _headerSuppressed = false;
         _headerExpanded = false;
+        _collapsePending = false;
         _fullHeaderText = string.Empty;
-
         _fixedWidth = null;
         _maxWidth = null;
 
         _categoryNameTextNode.String = string.Empty;
         _categoryNameTextNode.TextTooltip = string.Empty;
         _categoryNameTextNode.IsVisible = true;
+        _categoryNameTextNode.Position = Vector2.Zero;
 
         using (_itemGridNode.DeferRecalculateLayout())
         {
@@ -558,34 +468,12 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         var nodes = _itemGridNode.Nodes;
         for (int i = 0; i < nodes.Count; i++)
         {
-            if (nodes[i] is not InventoryDragDropNode itemNode)
-                continue;
-
-            if (SharedItemPool != null)
-            {
-                if (!SharedItemPool.TryReturn(itemNode))
-                {
-                    try
-                    {
-                        itemNode.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing overflow item node");
-                    }
-                }
-            }
-            else
-            {
-                try
-                {
-                    itemNode.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing item node (no pool)");
-                }
-            }
+            if (nodes[i] is not InventoryDragDropNode itemNode) continue;
+            if (SharedItemPool is not null && SharedItemPool.TryReturn(itemNode)) continue;
+            try { itemNode.Dispose(); }
+            catch (Exception ex) { Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing item node"); }
         }
     }
+
+    #endregion
 }

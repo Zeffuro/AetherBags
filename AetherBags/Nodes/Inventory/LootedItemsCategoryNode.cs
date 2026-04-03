@@ -36,6 +36,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     private int _hoverRefs;
     private bool _headerExpanded;
+    private bool _collapsePending;
     private float _baseHeaderWidth = 96f;
     private string _fullHeaderText = "Recently Looted";
 
@@ -156,6 +157,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
     public void BeginHeaderHover()
     {
         _hoverRefs++;
+        _collapsePending = false;
+
         if (_hoverRefs != 1) return;
 
         _headerExpanded = true;
@@ -170,9 +173,16 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         _hoverRefs--;
         if (_hoverRefs != 0) return;
 
-        _headerExpanded = false;
-        ApplyHeaderVisualStateAndSize();
-        HeaderHoverChanged?.Invoke(this, false);
+        _collapsePending = true;
+        Services.Framework.RunOnTick(() =>
+        {
+            if (!_collapsePending) return;
+            _collapsePending = false;
+
+            _headerExpanded = false;
+            ApplyHeaderVisualStateAndSize();
+            HeaderHoverChanged?.Invoke(this, false);
+        });
     }
 
     private void ApplyHeaderVisualStateAndSize()
@@ -193,10 +203,13 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             _headerTextNode.Size = _headerTextNode.Size with { X = expandedWidth };
 
             _clearButton.Position = new Vector2(expandedWidth + 4f, (HeaderHeight - ClearButtonSize) / 2);
+
+            _headerTextNode.Position = new Vector2(0, 1);
         }
         else
         {
             _headerTextNode.Size = _headerTextNode.Size with { X = _baseHeaderWidth };
+            _headerTextNode.Position = Vector2.Zero;
 
             if (!string.IsNullOrEmpty(_fullHeaderText))
                 _headerTextNode.String = _fullHeaderText;
@@ -248,7 +261,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         OnDismissItem?.Invoke(index);
     }
 
-    public override void RecalculateSize()
+    public sealed override void RecalculateSize()
     {
         int itemCount = _lootedItems.Count;
 
