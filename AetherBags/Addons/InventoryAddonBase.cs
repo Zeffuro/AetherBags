@@ -462,7 +462,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             if (!HoverSubscribed.Add(node))
                 continue;
 
-            node.HeaderHoverChanged += (src, hovering) =>
+            node.OnHeaderHoverChanged += (src, hovering) =>
             {
                 HoverCoordinator.OnCategoryHoverChanged(CategoriesNode, src, hovering);
             };

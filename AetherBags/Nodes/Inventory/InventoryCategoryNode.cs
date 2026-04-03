@@ -47,7 +47,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private bool _itemsNeedPopulation;
     private CategorizedInventory _categorizedInventory;
 
-    public event Action<InventoryCategoryNode, bool>? HeaderHoverChanged;
+    public event Action<InventoryCategoryNode, bool>? OnHeaderHoverChanged;
     public bool NeedsItemPopulation => _itemsNeedPopulation;
     public Action? OnRefreshRequested { get; set; }
     public Action? OnDragEnd { get; set; }
@@ -190,7 +190,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
         _headerExpanded = true;
         ApplyHeaderVisualState();
-        HeaderHoverChanged?.Invoke(this, true);
+        OnHeaderHoverChanged?.Invoke(this, true);
     }
 
     public void EndHeaderHover()
@@ -204,9 +204,14 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         {
             if (!_collapsePending) return;
             _collapsePending = false;
-            _headerExpanded = false;
-            ApplyHeaderVisualState();
-            HeaderHoverChanged?.Invoke(this, false);
+
+            try
+            {
+                _headerExpanded = false;
+                ApplyHeaderVisualState();
+                OnHeaderHoverChanged?.Invoke(this, false);
+            }
+            catch (NullReferenceException) { }
         });
     }
 

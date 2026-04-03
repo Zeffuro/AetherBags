@@ -179,9 +179,13 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             if (!_collapsePending) return;
             _collapsePending = false;
 
-            _headerExpanded = false;
-            ApplyHeaderVisualStateAndSize();
-            HeaderHoverChanged?.Invoke(this, false);
+            try
+            {
+                _headerExpanded = false;
+                ApplyHeaderVisualStateAndSize();
+                HeaderHoverChanged?.Invoke(this, false);
+            }
+            catch (NullReferenceException) { }
         });
     }
 
