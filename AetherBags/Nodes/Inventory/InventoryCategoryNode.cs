@@ -23,6 +23,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private const uint CategoryNodeKeyBase = 0x10000000;
 
     public override uint Key => CategoryNodeKeyBase | CategorizedInventory.Key;
+    private readonly CollisionNode _hoverCollisionNode;
     private readonly TextNode _categoryNameTextNode;
     private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
 
@@ -55,14 +56,20 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     public InventoryCategoryNode()
     {
+        _hoverCollisionNode = new CollisionNode
+        {
+            Size = new Vector2(240, 108),
+            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.EmitsEvents,
+        };
+        _hoverCollisionNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
+        _hoverCollisionNode.AddEvent(AtkEventType.MouseOut, EndHeaderHover);
+        _hoverCollisionNode.AttachNode(this);
+
         _categoryNameTextNode = new TextNode
         {
             Size = new Vector2(96, 16),
             AlignmentType = AlignmentType.Left,
         };
-
-        _categoryNameTextNode.AddEvent(AtkEventType.MouseOver, BeginHeaderHover);
-        _categoryNameTextNode.AddEvent(AtkEventType.MouseOut, EndHeaderHover);
 
         _categoryNameTextNode.TextFlags |= TextFlags.OverflowHidden | TextFlags.Ellipsis;
         _categoryNameTextNode.TextFlags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
@@ -273,6 +280,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             float width = _fixedWidth ?? MinWidth;
             if (_maxWidth.HasValue) width = Math.Min(width, _maxWidth.Value);
             Size = new Vector2(width, HeaderHeight);
+            _hoverCollisionNode.Size = Size;
             _baseHeaderWidth = width;
             _itemGridNode.Position = new Vector2(0, HeaderHeight);
             _itemGridNode.Size = new Vector2(width, 0);
@@ -306,6 +314,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
 
         Size = new Vector2(calculatedWidth, height);
+        _hoverCollisionNode.Size = Size;
         _itemGridNode.Position = new Vector2(0, HeaderHeight);
         _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
 
@@ -379,7 +388,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         }
         else
         {
-            node.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
+            node.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
         }
 
         Vector3? decorationColor = null;
@@ -415,14 +424,12 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private void OnNodeRollOver(DragDropNode n)
     {
         if (n is not InventoryDragDropNode node) return;
-        BeginHeaderHover();
         var item = node.ItemInfo.Item;
         n.ShowInventoryItemTooltip(item.Container, item.Slot);
     }
 
     private unsafe void OnNodeRollOut(DragDropNode n)
     {
-        EndHeaderHover();
         ushort addonId = RaptureAtkUnitManager.Instance()->GetAddonByNode(n)->Id;
         AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
     }
@@ -464,7 +471,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             if (newAntsVisible && config.AnimationEnabled)
                 itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(26);
             else
-                itemNode.IconNode.IconExtras.AntsNode.Timeline?.PlayAnimation(0);
+                itemNode.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
         }
     }
 

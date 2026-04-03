@@ -6,6 +6,7 @@ using AetherBags.Inventory;
 using AetherBags.Nodes.Input;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Configuration.General;
 

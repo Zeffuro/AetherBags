@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
 using AetherBags.Currency;
-using KamiToolKit.Premade.ListItemNodes;
-using KamiToolKit.Premade.SearchAddons;
+using KamiToolKit.Premade.Addon.Search;
+using KamiToolKit.Premade.Node.ListItem;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;

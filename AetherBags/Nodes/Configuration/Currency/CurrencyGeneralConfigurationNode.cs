@@ -6,6 +6,7 @@ using AetherBags.Nodes.Color;
 using AetherBags.Nodes.Configuration.Category;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Nodes.Configuration.Currency;

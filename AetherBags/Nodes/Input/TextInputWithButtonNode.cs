@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Input;

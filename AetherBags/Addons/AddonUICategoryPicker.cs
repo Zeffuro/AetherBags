@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using AetherBags.Nodes.Configuration.Category;
-using KamiToolKit.Premade.SearchAddons;
+using KamiToolKit.Premade.Addon.Search;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;

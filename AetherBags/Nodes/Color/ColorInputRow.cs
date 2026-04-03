@@ -2,8 +2,8 @@ using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Addons;
-using KamiToolKit.Premade.Color;
+using KamiToolKit.Premade.Addon;
+using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Color;
 

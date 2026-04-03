@@ -2,6 +2,7 @@
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
