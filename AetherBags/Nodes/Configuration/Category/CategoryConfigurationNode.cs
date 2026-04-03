@@ -31,6 +31,7 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
             {
                 OnLayoutChanged = RecalculateLayout,
                 OnCategoryPropertyChanged = OnCategoryChanged,
+                OnCategoryImported = OnCategoryChanged,
             };
             _activeNode.AttachNode(this);
         }

@@ -74,6 +74,14 @@ public class CommandHandler : IDisposable
                 HandleExport();
                 break;
 
+            case "export-categories":
+                ImportExportResetHelper.TryExportCategoriesToClipboard();
+                break;
+
+            case "import-categories":
+                ImportExportResetHelper.TryImportCategoriesFromClipboard(true);
+                break;
+
             case "import":
                 ImportExportResetHelper.TryImportConfigFromClipboard();
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
@@ -357,6 +365,8 @@ public class CommandHandler : IDisposable
             ("/ab import", "Import config from clipboard (hold Shift)"),
             ("/ab import-sk", "Import SortaKinda clipboard config"),
             ("/ab export", "Export config to clipboard"),
+            ("/ab export-categories", "Export all categories to clipboard"),
+            ("/ab import-categories", "Import categories from clipboard (replaces existing)"),
             ("/ab reset", "Reset config to default"),
 
             ("/ab help", "Show this help message"),

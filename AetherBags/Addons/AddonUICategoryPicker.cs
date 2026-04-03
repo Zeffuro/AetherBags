@@ -1,11 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
 using AetherBags.Nodes.Configuration.Category;
 using KamiToolKit.Premade.Addon.Search;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;
 
-public class AddonUICategoryPicker : BaseSearchAddon<ItemUICategory, UICategoryListItemNode> {
+public class AddonUICategoryPicker : BaseSearchAddon<ItemUICategory, UICategoryListItemWithAddNode> {
     protected override int Comparer(ItemUICategory left, ItemUICategory right, string sort, bool rev)
         => string.CompareOrdinal(left.Name.ToString(), right.Name.ToString());
 

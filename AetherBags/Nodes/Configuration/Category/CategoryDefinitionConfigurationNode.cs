@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Helpers;
+using AetherBags.Helpers.Import;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
+using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
 using KamiToolKit.Premade.Node.Simple;
@@ -21,14 +26,44 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 
     public Action? OnLayoutChanged { get; init; }
     public Action? OnCategoryPropertyChanged { get; init; }
+    public Action? OnCategoryImported { get; init; }
 
     private UserCategoryDefinition _categoryDefinition = new();
 
+    private readonly HorizontalListNode _headerButtonsList;
     private readonly ScrollingAreaNode<VerticalListNode> _scrollingArea;
     private readonly List<ConfigurationSection> _sections = new();
 
     public CategoryDefinitionConfigurationNode()
     {
+        _headerButtonsList = new HorizontalListNode
+        {
+            Height = 30,
+            ItemSpacing = 2.0f,
+            Alignment = HorizontalListAnchor.Right,
+        };
+        _headerButtonsList.AttachNode(this);
+
+        _headerButtonsList.AddNode(new ResNode { Width = 12 });
+
+        _headerButtonsList.AddNode(new ImGuiIconButtonNode
+        {
+            Width = 28,
+            Height = 28,
+            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
+            TextTooltip = "Import Category from Clipboard (Overwrites current)\n(hold shift to confirm)",
+            OnClick = HandleImportCategory,
+        });
+
+        _headerButtonsList.AddNode(new ImGuiIconButtonNode
+        {
+            Width = 28,
+            Height = 28,
+            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
+            TextTooltip = "Export Category to Clipboard",
+            OnClick = HandleExportCategory,
+        });
+
         _scrollingArea = new ScrollingAreaNode<VerticalListNode> {
             AutoHideScrollBar = true,
             ContentHeight = 100f
@@ -63,7 +98,12 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
     {
         base.OnSizeChanged();
 
-        _scrollingArea.Size = Size;
+        _headerButtonsList.Size = new Vector2(Width, 30);
+        _headerButtonsList.Position = new Vector2(0, 0);
+        _headerButtonsList.RecalculateLayout();
+
+        _scrollingArea.Position = new Vector2(0, 34);
+        _scrollingArea.Size = Size with { Y = Size.Y - 34 };
 
         foreach (var section in _sections)
         {
@@ -87,6 +127,34 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
     }
 
     private static void NotifyChanged() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+
+    private void HandleExportCategory()
+    {
+        CategoryImportExport.ExportCategoryToClipboard(_categoryDefinition);
+    }
+
+    private void HandleImportCategory()
+    {
+        if (!Services.KeyState[VirtualKey.SHIFT]) return;
+
+        var imported = CategoryImportExport.ImportCategoryFromClipboard();
+        if (imported is null) return;
+
+        _categoryDefinition.Name = imported.Name;
+        _categoryDefinition.Description = imported.Description;
+        _categoryDefinition.Priority = imported.Priority;
+        _categoryDefinition.Color = imported.Color;
+        _categoryDefinition.Enabled = imported.Enabled;
+        _categoryDefinition.Pinned = imported.Pinned;
+        _categoryDefinition.Rules = imported.Rules;
+
+        Util.SaveConfig(System.Config);
+
+        foreach (var section in _sections) section.Refresh();
+        HandleLayoutChange();
+        OnCategoryPropertyChanged?.Invoke();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
+    }
 
     public static string ResolveItemName(uint itemId) => ItemSheet?.GetRow(itemId).Name.ToString() ?? "Unknown";
 

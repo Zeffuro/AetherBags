@@ -85,6 +85,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
             ItemSpacing = 3.0f,
         };
         _itemPicker.SelectionResult = item => _itemIdsEditor?.AddValue(item.RowId);
+        ItemListItemWithAddNode.OnAddClicked = item => _itemIdsEditor?.AddValue(item.RowId);
         _itemPicker.Open();
     }
 
@@ -97,6 +98,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
                 .ToList()
         };
         _categoryPicker.SelectionResult = cat => _uiCategoriesEditor?.AddValue(cat.RowId);
+        UICategoryListItemWithAddNode.OnAddClicked = cat => _uiCategoriesEditor?.AddValue(cat.RowId);
         _categoryPicker.Open();
     }
 
