@@ -667,7 +667,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         ContextMenu = new ContextMenu();
 
@@ -678,7 +678,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             ScrollableCategories.ScrollBarNode.OnValueChanged = OnScrollValueChanged;
         }
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void OnUpdate(AtkUnitBase* addon)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -7,6 +8,7 @@ using AetherBags.Nodes.Configuration.Category;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
 
@@ -24,7 +26,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     private bool _suppressSelectionListRefresh;
     private bool _pendingSelectionListRefresh;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon)
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         _categoryWrappers = CreateCategoryWrappers();
 
@@ -36,9 +38,9 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             SelectionChanged = OnOptionChanged,
             AddNewEntry = OnAddNewCategory,
             RemoveEntry = OnRemoveCategory,
-            SortOptions = [ "Order" ],
-            ItemComparer = (left, right, mode) => left.Compare(right, mode),
-            IsSearchMatch = (data, search) => data.GetLabel().Contains(search, global::System.StringComparison.OrdinalIgnoreCase)
+            SortOptions = [ DefaultSortOptions.Alphabetical ],
+            ItemComparer = (left, right, mode) => left.Compare(right),
+            IsSearchMatch = (data, search) => data.GetLabel().Contains(search, StringComparison.OrdinalIgnoreCase)
         };
         _selectionListNode.AttachNode(this);
 

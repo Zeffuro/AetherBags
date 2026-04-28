@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -25,7 +26,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     protected override float MinWindowWidth => 500;
     protected override float MaxWindowWidth => 600;
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -88,7 +89,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

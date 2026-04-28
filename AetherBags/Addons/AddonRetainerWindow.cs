@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Inventory;
@@ -32,7 +33,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -114,7 +115,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

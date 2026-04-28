@@ -3,7 +3,6 @@ using AetherBags.Inventory.Categories;
 
 namespace AetherBags.Addons;
 
-// Removed IInfoNodeData implementation
 public class CategoryWrapper(UserCategoryDefinition categoryDefinition)
 {
     public UserCategoryDefinition? CategoryDefinition { get; } = categoryDefinition;
@@ -19,7 +18,7 @@ public class CategoryWrapper(UserCategoryDefinition categoryDefinition)
 
     public uint? GetIconId() => 0;
 
-    public int Compare(CategoryWrapper other, string sortingMode) {
+    public int Compare(CategoryWrapper other) {
         return CategoryDefinition!.Order.CompareTo(other.CategoryDefinition!.Order);
     }
 }

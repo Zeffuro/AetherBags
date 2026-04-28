@@ -24,5 +24,5 @@ public class AddonCurrencyPicker : BaseSearchAddon<Item, ItemListItemNode> {
     }
 
     protected override bool IsMatch(Item item, string search) => item.Name.ToString().Contains(search, StringComparison.OrdinalIgnoreCase);
-    protected override int Comparer(Item l, Item r, string s, bool rev) => string.CompareOrdinal(l.Name.ToString(), r.Name.ToString());
+    protected override int Comparer(Item l, Item r, Enum s, bool rev) => string.CompareOrdinal(l.Name.ToString(), r.Name.ToString());
 }

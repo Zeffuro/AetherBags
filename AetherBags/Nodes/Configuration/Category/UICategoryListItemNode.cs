@@ -6,8 +6,8 @@ using Lumina.Excel.Sheets;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public class UICategoryListItemNode : ListItemNode<ItemUICategory> {
-    public override float ItemHeight => 30.0f;
+public class UICategoryListItemNode : ListItemNode<ItemUICategory>, IListItemNode {
+    public static float ItemHeight => 30.0f;
     protected readonly TextNode LabelTextNode;
 
     public UICategoryListItemNode() {

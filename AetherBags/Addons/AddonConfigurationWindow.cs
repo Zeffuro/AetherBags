@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
@@ -18,7 +19,7 @@ public class AddonConfigurationWindow : NativeAddon
 
     private readonly List<NodeBase> _tabContent = new();
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon)
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         var tabContentY = ContentStartPosition.Y + 40;
         var tabContentHeight = ContentSize.Y - 40;
@@ -65,7 +66,7 @@ public class AddonConfigurationWindow : NativeAddon
         _tabBarNode.AddTab("Categories", () => SwitchTab(1));
         _tabBarNode.AddTab("Currency", () => SwitchTab(2));
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void SwitchTab(int index)

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using AetherBags.Addons;
 using AetherBags.Configuration;
+using KamiToolKit.Enums;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
@@ -81,7 +82,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
                 .Where(i => i.RowId > 0 && !i.Name.IsEmpty)
                 .ToList(),
 
-            SortingOptions = ["Alphabetical", "Id"],
+            SortingOptions = [DefaultSortOptions.Alphabetical, DefaultSortOptions.Id],
             ItemSpacing = 3.0f,
         };
         _itemPicker.SelectionResult = item => _itemIdsEditor?.AddValue(item.RowId);

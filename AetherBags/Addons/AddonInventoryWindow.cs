@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Inventory.Context;
@@ -21,7 +22,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -99,7 +100,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
