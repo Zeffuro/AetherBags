@@ -14,7 +14,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text.ReadOnly;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
+using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.AtkValueType;
 
 namespace AetherBags.Monitoring;
 
@@ -177,7 +177,7 @@ public class InventoryMonitor : IDisposable
         AtkValue* value5 = (AtkValue*)atkValues[5].Address;
         AtkValue* value6 = (AtkValue*)atkValues[6].Address;
 
-        if (value5->Type != ValueType.ManagedString || value6->Type != ValueType.ManagedString)
+        if (value5->Type != AtkValueType.ManagedString || value6->Type != AtkValueType.ManagedString)
             return;
 
         ReadOnlySeString title = value5->String.AsReadOnlySeString();

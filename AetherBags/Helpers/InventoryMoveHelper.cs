@@ -2,7 +2,6 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags. Helpers;
 
@@ -34,7 +33,7 @@ public static unsafe class InventoryMoveHelper
         var atkValues = stackalloc AtkValue[4];
         for (var i = 0; i < 4; i++)
         {
-            atkValues[i].Type = ValueType.UInt;
+            atkValues[i].Type = AtkValueType.UInt;
         }
 
         atkValues[0].UInt = srcContainer;
