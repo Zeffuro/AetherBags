@@ -148,7 +148,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
             if (!StandardInventories.Contains((InventoryType)eventData.Item.ContainerType))
                 continue;
 
-            if (eventData.Item.ContainerType == GameInventoryType.DamagedGear)
+            if (eventData.Item.ContainerType == GameInventoryType.BlockedItems)
                 continue;
 
             int changeAmount = eventData switch
