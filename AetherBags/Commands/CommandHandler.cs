@@ -133,7 +133,7 @@ public class CommandHandler : IDisposable
         {
             case "":
             case "help":
-                PrintChat("Debug commands:\n  /ab debug saddle       - Toggle saddlebag window\n  /ab debug retainer      - Toggle retainer window\n  /ab debug test [arg]    - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug help          - Show this message");
+                PrintChat("Debug commands:\n  /ab debug saddle       - Toggle saddlebag window\n  /ab debug retainer      - Toggle retainer window\n  /ab debug test [arg]    - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug batching [arg] - Frame batching (toggle/on/off/status)\n  /ab debug help          - Show this message");
                 break;
 
             case "saddle":
@@ -146,6 +146,10 @@ public class CommandHandler : IDisposable
 
             case "test":
                 HandleTestSource(subArgs);
+                break;
+
+            case "batching":
+                HandleBatching(subArgs);
                 break;
 
             case "refresh":
@@ -284,6 +288,40 @@ public class CommandHandler : IDisposable
         }
 
         PrintChat($"Shown {count} items. Total categories: {categories.Count}");
+    }
+
+    private void HandleBatching(string args)
+    {
+        var subCmd = args.Trim().ToLowerInvariant();
+
+        switch (subCmd)
+        {
+            case "":
+            case "toggle":
+                InventoryAddonBase.DisableBatching = !InventoryAddonBase.DisableBatching;
+                break;
+
+            case "on":
+            case "enable":
+                InventoryAddonBase.DisableBatching = false;
+                break;
+
+            case "off":
+            case "disable":
+                InventoryAddonBase.DisableBatching = true;
+                break;
+
+            case "status":
+                PrintChat($"Frame batching is {(InventoryAddonBase.DisableBatching ? "DISABLED" : "enabled")}.");
+                return;
+
+            default:
+                PrintChat("Usage: /ab debug batching [toggle|on|off|status]\n  on  = batching enabled (default, items spread across frames)\n  off = batching disabled (all items populated in one frame, for profiling)");
+                return;
+        }
+
+        PrintChat($"Frame batching is now {(InventoryAddonBase.DisableBatching ? "DISABLED" : "enabled")}. Refreshing inventory…");
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void HandleTestSource(string args)
