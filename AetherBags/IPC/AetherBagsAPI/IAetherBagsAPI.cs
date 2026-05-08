@@ -19,8 +19,13 @@ public interface IAetherBagsAPI
     event Action? OnInventoryOpened;
     event Action? OnInventoryClosed;
     event Action? OnCategoriesRefreshed;
+    event Action? OnConfigurationChanged;
 
     void RegisterSource(IExternalItemSource source);
     void UnregisterSource(string sourceName);
     IReadOnlyList<string> GetRegisteredSourceNames();
+    string GetConfigurationJson();
+    void SetConfigurationJson(string json);
+    string GetConfigProperty(string propertyPath);
+    void SetConfigProperty(string propertyPath, string jsonValue);
 }

@@ -16,6 +16,10 @@ public class AetherBagsIPCProvider : IDisposable
     private readonly ICallGateProvider<uint, bool> _isItemVisible;
     private readonly ICallGateProvider<string> _getSearchFilter;
     private readonly ICallGateProvider<List<string>> _getRegisteredSources;
+    private readonly ICallGateProvider<string> _getConfigurationJson;
+    private readonly ICallGateProvider<string, bool> _setConfigurationJson;
+    private readonly ICallGateProvider<string, string> _getConfigProperty;
+    private readonly ICallGateProvider<string, string, bool> _setConfigProperty;
 
     private readonly ICallGateProvider<uint, bool> _onItemHovered;
     private readonly ICallGateProvider<uint, bool> _onItemUnhovered;
@@ -24,6 +28,7 @@ public class AetherBagsIPCProvider : IDisposable
     private readonly ICallGateProvider<bool> _onInventoryOpened;
     private readonly ICallGateProvider<bool> _onInventoryClosed;
     private readonly ICallGateProvider<bool> _onCategoriesRefreshed;
+    private readonly ICallGateProvider<bool> _onConfigurationChanged;
 
     public AetherBagsAPIImpl API => _api;
 
@@ -37,6 +42,10 @@ public class AetherBagsIPCProvider : IDisposable
         _isItemVisible = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}IsItemVisible");
         _getSearchFilter = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetSearchFilter");
         _getRegisteredSources = Services.PluginInterface.GetIpcProvider<List<string>>($"{IpcPrefix}GetRegisteredSources");
+        _getConfigurationJson = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetConfigurationJson");
+        _setConfigurationJson = Services.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}SetConfigurationJson");
+        _getConfigProperty = Services.PluginInterface.GetIpcProvider<string, string>($"{IpcPrefix}GetConfigProperty");
+        _setConfigProperty = Services.PluginInterface.GetIpcProvider<string, string, bool>($"{IpcPrefix}SetConfigProperty");
 
         _onItemHovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemHovered");
         _onItemUnhovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemUnhovered");
@@ -45,6 +54,7 @@ public class AetherBagsIPCProvider : IDisposable
         _onInventoryOpened = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryOpened");
         _onInventoryClosed = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryClosed");
         _onCategoriesRefreshed = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnCategoriesRefreshed");
+        _onConfigurationChanged = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnConfigurationChanged");
 
         RegisterFunctions();
         SubscribeEvents();
@@ -58,6 +68,10 @@ public class AetherBagsIPCProvider : IDisposable
         _isItemVisible.RegisterFunc(itemId => _api.IsItemVisible(itemId));
         _getSearchFilter.RegisterFunc(() => _api.GetCurrentSearchFilter());
         _getRegisteredSources.RegisterFunc(() => new List<string>(_api.GetRegisteredSourceNames()));
+        _getConfigurationJson.RegisterFunc(() => _api.GetConfigurationJson());
+        _setConfigurationJson.RegisterAction(json => _api.SetConfigurationJson(json));
+        _getConfigProperty.RegisterFunc(path => _api.GetConfigProperty(path));
+        _setConfigProperty.RegisterAction((path, jsonValue) => _api.SetConfigProperty(path, jsonValue));
     }
 
     private void SubscribeEvents()
@@ -69,6 +83,7 @@ public class AetherBagsIPCProvider : IDisposable
         _api.OnInventoryOpened += () => _onInventoryOpened.SendMessage();
         _api.OnInventoryClosed += () => _onInventoryClosed.SendMessage();
         _api.OnCategoriesRefreshed += () => _onCategoriesRefreshed.SendMessage();
+        _api.OnConfigurationChanged += () => _onConfigurationChanged.SendMessage();
     }
 
     public void Dispose()
@@ -79,5 +94,9 @@ public class AetherBagsIPCProvider : IDisposable
         _isItemVisible.UnregisterFunc();
         _getSearchFilter.UnregisterFunc();
         _getRegisteredSources.UnregisterFunc();
+        _getConfigurationJson.UnregisterFunc();
+        _setConfigurationJson.UnregisterAction();
+        _getConfigProperty.UnregisterFunc();
+        _setConfigProperty.UnregisterAction();
     }
 }

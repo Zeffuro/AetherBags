@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text.Json;
+using AetherBags.Helpers;
 using AetherBags.IPC.ExternalCategorySystem;
 
 namespace AetherBags.IPC.AetherBagsAPI;
@@ -14,6 +17,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
     public event Action? OnInventoryOpened;
     public event Action? OnInventoryClosed;
     public event Action? OnCategoriesRefreshed;
+    public event Action? OnConfigurationChanged;
 
     public bool IsInventoryOpen => System.AddonInventoryWindow?.IsOpen ?? false;
 
@@ -86,6 +90,92 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
         return ExternalCategoryManager.RegisteredSources.Select(s => s.SourceName).ToList();
     }
 
+    public string GetConfigurationJson()
+    {
+        return System.Config != null ? JsonSerializer.Serialize(System.Config) : "{}";
+    }
+
+    public void SetConfigurationJson(string json)
+    {
+        try
+        {
+            var config = JsonSerializer.Deserialize<Configuration.SystemConfiguration>(json);
+            if (config != null)
+            {
+                config.EnsureInitialized();
+                System.Config = config;
+                Util.SaveConfig(System.Config);
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.Error($"Failed to set configuration from JSON: {ex}");
+        }
+    }
+
+    public string GetConfigProperty(string propertyPath)
+    {
+        try
+        {
+            var parts = propertyPath.Split('.');
+            object? current = System.Config;
+
+            foreach (var part in parts)
+            {
+                if (current == null) return "null";
+                var prop = current.GetType().GetProperty(part, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (prop == null) throw new Exception($"Property '{part}' not found on {current.GetType().Name}");
+                current = prop.GetValue(current);
+            }
+
+            return JsonSerializer.Serialize(current);
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.Error($"Failed to get config property '{propertyPath}': {ex}");
+            return "null";
+        }
+    }
+
+    public void SetConfigProperty(string propertyPath, string jsonValue)
+    {
+        try
+        {
+            var parts = propertyPath.Split('.');
+            object? current = System.Config;
+            PropertyInfo? lastProp = null;
+            object? parent = null;
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (current == null) throw new Exception($"Cannot traverse null object at property '{parts[i - 1]}'");
+                lastProp = current.GetType().GetProperty(parts[i], BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (lastProp == null) throw new Exception($"Property '{parts[i]}' not found on {current.GetType().Name}");
+
+                if (i < parts.Length - 1)
+                {
+                    parent = current;
+                    current = lastProp.GetValue(current);
+                }
+                else
+                {
+                    parent = current;
+                }
+            }
+
+            if (lastProp != null && parent != null)
+            {
+                var value = JsonSerializer.Deserialize(jsonValue, lastProp.PropertyType);
+                lastProp.SetValue(parent, value);
+                Util.SaveConfig(System.Config);
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.Error($"Failed to set config property '{propertyPath}': {ex}");
+        }
+    }
+
     public void RaiseItemHovered(uint itemId) => OnItemHovered?.Invoke(itemId);
     public void RaiseItemUnhovered(uint itemId) => OnItemUnhovered?.Invoke(itemId);
     public void RaiseItemClicked(uint itemId) => OnItemClicked?.Invoke(itemId);
@@ -93,4 +183,5 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
     public void RaiseInventoryOpened() => OnInventoryOpened?.Invoke();
     public void RaiseInventoryClosed() => OnInventoryClosed?.Invoke();
     public void RaiseCategoriesRefreshed() => OnCategoriesRefreshed?.Invoke();
+    public void RaiseConfigurationChanged() => OnConfigurationChanged?.Invoke();
 }

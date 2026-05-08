@@ -82,6 +82,7 @@ public static class Util
     {
         FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
         JsonFileHelper.SaveFile(config, file.FullName);
+        System.AetherBagsAPI?.API.RaiseConfigurationChanged();
     }
 
     private static SystemConfiguration LoadConfig()
