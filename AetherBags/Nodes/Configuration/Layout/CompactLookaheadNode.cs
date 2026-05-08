@@ -33,6 +33,8 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             IsVisible = true,
             IsEnabled = config.CompactPackingEnabled,
             Value = config.CompactLookahead,
+            Min = 0,
+            Max = 175, // Inventory Slot Max
             OnValueUpdate = value =>
             {
                 config.CompactLookahead = value;
