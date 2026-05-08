@@ -52,7 +52,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected readonly Debouncer SearchDebouncer = new(System.Config.General.SearchDelay);
 
-    protected virtual float MinWindowWidth => 600;
+    protected virtual float MinWindowWidth => 620;
     protected virtual float MaxWindowWidth => 800;
     protected virtual float MinWindowHeight => 200;
     protected virtual float MaxWindowHeight => 1000;
@@ -335,43 +335,33 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         var header = addon->WindowHeaderCollisionNode;
         float headerW = header->Width;
 
-        float itemY = header->Y + (header->Height - 28f) * 0.5f;
+        const float searchHeight = 28f;
+        float itemY = header->Y + (header->Height - searchHeight) * 0.5f;
 
-        // Reserve space for close button (~50px) and settings button (~48px + gap)
-        const float closeButtonReserve = 50f;
-        const float settingsButtonWidth = 28f;
-        const float minGap = 16f;
-        const float minSearchWidth = 150f;
-        const float maxSearchWidth = 350f;
+        // Space for title (e.g. "AetherRetainerbag" is ~150px)
+        const float titleReserve = 160f;
+        const float gap = 8f;
+        float leftReserve = titleReserve + gap;
+        float rightReserve = SettingsButtonOffset + gap;
 
-        // Calculate max available width for search bar
-        // Layout from right: [closeButton 50px] [settings 28px] [gap 16px] [searchBar] [gap 16px] [leftContent]
-        float rightReserve = closeButtonReserve + settingsButtonWidth + minGap;
-        float leftReserve = 220f; // Space for title (e.g. "Chocobo Saddlebag" is ~200px)
-        float availableForSearch = headerW - rightReserve - leftReserve;
+        const float minSearchWidth = 200f;
+        const float maxSearchWidth = 360f;
 
-        // Search bar width: prefer 45% of header, but clamp to available space and min/max
-        float desiredSearchWidth = headerW * 0.45f;
-        float searchWidth = Math.Clamp(desiredSearchWidth, minSearchWidth, Math.Min(maxSearchWidth, availableForSearch));
+        float available = headerW - rightReserve - leftReserve;
+        float searchWidth = Math.Clamp(
+            headerW * 0.45f,
+            minSearchWidth,
+            Math.Max(minSearchWidth, Math.Min(maxSearchWidth, available)));
 
-        // Center the search bar, but ensure it doesn't extend past the safe right boundary
-        float maxSearchRight = headerW - rightReserve;
-        float centeredSearchX = (headerW - searchWidth) * 0.5f;
-        float searchRight = centeredSearchX + searchWidth;
-
-        // If centered position would overlap with right elements, shift left
-        float searchX = searchRight > maxSearchRight
-            ? maxSearchRight - searchWidth
-            : centeredSearchX;
-
-        // Ensure search bar doesn't go past left reserve
-        if (searchX < leftReserve)
-            searchX = leftReserve;
+        float centeredX = (headerW - searchWidth) * 0.5f;
+        float minX = leftReserve;
+        float maxX = headerW - rightReserve - searchWidth;
+        float searchX = Math.Clamp(centeredX, minX, Math.Max(minX, maxX));
 
         return new HeaderLayout
         {
             SearchPosition = new Vector2(searchX, itemY),
-            SearchSize = new Vector2(searchWidth, 28f),
+            SearchSize = new Vector2(searchWidth, searchHeight),
             HeaderWidth = headerW,
             HeaderY = itemY
         };
