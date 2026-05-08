@@ -5,6 +5,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
+using AetherBags.Enums;
+using AetherBags.Extensions;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -13,19 +15,11 @@ public sealed class RarityEditorNode :VerticalListNode
     private const float LabelWidth = 120f;
     private const float CheckboxWidth = 150f;
 
-    private static readonly string[] RarityNames =
-    [
-        "Common (White)",
-        "Uncommon (Green)",
-        "Rare (Blue)",
-        "Relic (Purple)",
-        "Aetherial (Pink)"
-    ];
-
     public Action? OnChanged { get; set; }
 
     private List<int> _list = [];
     private readonly List<CheckboxNode> _checkboxes = [];
+    private readonly List<int> _checkboxRarities = [];
 
     public RarityEditorNode()
     {
@@ -41,16 +35,18 @@ public sealed class RarityEditorNode :VerticalListNode
         };
         AddNode(headerLabel);
 
-        for (var i = 0; i < RarityNames.Length; i++)
+        var rarities = Enum.GetValues<ItemRarity>();
+        foreach (var rarityEnum in rarities)
         {
-            var rarity = i;
+            var rarity = (int)rarityEnum;
             var checkbox = new CheckboxNode
             {
                 Size = new Vector2(LabelWidth + CheckboxWidth, 22),
-                String = RarityNames[i],
+                String = rarityEnum.Description,
                 OnClick = isChecked => ToggleRarity(rarity, isChecked),
             };
             _checkboxes.Add(checkbox);
+            _checkboxRarities.Add(rarity);
             AddNode(checkbox);
         }
     }
@@ -80,7 +76,7 @@ public sealed class RarityEditorNode :VerticalListNode
     {
         for (var i = 0; i < _checkboxes.Count; i++)
         {
-            _checkboxes[i].IsChecked = _list.Contains(i);
+            _checkboxes[i].IsChecked = _list.Contains(_checkboxRarities[i]);
         }
     }
 }
