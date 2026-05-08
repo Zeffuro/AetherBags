@@ -33,7 +33,6 @@ public static unsafe class InventoryMoveHelper
 
         Services.Logger.DebugOnly($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
 
-        //var atkValues = stackalloc AtkValue[4];
         using var atkValues = new RentedAtkValues(4);
         for (var i = 0; i < 4; i++)
         {
@@ -48,6 +47,8 @@ public static unsafe class InventoryMoveHelper
         var retVal = stackalloc AtkValue[1];
 
         RaptureAtkModule* atkModule = RaptureAtkModule.Instance();
+
+        // This is a networked call, treat with greate care!
         atkModule->HandleItemMove(retVal, atkValues, 4);
     }
 }
