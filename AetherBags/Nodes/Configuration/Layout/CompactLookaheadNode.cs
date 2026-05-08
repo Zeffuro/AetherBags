@@ -18,11 +18,16 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
     {
         GeneralSettings config = System.Config.General;
 
+        const string lookaheadTooltip =
+            "How many upcoming categories to consider when filling a row gap.\n" +
+            "Higher values pack tighter; lower values stay closer to your configured order.";
+
         TitleNode = new LabelTextNode
         {
             TextFlags = TextFlags.AutoAdjustNodeSize,
             Height = 24,
             String = "Compact Lookahead",
+            TextTooltip = lookaheadTooltip,
         };
         TitleNode.AttachNode(this);
 
@@ -35,6 +40,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             Value = config.CompactLookahead,
             Min = 0,
             Max = 175, // Inventory Slot Max
+            TextTooltip = lookaheadTooltip,
             OnValueUpdate = value =>
             {
                 config.CompactLookahead = value;
