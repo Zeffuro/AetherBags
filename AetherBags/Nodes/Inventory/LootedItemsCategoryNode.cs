@@ -100,7 +100,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             Size = new Vector2(240, 92),
             FillRowsFirst = true,
             ItemsPerLine = 10,
-            HorizontalPadding = 5,
+            HorizontalPadding = 2,
             VerticalPadding = 2,
         };
         _itemGridNode.NodeFlags |= NodeFlags.EmitsEvents;
@@ -285,8 +285,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
         int itemCount = _lootedItems.Count;
 
-        const float cellW = 42f;
-        const float cellH = 46f;
+        const float cellW = 44f;
+        const float cellH = 48f;
 
         float hPad = _itemGridNode.HorizontalPadding;
         float vPad = _itemGridNode.VerticalPadding;

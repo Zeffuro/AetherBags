@@ -37,7 +37,7 @@ public class InventoryDragDropNode : DragDropNode
     {
         _quantityTextNode = new TextNode {
             Size = new Vector2(40.0f, 12.0f),
-            Position = new Vector2(4.0f, 34.0f),
+            Position = new Vector2(2.0f, 34.0f),
             NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(51),

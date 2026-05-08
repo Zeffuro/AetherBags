@@ -24,12 +24,12 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
 
     public LootedItemDisplayNode()
     {
-        Size = new Vector2(42, 46);
+        Size = new Vector2(44, 48);
 
         _iconNode = new IconNode
         {
             Position = new Vector2(0, 0),
-            Size = new Vector2(42, 46),
+            Size = new Vector2(44, 48),
         };
         _iconNode.CollisionNode.NodeFlags = 0;
         _iconNode.AttachNode(this);
@@ -41,7 +41,7 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
         _quantityTextNode = new TextNode
         {
             Size = new Vector2(40.0f, 12.0f),
-            Position = new Vector2(4.0f, 34.0f),
+            Position = new Vector2(2.0f, 34.0f),
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(51),
             TextFlags = TextFlags.Edge,

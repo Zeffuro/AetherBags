@@ -20,8 +20,8 @@ namespace AetherBags.Nodes.Inventory;
 public class InventoryCategoryNode : InventoryCategoryNodeBase
 {
     private const uint CategoryNodeKeyBase = 0x10000000;
-    private const float ExpectedItemWidth = 42;
-    private const float ExpectedItemHeight = 46;
+    private const float ExpectedItemWidth = 44;
+    private const float ExpectedItemHeight = 48;
     private const float HeaderHeight = 16;
     private const float MinWidth = 40;
 
@@ -115,7 +115,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             Size = new Vector2(240, 92),
             FillRowsFirst = true,
             ItemsPerLine = 10,
-            HorizontalPadding = 5,
+            HorizontalPadding = 2,
             VerticalPadding = 2,
         };
         _itemGridNode.NodeFlags |= NodeFlags.EmitsEvents;
@@ -322,7 +322,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         var node = new InventoryDragDropNode
         {
-            Size = new Vector2(42, 46),
+            Size = new Vector2(44, 48),
             IsVisible = true,
             AcceptedType = DragDropType.Item,
             IsClickable = true,

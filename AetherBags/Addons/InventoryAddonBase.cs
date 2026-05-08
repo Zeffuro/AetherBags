@@ -58,8 +58,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected virtual float MaxWindowHeight => 1000;
 
     protected const float CategorySpacing = 12;
-    protected const float ItemSize = 42;
-    protected const float ItemPadding = 5;
+    protected const float ItemSize = 44;
+    protected const float ItemPadding = 2;
     protected const float FooterHeight = 28f;
     protected const float FooterTopSpacing = 4f;
     protected const float SettingsButtonOffset = 62f;
@@ -71,7 +71,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected bool IsSetupComplete;
     private bool _deferredPopulationInProgress;
     private bool _initialPopulationComplete;
-    private const int ItemsPerFrame = 50;
+    private const int ItemsPerFrame = 40;
 
     public static bool DisableBatching;
 
@@ -481,7 +481,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             SlotCounterNode.Position = new Vector2(contentSize.X -80f, contentPos.Y + contentSize.Y - footerH + 4f);
         }
 
-        float gridH = contentSize.Y - (HasFooter ? FooterHeight + FooterTopSpacing : 0);
+        float gridH = contentSize.Y - ((HasFooter || HasSlotCounter) ? FooterHeight + FooterTopSpacing : 0);
         if (gridH < 0) gridH = 0;
 
         ScrollableCategories.Position = contentPos;
