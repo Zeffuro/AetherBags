@@ -138,6 +138,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         _currencyListEditor = new UintListEditorNode
         {
             Label = "Displayed Currencies:",
+            LabelWidth = 360f,
             MaxValue = Services.DataManager.GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = id =>
             {

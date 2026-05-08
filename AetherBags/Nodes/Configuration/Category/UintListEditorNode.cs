@@ -14,8 +14,8 @@ namespace AetherBags.Nodes.Configuration.Category;
 
 public sealed class UintListEditorNode : VerticalListNode
 {
-    private const float LabelWidth = 420f;
     private const float RowHeight = 28f;
+    private const float ButtonsAreaWidth = 100f; // 3 buttons (28) + 3 spacings (4) + slack
 
     private List<uint> _list = [];
 
@@ -31,6 +31,9 @@ public sealed class UintListEditorNode : VerticalListNode
     public Action? OnChanged { get; set; }
 
     public uint MaxValue { get; init; } = int.MaxValue;
+
+    public float LabelWidth { get; init; } = 300f;
+    private float RowWidth => LabelWidth + ButtonsAreaWidth;
 
     public required ReadOnlySeString Label
     {
@@ -53,7 +56,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         _itemsContainer = new VerticalListNode
         {
-            Size = new Vector2(LabelWidth + 40f, 0),
+            Size = new Vector2(RowWidth, 0),
             ItemSpacing = 2.0f,
             FitContents = true,
             FirstItemSpacing = 2,
@@ -62,7 +65,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         var addRow = new HorizontalListNode
         {
-            Size = new Vector2(LabelWidth + 40f, RowHeight),
+            Size = new Vector2(RowWidth, RowHeight),
             ItemSpacing = 4.0f,
         };
 
@@ -77,7 +80,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         _addInput = new NumericInputNode
         {
-            Size = new Vector2(280, RowHeight),
+            Size = new Vector2(LabelWidth - 60, RowHeight),
             Min = 0,
             Max = MaxValue > int.MaxValue ? int.MaxValue : (int)MaxValue,
             Value = 0,
@@ -148,9 +151,9 @@ public sealed class UintListEditorNode : VerticalListNode
         OnChanged?.Invoke();
     }
 
-    private UintListItemNode CreateItemNode(uint value, bool isFirst, bool isLast) => new(value, isFirst, isLast, LabelResolver)
+    private UintListItemNode CreateItemNode(uint value, bool isFirst, bool isLast) => new(value, isFirst, isLast, LabelWidth, LabelResolver)
     {
-        Size = new Vector2(LabelWidth + 40f, RowHeight),
+        Size = new Vector2(RowWidth, RowHeight),
         OnRemove = () => RemoveValue(value),
         OnMoveUp = () => MoveValue(value, -1),
         OnMoveDown = () => MoveValue(value, +1),
@@ -183,14 +186,12 @@ public sealed class UintListEditorNode : VerticalListNode
 
 public sealed class UintListItemNode : HorizontalListNode
 {
-    private const float LabelWidth = 360f;
-
     public uint Value { get; }
     public Action? OnRemove { get; init; }
     public Action? OnMoveUp { get; init; }
     public Action? OnMoveDown { get; init; }
 
-    public UintListItemNode(uint value, bool isFirst, bool isLast, Func<uint, string>? labelResolver = null)
+    public UintListItemNode(uint value, bool isFirst, bool isLast, float labelWidth, Func<uint, string>? labelResolver = null)
     {
         Value = value;
         ItemSpacing = 4.0f;
@@ -207,7 +208,7 @@ public sealed class UintListItemNode : HorizontalListNode
 
         AddNode(new LabelTextNode
         {
-            Size = new Vector2(LabelWidth, 24),
+            Size = new Vector2(labelWidth, 24),
             String = displayText,
             TextColor = ColorHelper.GetColor(3),
             TextFlags = TextFlags.OverflowHidden | TextFlags.Ellipsis,
