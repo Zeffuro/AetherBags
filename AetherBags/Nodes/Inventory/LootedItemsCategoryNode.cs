@@ -208,7 +208,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
             _clearButton.Position = new Vector2(expandedWidth + 4f, (HeaderHeight - ClearButtonSize) / 2);
 
-            _headerTextNode.Position = new Vector2(0, 1);
+            _headerTextNode.Position = new Vector2(0, -1);
         }
         else
         {
