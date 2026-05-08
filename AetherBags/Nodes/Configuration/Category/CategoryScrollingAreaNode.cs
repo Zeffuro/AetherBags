@@ -4,6 +4,7 @@ using AetherBags.Addons;
 using AetherBags.Helpers.Import;
 using AetherBags.Inventory;
 using Dalamud.Game.ClientState.Keys;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -53,11 +54,33 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
             OnClick = HandleBulkImport,
         });
 
+        var resetButton = new HoldButtonNode
+        {
+            Y = -4,
+            Width = 100,
+            Height = 28,
+            String = "Reset",
+            TextTooltip = "Resets All Categories\n(hold button to confirm)",
+            TextNode = { TextColor = ColorHelper.GetColor(50) },
+        };
+
+        resetButton.OnClick = () =>
+        {
+            CheckAndCloseCategoryAddon();
+
+            CategoryImportExport.ResetAllCategories(System.Config);
+            resetButton.Reset();
+        };
+
+        categoryButtonRow.AddNode(resetButton);
+
         AddNode(categoryButtonRow);
     }
 
     private void HandleBulkImport()
     {
+        CheckAndCloseCategoryAddon();
+
         if (!Services.KeyState[VirtualKey.SHIFT]) return;
         CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, true);
         InventoryOrchestrator.RefreshAll(updateMaps: true);
@@ -71,6 +94,14 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
             InternalName = "AetherBags_CategoryConfig",
             Title = "Category Configuration Window",
         };
+    }
+
+    private void CheckAndCloseCategoryAddon()
+    {
+        if (_categoryConfigurationAddon != null)
+        {
+            _categoryConfigurationAddon.Close();
+        }
     }
 
     protected override void Dispose(bool disposing, bool isNativeDestructor)

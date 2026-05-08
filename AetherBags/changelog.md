@@ -1,6 +1,7 @@
 # 1.0.0.2
 - Fix ghost hovers for expanded retainer grid too.
 - Now also properly save when closing the configuration window.
+- Added a reset button for the custom categories.
 
 # 1.0.0.1
 - Update KTK

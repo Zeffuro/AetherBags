@@ -153,6 +153,12 @@ public static class CategoryImportExport
 
         return true;
     }
+
+    public static void ResetAllCategories(SystemConfiguration config)
+    {
+        config.Categories.UserCategories = new List<UserCategoryDefinition>();
+        Util.SaveConfig(config);
+    }
 }
 
 public class CategoryExportData
