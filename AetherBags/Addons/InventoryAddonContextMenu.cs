@@ -1,8 +1,10 @@
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiToolKit.ContextMenu;
+using KamiToolKit.Enums;
 
 namespace AetherBags.Addons;
 
@@ -15,12 +17,23 @@ public static class InventoryAddonContextMenu
         OnClick = () => { }
     };
 
+    // Temporary method, since OwnerAddon is never set for Overlays we need to set this or else the contextmenu will close immediately
+    // TODO: Figure out how to do this in the ContextMenu itself or have Kami come up with a solution
+    // The better solution is to use agentContextMenu->OpenContextMenu(false, true); in KTK when it's an overlay so it doesn't bind to the addon
+    private static unsafe void SetAgentOwnerAddon(int addonId)
+    {
+        var agentContext = AgentContext.Instance();
+        agentContext->OwnerAddon = (uint) addonId;
+    }
+
     public static void OpenMain(InventoryAddonBase parent)
     {
         if (parent?.ContextMenu == null || System.Config == null) return;
 
         var menu = parent.ContextMenu;
         menu.Clear();
+
+        SetAgentOwnerAddon(parent.AddonId);
 
         bool hasActiveAtFilter = !string.IsNullOrEmpty(HighlightState.SelectedAllaganToolsFilterKey);
         string searchText = parent.GetSearchText();
