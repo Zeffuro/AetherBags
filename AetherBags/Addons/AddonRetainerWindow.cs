@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -28,8 +29,8 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private readonly Vector3 _tintColor = new(8f / 255f, -8f / 255f, -4f / 255f);
 
-    protected override float MinWindowWidth => 500;
-    protected override float MaxWindowWidth => 700;
+    protected override InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.Retainer;
+    protected override InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.RetainerWindowSizing;
 
     private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
 

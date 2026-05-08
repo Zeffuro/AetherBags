@@ -53,10 +53,12 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected readonly Debouncer SearchDebouncer = new(System.Config.General.SearchDelay);
 
-    protected virtual float MinWindowWidth => 620;
-    protected virtual float MaxWindowWidth => 800;
-    protected virtual float MinWindowHeight => 200;
-    protected virtual float MaxWindowHeight => 1000;
+    protected virtual InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.Inventory;
+    protected virtual float MinWindowWidth => WindowSizingLimits.SafeMinWidth;
+    protected virtual float MaxWindowWidth => WindowSizingLimits.DefaultMaxWidth;
+    protected virtual float MinWindowHeight => WindowSizingLimits.SafeMinHeight;
+    protected virtual float MaxWindowHeight => WindowSizingLimits.DefaultMaxHeight;
+    protected virtual InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.InventoryWindowSizing;
 
     protected const float CategorySpacing = 12;
     protected const float ItemSize = 44;
@@ -486,6 +488,53 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected int CalculateOptimalItemsPerLine(float availableWidth)
         => Math.Clamp((int)MathF.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
 
+    private readonly struct EffectiveWindowSizing
+    {
+        public InventoryWindowSizingMode Mode { get; init; }
+        public float FixedWidth { get; init; }
+        public float FixedHeight { get; init; }
+        public float MinWidth { get; init; }
+        public float MaxWidth { get; init; }
+        public float MinHeight { get; init; }
+        public float MaxHeight { get; init; }
+    }
+
+    private EffectiveWindowSizing GetEffectiveWindowSizing()
+    {
+        var settings = WindowSizingSettings;
+        InventoryWindowSizingDefaults.Normalize(settings, WindowSizingLimits);
+
+        return settings.Mode switch
+        {
+            InventoryWindowSizingMode.Fixed => new EffectiveWindowSizing
+            {
+                Mode = settings.Mode,
+                FixedWidth = settings.FixedWidth,
+                FixedHeight = settings.FixedHeight,
+                MinWidth = MinWindowWidth,
+                MaxWidth = InventoryWindowSizingDefaults.MaxConfigurableWidth,
+                MinHeight = MinWindowHeight,
+                MaxHeight = InventoryWindowSizingDefaults.MaxConfigurableHeight,
+            },
+            InventoryWindowSizingMode.CustomBounds => new EffectiveWindowSizing
+            {
+                Mode = settings.Mode,
+                MinWidth = settings.MinWidth,
+                MaxWidth = settings.MaxWidth,
+                MinHeight = settings.MinHeight,
+                MaxHeight = settings.MaxHeight,
+            },
+            _ => new EffectiveWindowSizing
+            {
+                Mode = InventoryWindowSizingMode.Automatic,
+                MinWidth = MinWindowWidth,
+                MaxWidth = MaxWindowWidth,
+                MinHeight = MinWindowHeight,
+                MaxHeight = MaxWindowHeight,
+            }
+        };
+    }
+
     protected virtual void LayoutContent()
     {
         Vector2 contentPos = ContentStartPosition;
@@ -529,6 +578,15 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected virtual void AutoSizeWindow()
     {
+        var sizing = GetEffectiveWindowSizing();
+
+        if (sizing.Mode == InventoryWindowSizingMode.Fixed)
+        {
+            ResizeWindow(sizing.FixedWidth, sizing.FixedHeight, recalcLayout: true);
+            UpdateScrollParameters();
+            return;
+        }
+
         var nodes = CategoriesNode.Nodes;
 
         float maxChildWidth = 0f;
@@ -546,7 +604,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         if (childCount == 0)
         {
-            ResizeWindow(MinWindowWidth, MinWindowHeight, recalcLayout: true);
+            ResizeWindow(sizing.MinWidth, sizing.MinHeight, recalcLayout: true);
             UpdateScrollParameters();
             return;
         }
@@ -554,7 +612,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         float footerSpace = HasFooter || HasSlotCounter ? FooterHeight + FooterTopSpacing : 0;
 
         float requiredWidth = maxChildWidth + ScrollBarWidth + (ContentStartPosition.X * 2);
-        float finalWidth = Math.Clamp(requiredWidth, MinWindowWidth, MaxWindowWidth);
+        float finalWidth = Math.Clamp(requiredWidth, sizing.MinWidth, sizing.MaxWidth);
 
         if (SettingsButtonNode != null)
         {
@@ -572,7 +630,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         float requiredContentHeight = requiredGridHeight + footerSpace;
         float requiredWindowHeight = requiredContentHeight + ContentStartPosition.Y + ContentStartPosition.X + ContentHeightOffset;
-        float finalHeight = Math.Clamp(requiredWindowHeight, MinWindowHeight, MaxWindowHeight);
+        float finalHeight = Math.Clamp(requiredWindowHeight, sizing.MinHeight, sizing.MaxHeight);
 
         ResizeWindow(finalWidth, finalHeight, recalcLayout: false);
 

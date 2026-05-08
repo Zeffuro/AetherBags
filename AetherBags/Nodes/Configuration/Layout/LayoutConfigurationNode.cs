@@ -27,6 +27,13 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
+        AddNode(new WindowSizingConfigurationNode());
+
+        AddNode(new ResNode
+        {
+            Height = 6
+        });
+
         var showRecentlyLootedCheckboxNode = new CheckboxNode
         {
             Size = Size with { Y = 18 },

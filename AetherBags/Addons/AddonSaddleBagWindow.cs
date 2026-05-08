@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AetherBags.Configuration;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
@@ -23,8 +24,8 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
     private readonly Vector3 _tintColor = new (-16f / 255f, -4f / 255f, 8f / 255f);
 
-    protected override float MinWindowWidth => 500;
-    protected override float MaxWindowWidth => 600;
+    protected override InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.SaddleBag;
+    protected override InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.SaddleBagWindowSizing;
 
     protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {

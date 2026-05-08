@@ -43,5 +43,11 @@ public class SystemConfiguration
         _currency ??= new();
         _keybinds ??= new();
         _categories.UserCategories ??= new();
+        _general.InventoryWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Inventory);
+        _general.SaddleBagWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.SaddleBag);
+        _general.RetainerWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Retainer);
+        InventoryWindowSizingDefaults.Normalize(_general.InventoryWindowSizing, InventoryWindowSizingLimits.Inventory);
+        InventoryWindowSizingDefaults.Normalize(_general.SaddleBagWindowSizing, InventoryWindowSizingLimits.SaddleBag);
+        InventoryWindowSizingDefaults.Normalize(_general.RetainerWindowSizing, InventoryWindowSizingLimits.Retainer);
     }
 }

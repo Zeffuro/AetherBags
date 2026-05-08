@@ -27,6 +27,9 @@ public class GeneralSettings
     public bool HighlightRecentlyLootedItems { get; set; } = false;
     public Vector4 RecentlyLootedHighlightColor { get; set; } = new(0.9f, 0.7f, 0.2f, 0.4f);
     public bool UseUnifiedExternalCategories { get; set; } = false;
+    public InventoryWindowSizingSettings InventoryWindowSizing { get; set; } = InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Inventory);
+    public InventoryWindowSizingSettings SaddleBagWindowSizing { get; set; } = InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.SaddleBag);
+    public InventoryWindowSizingSettings RetainerWindowSizing { get; set; } = InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Retainer);
 }
 
 public enum InventoryStackMode : byte
