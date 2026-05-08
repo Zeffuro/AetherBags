@@ -15,6 +15,7 @@ public class CommandHandler : IDisposable
     private const string MainCommand = "/aetherbags";
     private const string ShortCommand = "/ab";
     private const string HelpDescription = "Opens your inventory. Use '/ab help' for more options.";
+    private string? _debugVanillaBypassToken;
 
     public CommandHandler()
     {
@@ -133,7 +134,7 @@ public class CommandHandler : IDisposable
         {
             case "":
             case "help":
-                PrintChat("Debug commands:\n  /ab debug saddle       - Toggle saddlebag window\n  /ab debug retainer      - Toggle retainer window\n  /ab debug test [arg]    - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug batching [arg] - Frame batching (toggle/on/off/status)\n  /ab debug help          - Show this message");
+                PrintChat("Debug commands:\n  /ab debug saddle                  - Toggle saddlebag window\n  /ab debug retainer                - Toggle retainer window\n  /ab debug test [arg]              - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug batching [arg]          - Frame batching (toggle/on/off/status)\n  /ab debug vanilla-bypass [arg]    - Vanilla inventory bypass (status/acquire/release)\n  /ab debug help                    - Show this message");
                 break;
 
             case "saddle":
@@ -150,6 +151,11 @@ public class CommandHandler : IDisposable
 
             case "batching":
                 HandleBatching(subArgs);
+                break;
+
+            case "vanilla-bypass":
+            case "bypass":
+                HandleVanillaInventoryBypass(subArgs);
                 break;
 
             case "refresh":
@@ -322,6 +328,84 @@ public class CommandHandler : IDisposable
 
         PrintChat($"Frame batching is now {(InventoryAddonBase.DisableBatching ? "DISABLED" : "enabled")}. Refreshing inventory…");
         InventoryOrchestrator.RefreshAll(updateMaps: true);
+    }
+
+    private void HandleVanillaInventoryBypass(string args)
+    {
+        var api = System.AetherBagsAPI?.API;
+        if (api == null)
+        {
+            PrintChat("AetherBags API is not available.");
+            return;
+        }
+
+        var parts = args.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var subCmd = parts.Length > 0 ? parts[0].ToLowerInvariant() : "status";
+        var subArgs = parts.Length > 1 ? parts[1] : string.Empty;
+
+        switch (subCmd)
+        {
+            case "":
+            case "status":
+                PrintChat(api.GetVanillaInventoryBypassStatus());
+                break;
+
+            case "on":
+            case "acquire":
+            case "enable":
+                AcquireDebugVanillaBypass(ParseBypassTimeout(subArgs));
+                break;
+
+            case "off":
+            case "release":
+            case "disable":
+                ReleaseDebugVanillaBypass();
+                break;
+
+            default:
+                if (int.TryParse(subCmd, out int timeoutMs))
+                {
+                    AcquireDebugVanillaBypass(timeoutMs);
+                    break;
+                }
+
+                PrintChat("Usage: /ab debug vanilla-bypass [status|acquire [ms]|release|<ms>]\n  Example: /ab debug vanilla-bypass 30000");
+                break;
+        }
+    }
+
+    private void AcquireDebugVanillaBypass(int timeoutMs)
+    {
+        var api = System.AetherBagsAPI?.API;
+        if (api == null)
+        {
+            PrintChat("AetherBags API is not available.");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_debugVanillaBypassToken))
+            api.ReleaseVanillaInventoryBypass(_debugVanillaBypassToken);
+
+        _debugVanillaBypassToken = api.AcquireVanillaInventoryBypass("AetherBags Debug Command", timeoutMs);
+        PrintChat($"Vanilla inventory bypass acquired for {timeoutMs}ms. Token: {_debugVanillaBypassToken}");
+    }
+
+    private void ReleaseDebugVanillaBypass()
+    {
+        if (string.IsNullOrWhiteSpace(_debugVanillaBypassToken))
+        {
+            PrintChat("No debug vanilla inventory bypass token is active in this session.");
+            return;
+        }
+
+        bool released = System.AetherBagsAPI?.API.ReleaseVanillaInventoryBypass(_debugVanillaBypassToken) ?? false;
+        PrintChat(released ? "Debug vanilla inventory bypass released." : "Debug vanilla inventory bypass token was already expired or released.");
+        _debugVanillaBypassToken = null;
+    }
+
+    private static int ParseBypassTimeout(string args)
+    {
+        return int.TryParse(args.Trim(), out int timeoutMs) ? timeoutMs : 30_000;
     }
 
     private void HandleTestSource(string args)

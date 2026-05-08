@@ -29,4 +29,9 @@ public interface IAetherBagsAPI
     void SetConfigurationJson(string json);
     string GetConfigProperty(string propertyPath);
     void SetConfigProperty(string propertyPath, string jsonValue);
+
+    bool IsVanillaInventoryBypassActive { get; }
+    string AcquireVanillaInventoryBypass(string owner, int timeoutMs);
+    bool ReleaseVanillaInventoryBypass(string token);
+    string GetVanillaInventoryBypassStatus();
 }

@@ -20,6 +20,10 @@ public class AetherBagsIPCProvider : IDisposable
     private readonly ICallGateProvider<string, bool> _setConfigurationJson;
     private readonly ICallGateProvider<string, string> _getConfigProperty;
     private readonly ICallGateProvider<string, string, bool> _setConfigProperty;
+    private readonly ICallGateProvider<string, int, string> _acquireVanillaInventoryBypass;
+    private readonly ICallGateProvider<string, bool> _releaseVanillaInventoryBypass;
+    private readonly ICallGateProvider<bool> _isVanillaInventoryBypassActive;
+    private readonly ICallGateProvider<string> _getVanillaInventoryBypassStatus;
 
     private readonly ICallGateProvider<uint, bool> _onItemHovered;
     private readonly ICallGateProvider<uint, bool> _onItemUnhovered;
@@ -47,6 +51,11 @@ public class AetherBagsIPCProvider : IDisposable
         _getConfigProperty = Services.PluginInterface.GetIpcProvider<string, string>($"{IpcPrefix}GetConfigProperty");
         _setConfigProperty = Services.PluginInterface.GetIpcProvider<string, string, bool>($"{IpcPrefix}SetConfigProperty");
 
+        _acquireVanillaInventoryBypass = Services.PluginInterface.GetIpcProvider<string, int, string>($"{IpcPrefix}AcquireVanillaInventoryBypass");
+        _releaseVanillaInventoryBypass = Services.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}ReleaseVanillaInventoryBypass");
+        _isVanillaInventoryBypassActive = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}IsVanillaInventoryBypassActive");
+        _getVanillaInventoryBypassStatus = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetVanillaInventoryBypassStatus");
+
         _onItemHovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemHovered");
         _onItemUnhovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemUnhovered");
         _onItemClicked = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemClicked");
@@ -72,6 +81,10 @@ public class AetherBagsIPCProvider : IDisposable
         _setConfigurationJson.RegisterAction(json => _api.SetConfigurationJson(json));
         _getConfigProperty.RegisterFunc(path => _api.GetConfigProperty(path));
         _setConfigProperty.RegisterAction((path, jsonValue) => _api.SetConfigProperty(path, jsonValue));
+        _acquireVanillaInventoryBypass.RegisterFunc((owner, timeoutMs) => _api.AcquireVanillaInventoryBypass(owner, timeoutMs));
+        _releaseVanillaInventoryBypass.RegisterFunc(token => _api.ReleaseVanillaInventoryBypass(token));
+        _isVanillaInventoryBypassActive.RegisterFunc(() => _api.IsVanillaInventoryBypassActive);
+        _getVanillaInventoryBypassStatus.RegisterFunc(() => _api.GetVanillaInventoryBypassStatus());
     }
 
     private void SubscribeEvents()
@@ -98,5 +111,9 @@ public class AetherBagsIPCProvider : IDisposable
         _setConfigurationJson.UnregisterAction();
         _getConfigProperty.UnregisterFunc();
         _setConfigProperty.UnregisterAction();
+        _acquireVanillaInventoryBypass.UnregisterFunc();
+        _releaseVanillaInventoryBypass.UnregisterFunc();
+        _isVanillaInventoryBypassActive.UnregisterFunc();
+        _getVanillaInventoryBypassStatus.UnregisterFunc();
     }
 }

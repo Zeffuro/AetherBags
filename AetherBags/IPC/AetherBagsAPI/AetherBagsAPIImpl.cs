@@ -10,6 +10,13 @@ namespace AetherBags.IPC.AetherBagsAPI;
 
 public class AetherBagsAPIImpl : IAetherBagsAPI
 {
+    private const int DefaultVanillaInventoryBypassTimeoutMs = 10_000;
+    private const int MinimumVanillaInventoryBypassTimeoutMs = 250;
+    private const int MaximumVanillaInventoryBypassTimeoutMs = 300_000;
+
+    private readonly object _vanillaInventoryBypassLock = new();
+    private readonly Dictionary<string, VanillaInventoryBypassLease> _vanillaInventoryBypassLeases = new();
+
     public event Action<uint>? OnItemHovered;
     public event Action<uint>? OnItemUnhovered;
     public event Action<uint>? OnItemClicked;
@@ -20,6 +27,18 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
     public event Action? OnConfigurationChanged;
 
     public bool IsInventoryOpen => System.AddonInventoryWindow?.IsOpen ?? false;
+
+    public bool IsVanillaInventoryBypassActive
+    {
+        get
+        {
+            lock (_vanillaInventoryBypassLock)
+            {
+                PruneExpiredVanillaInventoryBypassLeases();
+                return _vanillaInventoryBypassLeases.Count > 0;
+            }
+        }
+    }
 
     public IReadOnlyList<uint> GetVisibleItemIds()
     {
@@ -176,6 +195,68 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
         }
     }
 
+    public string AcquireVanillaInventoryBypass(string owner, int timeoutMs = DefaultVanillaInventoryBypassTimeoutMs)
+    {
+        string token = Guid.NewGuid().ToString("N");
+        int clampedTimeoutMs = Math.Clamp(
+            timeoutMs <= 0 ? DefaultVanillaInventoryBypassTimeoutMs : timeoutMs,
+            MinimumVanillaInventoryBypassTimeoutMs,
+            MaximumVanillaInventoryBypassTimeoutMs);
+
+        var lease = new VanillaInventoryBypassLease(
+            string.IsNullOrWhiteSpace(owner) ? "Unknown" : owner.Trim(),
+            DateTimeOffset.UtcNow.AddMilliseconds(clampedTimeoutMs));
+
+        lock (_vanillaInventoryBypassLock)
+        {
+            PruneExpiredVanillaInventoryBypassLeases();
+            _vanillaInventoryBypassLeases[token] = lease;
+        }
+
+        Services.Logger.Debug($"Vanilla inventory bypass acquired by {lease.Owner} for {clampedTimeoutMs}ms. Token: {token}");
+        return token;
+    }
+
+    public bool ReleaseVanillaInventoryBypass(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return false;
+
+        lock (_vanillaInventoryBypassLock)
+        {
+            PruneExpiredVanillaInventoryBypassLeases();
+            return _vanillaInventoryBypassLeases.Remove(token.Trim());
+        }
+    }
+
+    public string GetVanillaInventoryBypassStatus()
+    {
+        lock (_vanillaInventoryBypassLock)
+        {
+            PruneExpiredVanillaInventoryBypassLeases();
+            if (_vanillaInventoryBypassLeases.Count == 0)
+                return "No active vanilla inventory bypass leases.";
+
+            var now = DateTimeOffset.UtcNow;
+            var leases = _vanillaInventoryBypassLeases
+                .Select(lease => $"{lease.Value.Owner}: {Math.Max(0, (int)(lease.Value.ExpiresAt - now).TotalMilliseconds)}ms remaining ({lease.Key})");
+
+            return $"Active vanilla inventory bypass leases: {string.Join(", ", leases)}";
+        }
+    }
+
+    private void PruneExpiredVanillaInventoryBypassLeases()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expiredTokens = _vanillaInventoryBypassLeases
+            .Where(lease => lease.Value.ExpiresAt <= now)
+            .Select(lease => lease.Key)
+            .ToList();
+
+        foreach (var token in expiredTokens)
+            _vanillaInventoryBypassLeases.Remove(token);
+    }
+
     public void RaiseItemHovered(uint itemId) => OnItemHovered?.Invoke(itemId);
     public void RaiseItemUnhovered(uint itemId) => OnItemUnhovered?.Invoke(itemId);
     public void RaiseItemClicked(uint itemId) => OnItemClicked?.Invoke(itemId);
@@ -184,4 +265,6 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
     public void RaiseInventoryClosed() => OnInventoryClosed?.Invoke();
     public void RaiseCategoriesRefreshed() => OnCategoriesRefreshed?.Invoke();
     public void RaiseConfigurationChanged() => OnConfigurationChanged?.Invoke();
+
+    private sealed record VanillaInventoryBypassLease(string Owner, DateTimeOffset ExpiresAt);
 }

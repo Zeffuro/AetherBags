@@ -74,7 +74,9 @@ public class InventoryMonitor : IDisposable
     private unsafe void OpenInventories(string name)
     {
         GeneralSettings config = System.Config.General;
-        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory)
+        bool vanillaBypassActive = System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false;
+
+        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory && !vanillaBypassActive)
         {
             System.AddonRetainerWindow.Open();
             if (config.HideGameRetainer)
@@ -104,7 +106,7 @@ public class InventoryMonitor : IDisposable
             }
         }
 
-        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory)
+        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory && !vanillaBypassActive)
         {
             System.AddonSaddleBagWindow.Open();
             if (config.HideGameSaddleBags)
@@ -178,6 +180,7 @@ public class InventoryMonitor : IDisposable
             return;
 
         GeneralSettings config = System.Config.General;
+        bool vanillaBypassActive = System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false;
 
         Services.Logger.DebugOnly("PreRefresh event for Inventory detected");
 
@@ -196,12 +199,12 @@ public class InventoryMonitor : IDisposable
 
         System.AddonInventoryWindow.SetNotification(new InventoryNotificationInfo(title, upperTitle));
 
-        if (config.HideGameInventory)
+        if (config.HideGameInventory && !vanillaBypassActive)
         {
             refreshArgs.AtkValueCount = 0;
         }
 
-        if (config.OpenWithGameInventory)
+        if (config.OpenWithGameInventory && !vanillaBypassActive)
         {
             AtkValue* value1 = (AtkValue*)atkValues[1].Address;
             int openTitleId = value1->Int;
