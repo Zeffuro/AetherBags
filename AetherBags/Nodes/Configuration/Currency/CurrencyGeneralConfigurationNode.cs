@@ -131,7 +131,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         AddNode(new ResNode { Size = new Vector2(15) });
 
-        SubtractTab(2);
+        SubtractTab(1);
 
         AddNode(new ResNode { Size = new Vector2(15) });
 
@@ -158,6 +158,8 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         };
         _currencyListEditor.SetList(System.Config.Currency.DisplayedCurrencies);
         AddNode(_currencyListEditor);
+
+        AddTab(1);
 
         var quickAddRow = new HorizontalListNode { Size = new Vector2(600, 30), ItemSpacing = 8.0f };
 
