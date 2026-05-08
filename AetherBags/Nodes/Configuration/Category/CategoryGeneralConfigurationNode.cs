@@ -19,6 +19,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
     public CategoryGeneralConfigurationNode()
     {
         CategorySettings config = System.Config.Categories;
+        config.NormalizeCategorySourceDisplayOrder();
 
         ItemVerticalSpacing = 2;
 
@@ -79,23 +80,6 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             }
         };
         AddNode(userCategoriesEnabled);
-
-        var defaultItemSortDropdown = new LabeledEnumDropdownNode<ItemSortMode>
-        {
-            Size = new Vector2(500, 20),
-            LabelText = "Default Item Sort",
-            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetValues<ItemSortMode>()
-                .Where(mode => mode is not ItemSortMode.UseGlobal and not ItemSortMode.CustomOrder)
-                .ToList(),
-            SelectedOption = config.DefaultItemSortMode,
-            OnOptionSelected = selected =>
-            {
-                config.DefaultItemSortMode = selected;
-                RefreshInventory();
-            }
-        };
-        AddNode(defaultItemSortDropdown);
 
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
@@ -188,7 +172,57 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
         AddNode(_allaganToolsCheckbox);
 
         AddNode(1, atModeDropdown);
+
+        CheckboxNode blankMiscCategoryName = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Show uncategorized section without a label",
+            IsChecked = config.BlankMiscCategoryName,
+            TextTooltip = "When items are collected into the fallback Misc section, hide the 'Misc' title and count.",
+            OnClick = isChecked =>
+            {
+                config.BlankMiscCategoryName = isChecked;
+                RefreshInventory();
+            }
+        };
+        AddNode(blankMiscCategoryName);
+
         SubtractTab(1);
+
+        AddNode(new ResNode { Height = 8 });
+
+        var defaultItemSortDropdown = new LabeledEnumDropdownNode<ItemSortMode>
+        {
+            Size = new Vector2(500, 20),
+            LabelText = "Default Item Sort",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
+            Options = Enum.GetValues<ItemSortMode>()
+                .Where(mode => mode is not ItemSortMode.UseGlobal and not ItemSortMode.CustomOrder)
+                .ToList(),
+            SelectedOption = config.DefaultItemSortMode,
+            OnOptionSelected = selected =>
+            {
+                config.DefaultItemSortMode = selected;
+                RefreshInventory();
+            }
+        };
+        AddNode(defaultItemSortDropdown);
+
+        AddNode(new ResNode { Height = 8 });
+
+        CategorySourceOrderEditorNode? categorySourceOrderEditor = null;
+        var editor = categorySourceOrderEditor;
+        categorySourceOrderEditor = new CategorySourceOrderEditorNode
+        {
+            OnChanged = () =>
+            {
+                config.CategorySourceDisplayOrder = editor!.GetOrder();
+                RefreshInventory();
+            }
+        };
+        categorySourceOrderEditor.SetOrder(config.CategorySourceDisplayOrder);
+        AddNode(categorySourceOrderEditor);
     }
 
     private void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);

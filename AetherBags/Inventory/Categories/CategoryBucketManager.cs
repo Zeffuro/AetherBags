@@ -364,8 +364,10 @@ public static class CategoryBucketManager
             }
             else
             {
-                miscInfo = new CategoryInfo { Name = "Misc", Description = "Uncategorized items" };
+                miscInfo = CreateMiscCategoryInfo();
             }
+
+            ApplyMiscCategoryDisplay(miscInfo);
 
             miscBucket = new CategoryBucket
             {
@@ -380,6 +382,7 @@ public static class CategoryBucketManager
         else
         {
             miscBucket.Used = true;
+            ApplyMiscCategoryDisplay(miscBucket.Category);
         }
 
         foreach (var itemKvp in itemInfoByKey)
@@ -426,16 +429,24 @@ public static class CategoryBucketManager
             sortedCategoryKeys.Add(bucket.Key);
         }
 
-        // TODO: Make sortable by user
+        var categorySettings = System.Config.Categories;
+        categorySettings.NormalizeCategorySourceDisplayOrder();
+
         sortedCategoryKeys.Sort((left, right) =>
         {
+            CategorySource GetSource(uint key)
+            {
+                if (IsUserCategoryKey(key)) return CategorySource.UserCategories;
+                if (IsBisBuddyKey(key)) return CategorySource.BisBuddy;
+                if (IsAllaganFilterKey(key)) return CategorySource.AllaganTools;
+                if (key == 0) return CategorySource.Misc;
+                return CategorySource.GameCategories;
+            }
+
             int GetPriority(uint key)
             {
-                if (IsUserCategoryKey(key)) return 1;
-                if (IsBisBuddyKey(key)) return 2;
-                if (IsAllaganFilterKey(key)) return 3;
-                if (key == 0) return 99;
-                return 10;
+                int index = categorySettings.CategorySourceDisplayOrder.IndexOf(GetSource(key));
+                return index >= 0 ? index : int.MaxValue;
             }
 
             int leftPrio = GetPriority(left);
@@ -481,9 +492,17 @@ public static class CategoryBucketManager
     private static CategoryInfo GetCategoryInfoCached(uint key, ItemInfo sample)
     {
         if (CategoryInfoCache.TryGetValue(key, out var cached))
+        {
+            if (key == 0)
+                ApplyMiscCategoryDisplay(cached);
+
             return cached;
+        }
 
         CategoryInfo info = GetCategoryInfoSlow(key, sample);
+        if (key == 0)
+            ApplyMiscCategoryDisplay(info);
+
         CategoryInfoCache[key] = info;
         return info;
     }
@@ -492,11 +511,7 @@ public static class CategoryBucketManager
     {
         if (key == 0)
         {
-            return new CategoryInfo
-            {
-                Name = "Misc",
-                Description = "Uncategorized items",
-            };
+            return CreateMiscCategoryInfo();
         }
 
         var uiCat = sample.UiCategory.Value;
@@ -509,5 +524,26 @@ public static class CategoryBucketManager
         {
             Name = name,
         };
+    }
+
+    private static CategoryInfo CreateMiscCategoryInfo()
+    {
+        var info = new CategoryInfo { Name = "Misc", Description = "Uncategorized items" };
+        ApplyMiscCategoryDisplay(info);
+        return info;
+    }
+
+    private static void ApplyMiscCategoryDisplay(CategoryInfo info)
+    {
+        if (System.Config.Categories.BlankMiscCategoryName)
+        {
+            info.Name = string.Empty;
+            info.Description = string.Empty;
+        }
+        else
+        {
+            info.Name = "Misc";
+            info.Description = "Uncategorized items";
+        }
     }
 }

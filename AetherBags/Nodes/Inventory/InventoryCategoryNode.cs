@@ -137,7 +137,9 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _lastItemsPerLine = itemsPerLine;
         _categorizedInventory = data;
 
-        _fullHeaderText = System.Config.General.ShowCategoryItemCount
+        _fullHeaderText = string.IsNullOrEmpty(data.Category.Name)
+            ? string.Empty
+            : System.Config.General.ShowCategoryItemCount
             ? $"{data.Category.Name} ({data.Items.Count})"
             : data.Category.Name;
 

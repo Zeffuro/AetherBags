@@ -2,6 +2,8 @@
 - Add options to IPC to access the AetherBags configuration and make changes.
 - Add configurable keybinds for focusing search and opening bag windows directly into search.
 - Added custom per category sorting options.
+- Added an option to hide the fallback misc category label.
+- Added sorting options for the user, plugin, game and misc category display order.
 
 # 1.0.0.2
 - Fix ghost hovers for expanded retainer grid too.

@@ -17,8 +17,38 @@ public class CategorySettings
     public bool AllaganToolsCategoriesEnabled { get; set; } = false;
     public PluginFilterMode AllaganToolsFilterMode { get; set; } = PluginFilterMode.Highlight;
     public ItemSortMode DefaultItemSortMode { get; set; } = ItemSortMode.QuantityDescending;
+    public bool BlankMiscCategoryName { get; set; } = false;
+    public List<CategorySource> CategorySourceDisplayOrder { get; set; } = GetDefaultCategorySourceOrder();
 
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
+
+    public static List<CategorySource> GetDefaultCategorySourceOrder() =>
+    [
+        CategorySource.UserCategories,
+        CategorySource.BisBuddy,
+        CategorySource.AllaganTools,
+        CategorySource.GameCategories,
+        CategorySource.Misc,
+    ];
+
+    public void NormalizeCategorySourceDisplayOrder()
+    {
+        var normalized = new List<CategorySource>(GetDefaultCategorySourceOrder().Count);
+
+        foreach (var source in CategorySourceDisplayOrder ?? [])
+        {
+            if (Enum.IsDefined(source) && !normalized.Contains(source))
+                normalized.Add(source);
+        }
+
+        foreach (var source in GetDefaultCategorySourceOrder())
+        {
+            if (!normalized.Contains(source))
+                normalized.Add(source);
+        }
+
+        CategorySourceDisplayOrder = normalized;
+    }
 }
 
 public class UserCategoryDefinition
@@ -95,6 +125,24 @@ public enum PluginFilterMode
     Highlight = 1,
 }
 
+public enum CategorySource
+{
+    [Description("User Categories")]
+    UserCategories = 0,
+
+    [Description("BISBuddy")]
+    BisBuddy = 1,
+
+    [Description("Allagan Tools")]
+    AllaganTools = 2,
+
+    [Description("Game Categories")]
+    GameCategories = 3,
+
+    [Description("Misc")]
+    Misc = 4,
+}
+
 public enum ItemSortMode
 {
     [Description("Use Global Default")]
@@ -120,4 +168,7 @@ public enum ItemSortMode
 
     [Description("Custom Item Order")]
     CustomOrder = 7,
+
+    [Description("Game Category")]
+    GameCategory = 8,
 }

@@ -50,6 +50,7 @@ public sealed class ItemSortComparer : IComparer<ItemInfo>
             ItemSortMode.ItemIdAscending => CompareItemId(left, right, descending: false),
             ItemSortMode.ItemIdDescending => CompareItemId(left, right, descending: true),
             ItemSortMode.CustomOrder => CompareCustomOrder(left, right),
+            ItemSortMode.GameCategory => CompareGameCategory(left, right),
             _ => CompareQuantityDescending(left, right),
         };
     }
@@ -115,6 +116,14 @@ public sealed class ItemSortComparer : IComparer<ItemInfo>
         {
             return 1;
         }
+
+        return CompareFallback(left, right);
+    }
+
+    private static int CompareGameCategory(ItemInfo left, ItemInfo right)
+    {
+        int uiCategory = left.UiCategory.RowId.CompareTo(right.UiCategory.RowId);
+        if (uiCategory != 0) return uiCategory;
 
         return CompareFallback(left, right);
     }
