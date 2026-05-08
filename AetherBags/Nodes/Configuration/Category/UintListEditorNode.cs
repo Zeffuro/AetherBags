@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -13,7 +14,7 @@ namespace AetherBags.Nodes.Configuration.Category;
 
 public sealed class UintListEditorNode : VerticalListNode
 {
-    private const float LabelWidth = 300f;
+    private const float LabelWidth = 420f;
     private const float RowHeight = 28f;
 
     private List<uint> _list = [];
@@ -76,7 +77,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
         _addInput = new NumericInputNode
         {
-            Size = new Vector2(120, RowHeight),
+            Size = new Vector2(280, RowHeight),
             Min = 0,
             Max = MaxValue > int.MaxValue ? int.MaxValue : (int)MaxValue,
             Value = 0,
@@ -122,13 +123,13 @@ public sealed class UintListEditorNode : VerticalListNode
         }
     }
 
-    private void RefreshItems()
+    private unsafe void RefreshItems()
     {
         _itemsContainer.Clear();
 
-        foreach (var value in _list)
+        for (int i = 0; i < _list.Count; i++)
         {
-            _itemsContainer.AddNode(CreateItemNode(value));
+            _itemsContainer.AddNode(CreateItemNode(_list[i], isFirst: i == 0, isLast: i == _list.Count - 1));
         }
 
         if (_list.Count == 0)
@@ -138,33 +139,58 @@ public sealed class UintListEditorNode : VerticalListNode
 
         _itemsContainer.RecalculateLayout();
         RecalculateLayout();
+
+        // Drop disposed nodes from the addon's collision list to avoid use-after-free in input handling.
+        var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
+        if (addon is not null)
+            addon->UpdateCollisionNodeList(false);
+
         OnChanged?.Invoke();
     }
 
-    private UintListItemNode CreateItemNode(uint value) => new(value, LabelResolver)
+    private UintListItemNode CreateItemNode(uint value, bool isFirst, bool isLast) => new(value, isFirst, isLast, LabelResolver)
     {
         Size = new Vector2(LabelWidth + 40f, RowHeight),
         OnRemove = () => RemoveValue(value),
+        OnMoveUp = () => MoveValue(value, -1),
+        OnMoveDown = () => MoveValue(value, +1),
     };
 
     private void RemoveValue(uint value)
     {
         _list.Remove(value);
+        // Defer past the tick that handled the click so its hover/event state is fully unwound before disposal.
         Services.Framework.RunOnTick(() => {
             RefreshItems();
             OnChanged?.Invoke();
-        });
+        }, delayTicks: 2);
+    }
+
+    private void MoveValue(uint value, int delta)
+    {
+        int index = _list.IndexOf(value);
+        if (index < 0) return;
+        int target = index + delta;
+        if (target < 0 || target >= _list.Count) return;
+
+        (_list[index], _list[target]) = (_list[target], _list[index]);
+        Services.Framework.RunOnTick(() => {
+            RefreshItems();
+            OnChanged?.Invoke();
+        }, delayTicks: 2);
     }
 }
 
 public sealed class UintListItemNode : HorizontalListNode
 {
-    private const float LabelWidth = 300f;
+    private const float LabelWidth = 360f;
 
     public uint Value { get; }
     public Action? OnRemove { get; init; }
+    public Action? OnMoveUp { get; init; }
+    public Action? OnMoveDown { get; init; }
 
-    public UintListItemNode(uint value, Func<uint, string>? labelResolver = null)
+    public UintListItemNode(uint value, bool isFirst, bool isLast, Func<uint, string>? labelResolver = null)
     {
         Value = value;
         ItemSpacing = 4.0f;
@@ -184,12 +210,32 @@ public sealed class UintListItemNode : HorizontalListNode
             Size = new Vector2(LabelWidth, 24),
             String = displayText,
             TextColor = ColorHelper.GetColor(3),
+            TextFlags = TextFlags.OverflowHidden | TextFlags.Ellipsis,
+        });
+
+        AddNode(new CircleButtonNode
+        {
+            Size = new Vector2(28, 28),
+            Icon = ButtonIcon.UpArrow,
+            TextTooltip = "Move up",
+            IsEnabled = !isFirst,
+            OnClick = () => OnMoveUp?.Invoke(),
+        });
+
+        AddNode(new CircleButtonNode
+        {
+            Size = new Vector2(28, 28),
+            Icon = ButtonIcon.ArrowDown,
+            TextTooltip = "Move down",
+            IsEnabled = !isLast,
+            OnClick = () => OnMoveDown?.Invoke(),
         });
 
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
             Icon = ButtonIcon.Cross,
+            TextTooltip = "Remove",
             OnClick = () => OnRemove?.Invoke(),
         });
     }
