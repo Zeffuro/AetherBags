@@ -133,6 +133,8 @@ public static class CategoryImportExport
                     existing.Color = incoming.Color;
                     existing.Enabled = incoming.Enabled;
                     existing.Pinned = incoming.Pinned;
+                    existing.ItemSortMode = incoming.ItemSortMode;
+                    existing.CustomItemOrder = incoming.CustomItemOrder;
                     existing.Rules = incoming.Rules;
                 }
                 else

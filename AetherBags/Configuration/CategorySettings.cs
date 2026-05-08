@@ -16,6 +16,7 @@ public class CategorySettings
     public PluginFilterMode BisBuddyMode { get; set; } = PluginFilterMode.Highlight;
     public bool AllaganToolsCategoriesEnabled { get; set; } = false;
     public PluginFilterMode AllaganToolsFilterMode { get; set; } = PluginFilterMode.Highlight;
+    public ItemSortMode DefaultItemSortMode { get; set; } = ItemSortMode.QuantityDescending;
 
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
 }
@@ -31,6 +32,8 @@ public class UserCategoryDefinition
     public int Order { get; set; }
     public int Priority { get; set; } = 100;
     public Vector4 Color { get; set; } = ColorHelper.GetColor(50);
+    public ItemSortMode ItemSortMode { get; set; } = ItemSortMode.UseGlobal;
+    public List<uint> CustomItemOrder { get; set; } = new();
 
     public CategoryRuleSet Rules { get; set; } = new();
 }
@@ -90,4 +93,31 @@ public enum PluginFilterMode
 
     [Description("Apply Highlight Only")]
     Highlight = 1,
+}
+
+public enum ItemSortMode
+{
+    [Description("Use Global Default")]
+    UseGlobal = 0,
+
+    [Description("Quantity (High to Low)")]
+    QuantityDescending = 1,
+
+    [Description("Name (A to Z)")]
+    NameAscending = 2,
+
+    [Description("Rarity (High to Low)")]
+    RarityDescending = 3,
+
+    [Description("Rarity (Low to High)")]
+    RarityAscending = 4,
+
+    [Description("Item ID (Low to High)")]
+    ItemIdAscending = 5,
+
+    [Description("Item ID (High to Low)")]
+    ItemIdDescending = 6,
+
+    [Description("Custom Item Order")]
+    CustomOrder = 7,
 }

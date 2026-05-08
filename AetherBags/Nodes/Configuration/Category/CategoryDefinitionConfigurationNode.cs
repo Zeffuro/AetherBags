@@ -79,6 +79,11 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
             OnPropertyChanged = () => { NotifyChanged(); OnCategoryPropertyChanged?.Invoke(); }
         });
 
+        _sections.Add(new ItemOrderingSection(() => _categoryDefinition) {
+            String = "Item Ordering",
+            OnLayoutChanged = HandleLayoutChange
+        });
+
         _sections.Add(new RangeFiltersSection(() => _categoryDefinition) { String = "Range Filters" });
         _sections.Add(new StateFiltersSection(() => _categoryDefinition) { String = "State Filters" });
         _sections.Add(new ListFiltersSection(() => _categoryDefinition) {
@@ -142,10 +147,13 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 
         _categoryDefinition.Name = imported.Name;
         _categoryDefinition.Description = imported.Description;
+        _categoryDefinition.Order = imported.Order;
         _categoryDefinition.Priority = imported.Priority;
         _categoryDefinition.Color = imported.Color;
         _categoryDefinition.Enabled = imported.Enabled;
         _categoryDefinition.Pinned = imported.Pinned;
+        _categoryDefinition.ItemSortMode = imported.ItemSortMode;
+        _categoryDefinition.CustomItemOrder = imported.CustomItemOrder;
         _categoryDefinition.Rules = imported.Rules;
 
         Util.SaveConfig(System.Config);

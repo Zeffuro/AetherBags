@@ -101,6 +101,8 @@ public static class CategoryBucketManager
                     },
                     Items = new List<ItemInfo>(capacity: 16),
                     FilteredItems = new List<ItemInfo>(capacity: 16),
+                    ItemSortMode = category.ItemSortMode,
+                    CustomItemOrder = category.CustomItemOrder,
                     Used = true,
                 };
             }
@@ -112,6 +114,8 @@ public static class CategoryBucketManager
                 bucketRef.Category.Color = category.Color;
                 bucketRef.Category.IsPinned = category.Pinned;
                 bucketRef.Category.Order = category.Order;
+                bucketRef.ItemSortMode = category.ItemSortMode;
+                bucketRef.CustomItemOrder = category.CustomItemOrder;
             }
 
             activeBuckets[activeCount++] = (bucketKey, bucketRef!, category);
@@ -409,7 +413,14 @@ public static class CategoryBucketManager
             // Only sort if items changed
             if (bucket.NeedsSorting)
             {
-                bucket.Items.Sort(ItemCountDescComparer.Instance);
+                ItemSortMode sortMode = bucket.ItemSortMode == ItemSortMode.UseGlobal
+                    ? System.Config.Categories.DefaultItemSortMode
+                    : bucket.ItemSortMode;
+
+                if (sortMode == ItemSortMode.UseGlobal || sortMode == ItemSortMode.CustomOrder && bucket.CustomItemOrder is not { Count: > 0 })
+                    sortMode = ItemSortMode.QuantityDescending;
+
+                bucket.Items.Sort(new ItemSortComparer(sortMode, bucket.CustomItemOrder));
                 bucket.NeedsSorting = false;
             }
             sortedCategoryKeys.Add(bucket.Key);

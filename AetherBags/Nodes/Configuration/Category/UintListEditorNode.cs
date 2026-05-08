@@ -147,8 +147,6 @@ public sealed class UintListEditorNode : VerticalListNode
         var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
         if (addon is not null)
             addon->UpdateCollisionNodeList(false);
-
-        OnChanged?.Invoke();
     }
 
     private UintListItemNode CreateItemNode(uint value, bool isFirst, bool isLast) => new(value, isFirst, isLast, LabelWidth, LabelResolver)

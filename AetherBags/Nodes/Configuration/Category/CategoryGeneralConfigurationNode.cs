@@ -80,6 +80,23 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
         };
         AddNode(userCategoriesEnabled);
 
+        var defaultItemSortDropdown = new LabeledEnumDropdownNode<ItemSortMode>
+        {
+            Size = new Vector2(500, 20),
+            LabelText = "Default Item Sort",
+            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
+            Options = Enum.GetValues<ItemSortMode>()
+                .Where(mode => mode is not ItemSortMode.UseGlobal and not ItemSortMode.CustomOrder)
+                .ToList(),
+            SelectedOption = config.DefaultItemSortMode,
+            OnOptionSelected = selected =>
+            {
+                config.DefaultItemSortMode = selected;
+                RefreshInventory();
+            }
+        };
+        AddNode(defaultItemSortDropdown);
+
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
         LabeledEnumDropdownNode<PluginFilterMode>? bbModeDropdown = new LabeledEnumDropdownNode<PluginFilterMode>

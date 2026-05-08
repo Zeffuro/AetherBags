@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -275,7 +276,7 @@ public static class ExternalCategoryManager
 
         foreach (var tag in tags)
         {
-            if (tag.Contains(searchText, global::System.StringComparison.OrdinalIgnoreCase))
+            if (tag.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;
