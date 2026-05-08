@@ -208,6 +208,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         {
             AddCurrencyToList(item.RowId);
         };
+        ItemListItemWithAddNode.OnAddClicked = item => AddCurrencyToList(item.RowId);
         picker.Open();
     }
 }
