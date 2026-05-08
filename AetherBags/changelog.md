@@ -1,3 +1,7 @@
+# 1.0.0.2
+- Fix ghost hovers for expanded retainer grid too.
+- Now also properly save when closing the configuration window.
+
 # 1.0.0.1
 - Update KTK
 - Added a toggle to enable/disable recently looted items section.

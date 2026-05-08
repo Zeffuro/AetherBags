@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AetherBags.Helpers;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
 using AetherBags.Nodes.Configuration.General;
@@ -77,6 +78,8 @@ public class AddonConfigurationWindow : NativeAddon
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        Util.SaveConfig(System.Config);
+
         _tabBarNode?.Dispose();
         _tabBarNode = null;
         _generalScrollingAreaNode?.Dispose();

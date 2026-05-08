@@ -79,28 +79,27 @@ public class InventoryMonitor : IDisposable
             System.AddonRetainerWindow.Open();
             if (config.HideGameRetainer)
             {
-                var addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainer");
-                if (addon != null)
-                {
-                    addon->IsVisible = false;
-                }
+                string[] retainerAddons = [
+                    "InventoryRetainer",
+                    "InventoryRetainerLarge",
+                    "RetainerGrid",
+                    "RetainerGrid0",
+                    "RetainerGrid1",
+                    "RetainerGrid2",
+                    "RetainerGrid3",
+                    "RetainerGrid4",
+                    "RetainerGrid5",
+                    "RetainerGridCrystal",
+                    "RetainerCrystalGrid"
+                ];
 
-                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryRetainerLarge");
-                if (addon != null)
+                foreach (var addonName in retainerAddons)
                 {
-                    addon->IsVisible = false;
-                }
-
-                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("RetainerGrid");
-                if (addon != null)
-                {
-                    addon->IsVisible = false;
-                }
-
-                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("RetainerGridCrystal");
-                if (addon != null)
-                {
-                    addon->IsVisible = false;
+                    var addon = RaptureAtkUnitManager.Instance()->GetAddonByName(addonName);
+                    if (addon != null)
+                    {
+                        addon->IsVisible = false;
+                    }
                 }
             }
         }
