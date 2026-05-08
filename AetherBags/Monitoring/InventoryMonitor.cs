@@ -90,6 +90,18 @@ public class InventoryMonitor : IDisposable
                 {
                     addon->IsVisible = false;
                 }
+
+                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("RetainerGrid");
+                if (addon != null)
+                {
+                    addon->IsVisible = false;
+                }
+
+                addon = RaptureAtkUnitManager.Instance()->GetAddonByName("RetainerGridCrystal");
+                if (addon != null)
+                {
+                    addon->IsVisible = false;
+                }
             }
         }
 
