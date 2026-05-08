@@ -1,8 +1,8 @@
-using KamiToolKit.Premade.GenericListItemNodes;
+using KamiToolKit.Premade.Node.ListItem;
 
 namespace AetherBags.Addons;
 
-public class CategoryListItemNode : GenericListItemNode<CategoryWrapper>
+public class CategoryListItemNode : IconListItemNode<CategoryWrapper>
 {
     protected override uint GetIconId(CategoryWrapper data) => data.GetIconId() ?? 0;
 

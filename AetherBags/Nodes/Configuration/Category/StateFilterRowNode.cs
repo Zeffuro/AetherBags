@@ -2,9 +2,9 @@ using AetherBags.Configuration;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Nodes;
 using System;
 using System.Numerics;
+using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Configuration.Category;
 

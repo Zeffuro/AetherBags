@@ -9,7 +9,7 @@ public static unsafe class AgentInterfaceExtensions {
     {
         public void SendCommand(uint eventKind, int[] commandValues)
         {
-            using var returnValue = new AtkValue();
+            var returnValue = new AtkValue();
             var command = stackalloc AtkValue[commandValues.Length];
 
             for (var index = 0; index < commandValues.Length; index++)
@@ -18,6 +18,8 @@ public static unsafe class AgentInterfaceExtensions {
             }
 
             agent.ReceiveEvent(&returnValue, command, (uint)commandValues.Length, eventKind);
+
+            returnValue.Dtor();
         }
     }
 }

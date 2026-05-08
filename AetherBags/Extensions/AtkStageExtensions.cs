@@ -24,7 +24,7 @@ public static unsafe class AtkStageExtensions
             if (addon is null) return;
 
             stage.TooltipManager.ShowTooltip(
-                AtkTooltipManager.AtkTooltipType.Item,
+                AtkTooltipType.Item,
                 addon->Id,
                 node,
                 tooltipArgs

@@ -5,6 +5,7 @@ using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 using Lumina.Text.ReadOnly;
 using static AetherBags.Inventory.State.InventoryStateBase;
 

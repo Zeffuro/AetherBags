@@ -50,6 +50,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected readonly VirtualizationState CategoryVirtualization = new() { BufferSize = 200f };
 
+    protected readonly Debouncer SearchDebouncer = new(System.Config.General.SearchDelay);
+
     protected virtual float MinWindowWidth => 600;
     protected virtual float MaxWindowWidth => 800;
     protected virtual float MinWindowHeight => 200;
@@ -70,6 +72,8 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     private bool _deferredPopulationInProgress;
     private bool _initialPopulationComplete;
     private const int ItemsPerFrame = 50;
+
+    public static bool DisableBatching;
 
     protected abstract InventoryStateBase InventoryState { get; }
 
@@ -186,7 +190,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         float maxContentWidth = CategoriesNode.Width > 0 ? CategoriesNode.Width : ContentSize.X;
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
 
-        bool deferItems = !_deferredPopulationInProgress && !_initialPopulationComplete;
+        bool deferItems = !DisableBatching && !_deferredPopulationInProgress && !_initialPopulationComplete;
 
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
             dataList: categories,
@@ -460,7 +464,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             if (!HoverSubscribed.Add(node))
                 continue;
 
-            node.HeaderHoverChanged += (src, hovering) =>
+            node.OnHeaderHoverChanged += (src, hovering) =>
             {
                 HoverCoordinator.OnCategoryHoverChanged(CategoriesNode, src, hovering);
             };
@@ -665,7 +669,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         ContextMenu = new ContextMenu();
 
@@ -676,7 +680,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             ScrollableCategories.ScrollBarNode.OnValueChanged = OnScrollValueChanged;
         }
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void OnUpdate(AtkUnitBase* addon)
@@ -699,6 +703,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         ContextMenu?.Dispose();
         HoverSubscribed.Clear();
+        SearchDebouncer.Dispose();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
         _deferredPopulationInProgress = false;

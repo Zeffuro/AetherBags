@@ -86,4 +86,17 @@ public abstract class ImportExportResetHelper {
         );
         Services.Logger.Info("SortaKinda JSON exported to clipboard.");
     }
+
+    public static void TryExportCategoriesToClipboard()
+    {
+        CategoryImportExport.ExportAllCategoriesToClipboard(System.Config.Categories.UserCategories);
+    }
+
+    public static void TryImportCategoriesFromClipboard(bool replaceExisting)
+    {
+        if (CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, replaceExisting))
+        {
+            Inventory.InventoryOrchestrator.RefreshAll(updateMaps: true);
+        }
+    }
 }

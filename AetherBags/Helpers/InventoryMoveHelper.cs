@@ -1,13 +1,14 @@
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.Interop;
 using KamiToolKit.Classes;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace AetherBags. Helpers;
 
 public static unsafe class InventoryMoveHelper
 {
+    /* Unused method, here for reference in case we ever need to swap back to the other method
     public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
         Services.Logger.DebugOnly($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
@@ -15,6 +16,7 @@ public static unsafe class InventoryMoveHelper
         Services.Framework.DelayTicks(3);
         Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualRefresh);
     }
+    */
 
     public static void HandleItemMovePayload(DragDropPayload source, DragDropPayload target)
     {
@@ -31,20 +33,22 @@ public static unsafe class InventoryMoveHelper
 
         Services.Logger.DebugOnly($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
 
-        var atkValues = stackalloc AtkValue[4];
+        using var atkValues = new RentedAtkValues(4);
         for (var i = 0; i < 4; i++)
         {
-            atkValues[i].Type = ValueType.UInt;
+            atkValues[i].Type = AtkValueType.UInt;
         }
 
-        atkValues[0].UInt = srcContainer;
-        atkValues[1].UInt = srcSlot;
-        atkValues[2].UInt = dstContainer;
-        atkValues[3].UInt = dstSlot;
+        atkValues[0].SetUInt(srcContainer);
+        atkValues[1].SetUInt(srcSlot);
+        atkValues[2].SetUInt(dstContainer);
+        atkValues[3].SetUInt(dstSlot);
 
         var retVal = stackalloc AtkValue[1];
 
         RaptureAtkModule* atkModule = RaptureAtkModule.Instance();
+
+        // This is a networked call, treat with greate care!
         atkModule->HandleItemMove(retVal, atkValues, 4);
     }
 }

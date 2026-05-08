@@ -101,4 +101,15 @@ public static class Util
 
     public static SystemConfiguration ResetConfig()
         => new SystemConfiguration();
+
+    public static bool LooksLikeRegex(string s)
+    {
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (c is '.' or '*' or '+' or '?' or '[' or ']' or '(' or ')' or '\\' or '^' or '$' or '{' or '}' or '|')
+                return true;
+        }
+        return false;
+    }
 }

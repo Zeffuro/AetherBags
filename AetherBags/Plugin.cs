@@ -82,6 +82,8 @@ public class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        RegexCache.Clear();
+
         InventoryAddonContextMenu.Close();
         ItemContextMenuHandler.Dispose();
         _inventoryHooks.Dispose();

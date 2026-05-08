@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Inventory.Context;
@@ -21,7 +22,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
-    protected override void OnSetup(AtkUnitBase* addon)
+    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -60,7 +61,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => ItemRefresh(),
+            OnInputReceived = _ => SearchDebouncer.Run(() => Services.Framework.RunOnTick(ItemRefresh)),
             OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);
@@ -99,20 +100,43 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon);
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
     {
         if (!IsOpen || !IsSetupComplete) return;
+
+        UpdateRecentlyLootedHighlight();
         UpdateLootedCategory(lootedItems);
+    }
+
+    protected override void RefreshCategoriesCore(bool autosize)
+    {
+        UpdateRecentlyLootedHighlight();
+        UpdateLootedCategory(System.LootedItemsTracker.LootedItems);
+        base.RefreshCategoriesCore(autosize);
+    }
+
+    private void UpdateRecentlyLootedHighlight()
+    {
+        if (System.Config.General.HighlightRecentlyLootedItems && System.LootedItemsTracker.UnseenLootItemIds.Count > 0)
+        {
+            var color = System.Config.General.RecentlyLootedHighlightColor;
+            var rgb = new Vector3(color.X * color.W, color.Y * color.W, color.Z * color.W);
+            HighlightState.SetLabel(HighlightSource.RecentlyLooted, System.LootedItemsTracker.UnseenLootItemIds, rgb);
+        }
+        else
+        {
+            HighlightState.ClearLabel(HighlightSource.RecentlyLooted);
+        }
     }
 
     private void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItems)
     {
         _lootedCategoryNode.UpdateLootedItems(lootedItems);
 
-        if (lootedItems.Count > 0)
+        if (lootedItems.Count > 0 && System.Config.General.ShowRecentlyLooted)
         {
             if (CategoriesNode.HoistedNode != _lootedCategoryNode)
             {
@@ -183,6 +207,9 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         _lootedCategoryNode?.Dispose();
 
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
+
+        System.LootedItemsTracker.UnseenLootItemIds.Clear();
+        HighlightState.ClearLabel(HighlightSource.RecentlyLooted);
 
         ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
         if (blockingAddonId != 0)

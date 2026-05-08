@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
         <Version>1.0.0.0</Version>
     </PropertyGroup>
@@ -10,7 +10,8 @@
         <Punchline>Never think too hard about your bags again!</Punchline>
         <Description>This plugin replaces your inventory with it's own categorified inventory addon.</Description>
         <RepoUrl>https://github.com/Zeffuro/AetherBags</RepoUrl>
-        <Tags>ui</Tags>
+        <IconUrl>https://raw.githubusercontent.com/Zeffuro/AetherBags/master/images/icon.png</IconUrl>
+        <Tags>inventory;bags;organization;categories;filters;sorting;qol;ui</Tags>
         <AcceptsFeedback>true</AcceptsFeedback>
     </PropertyGroup>
 

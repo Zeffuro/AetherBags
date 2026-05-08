@@ -3,6 +3,8 @@ using KamiToolKit.Nodes;
 using System.Numerics;
 using AetherBags.Inventory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Premade.Node;
+using KamiToolKit.Premade.Node.Simple;
 using KamiToolKit.Timelines;
 
 namespace AetherBags.Nodes.Configuration.Layout;
@@ -31,6 +33,8 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
             IsVisible = true,
             IsEnabled = config.CompactPackingEnabled,
             Value = config.CompactLookahead,
+            Min = 0,
+            Max = 175, // Inventory Slot Max
             OnValueUpdate = value =>
             {
                 config.CompactLookahead = value;

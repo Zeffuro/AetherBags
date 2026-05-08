@@ -53,7 +53,7 @@ internal static class UserCategoryMatcher
                     if (string.IsNullOrWhiteSpace(pattern))
                         continue;
 
-                    var regex = RegexCache.GetOrCreate(pattern);
+                    var regex = RegexCache.GetOrCreate(pattern, compiled: true);
                     if (regex != null && regex.IsMatch(item.Name))
                         return true;
                 }

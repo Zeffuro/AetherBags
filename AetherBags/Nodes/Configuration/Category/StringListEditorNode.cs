@@ -4,6 +4,7 @@ using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Configuration.Category;

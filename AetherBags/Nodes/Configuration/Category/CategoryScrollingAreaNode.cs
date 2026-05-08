@@ -1,5 +1,9 @@
+using System.IO;
 using System.Numerics;
 using AetherBags.Addons;
+using AetherBags.Helpers.Import;
+using AetherBags.Inventory;
+using Dalamud.Game.ClientState.Keys;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -16,13 +20,47 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
 
         AddNode(new ExperimentalConfigurationNode());
 
-        var categoryConfigurationButtonNode = new TextButtonNode
+        AddNode(new ResNode{ Height = 10 });
+
+        var categoryButtonRow = new HorizontalListNode
         {
             Size = new Vector2(300, 28),
+            ItemSpacing = 4.0f,
+        };
+
+        categoryButtonRow.AddNode(new TextButtonNode
+        {
+            Size = new Vector2(200, 28),
             String = "Configure Categories",
             OnClick = () => _categoryConfigurationAddon?.Toggle(),
-        };
-        AddNode(categoryConfigurationButtonNode);
+        });
+
+        categoryButtonRow.AddNode(new ImGuiIconButtonNode
+        {
+            Width = 28,
+            Height = 28,
+            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
+            TextTooltip = "Export All Categories to Clipboard",
+            OnClick = () => CategoryImportExport.ExportAllCategoriesToClipboard(System.Config.Categories.UserCategories),
+        });
+
+        categoryButtonRow.AddNode(new ImGuiIconButtonNode
+        {
+            Width = 28,
+            Height = 28,
+            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
+            TextTooltip = "Import All Categories from Clipboard\n(hold shift to confirm)",
+            OnClick = HandleBulkImport,
+        });
+
+        AddNode(categoryButtonRow);
+    }
+
+    private void HandleBulkImport()
+    {
+        if (!Services.KeyState[VirtualKey.SHIFT]) return;
+        CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, true);
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private void InitializeCategoryAddon() {

@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Common.Math;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -41,7 +42,7 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
         {
             Size = new Vector2(40.0f, 12.0f),
             Position = new Vector2(4.0f, 34.0f),
-            Color = ColorHelper.GetColor(50),
+            TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(51),
             TextFlags = TextFlags.Edge,
             AlignmentType = AlignmentType.Right,

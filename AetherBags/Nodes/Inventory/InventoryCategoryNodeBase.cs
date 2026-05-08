@@ -1,4 +1,5 @@
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 
 namespace AetherBags.Nodes.Inventory;
 

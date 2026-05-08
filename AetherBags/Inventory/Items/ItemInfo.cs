@@ -136,9 +136,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
             return;
 
         _cachedVisualAlpha = IsEligibleForContext ? 1.0f : 0.4f;
-        _cachedHighlightColor = System.Config.Categories.BisBuddyEnabled
-            ? HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero
-            : Vector3.Zero;
+        _cachedHighlightColor = HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero;
 
         var entry = HighlightState.GetHighlightEntry(Item.ItemId);
         _cachedIsRelationshipHighlighted = entry != null;
@@ -182,20 +180,12 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
         if (string.IsNullOrEmpty(searchTerms))
             return true;
 
-        var re = RegexCache.GetOrCreate(searchTerms);
+        var re = RegexCache.GetOrCreate(searchTerms, compiled: false);
         if (re == null)
             return false;
 
-        if (re.IsMatch(Name)) return true;
-
-        if (re.IsMatch(LevelString)) return true;
-        if (re.IsMatch(ItemLevelString)) return true;
-
         if (ExternalCategoryManager.MatchesSearchTag(Item.ItemId, searchTerms)) return true;
-
-        if (re.IsMatch(Description)) return true;
-
-        return false;
+        return IsRegexMatch(re);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

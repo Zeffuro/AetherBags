@@ -14,8 +14,16 @@ public static class CategoryBucketManager
 
     private static readonly Dictionary<uint, CategoryInfo> CategoryInfoCache = new(capacity: 256);
 
-    public static uint MakeUserCategoryKey(int order)
-        => UserCategoryKeyFlag | (uint)(order & 0x7FFF_FFFF);
+    public static uint MakeUserCategoryKey(string id)
+    {
+        uint hash = 2166136261u;
+        foreach (char c in id)
+        {
+            hash ^= c;
+            hash *= 16777619u;
+        }
+        return UserCategoryKeyFlag | (hash & 0x7FFF_FFFF);
+    }
 
     public static bool IsUserCategoryKey(uint key)
         => (key & UserCategoryKeyFlag) != 0;
@@ -75,7 +83,7 @@ public static class CategoryBucketManager
             if (!category.Enabled || UserCategoryMatcher.IsCatchAll(category))
                 continue;
 
-            uint bucketKey = MakeUserCategoryKey(category.Order);
+            uint bucketKey = MakeUserCategoryKey(category.Id);
             ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, bucketKey, out bool exists);
 
             if (!exists)
@@ -89,6 +97,7 @@ public static class CategoryBucketManager
                         Description = category.Description,
                         Color = category.Color,
                         IsPinned = category.Pinned,
+                        Order = category.Order,
                     },
                     Items = new List<ItemInfo>(capacity: 16),
                     FilteredItems = new List<ItemInfo>(capacity: 16),
@@ -102,6 +111,7 @@ public static class CategoryBucketManager
                 bucketRef.Category.Description = category.Description;
                 bucketRef.Category.Color = category.Color;
                 bucketRef.Category.IsPinned = category.Pinned;
+                bucketRef.Category.Order = category.Order;
             }
 
             activeBuckets[activeCount++] = (bucketKey, bucketRef!, category);
@@ -420,7 +430,18 @@ public static class CategoryBucketManager
             int leftPrio = GetPriority(left);
             int rightPrio = GetPriority(right);
 
-            return leftPrio != rightPrio ? leftPrio.CompareTo(rightPrio) : left.CompareTo(right);
+            if (leftPrio != rightPrio)
+                return leftPrio.CompareTo(rightPrio);
+
+            if (IsUserCategoryKey(left) && IsUserCategoryKey(right))
+            {
+                var leftOrder = bucketsByKey[left].Category.Order;
+                var rightOrder = bucketsByKey[right].Category.Order;
+                int orderCmp = leftOrder.CompareTo(rightOrder);
+                if (orderCmp != 0) return orderCmp;
+            }
+
+            return left.CompareTo(right);
         });
     }
 

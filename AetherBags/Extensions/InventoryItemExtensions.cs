@@ -1,8 +1,6 @@
-using System.Text.RegularExpressions;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
 
@@ -61,48 +59,6 @@ public static unsafe class InventoryItemExtensions {
             }
 
             return null;
-        }
-
-        public ItemOrderModuleSorterItemEntry* GetItemOrderData()
-        {
-            InventoryType type = item.GetInventoryType();
-            int slot = item.GetSlot();
-            return type.GetInventorySorter->Items[slot + type.GetInventoryStartIndex];
-        }
-
-        public bool IsRegexMatch(string searchString) {
-            // Skip any data access if string is empty
-            if (searchString.IsNullOrEmpty()) return true;
-
-            var isDescriptionSearch = searchString.StartsWith('$');
-
-            if (isDescriptionSearch) {
-                searchString = searchString[1..];
-            }
-
-            try {
-                var regex = new Regex(searchString,RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-
-                if (ItemUtil.IsEventItem(item.GetBaseItemId())) {
-                    if (!Services.DataManager.GetExcelSheet<EventItem>().TryGetRow(item.GetBaseItemId(), out var itemData)) return false;
-
-                    if (regex.IsMatch(item.ItemId.ToString())) return true;
-                    if (regex.IsMatch(itemData.Name.ToString())) return true;
-                }
-
-                else if (ItemUtil.IsNormalItem(item.GetBaseItemId())) {
-                    if (!Services.DataManager.GetExcelSheet<Item>().TryGetRow(item.GetBaseItemId(), out var itemData)) return false;
-
-                    if (regex.IsMatch(item.ItemId.ToString())) return true;
-                    if (regex.IsMatch(itemData.Name.ToString())) return true;
-                    if (regex.IsMatch(itemData.Description.ToString()) && isDescriptionSearch) return true;
-                    if (regex.IsMatch(itemData.LevelEquip.ToString())) return true;
-                    if (regex.IsMatch(itemData.LevelItem.RowId.ToString())) return true;
-                }
-            }
-            catch (RegexParseException) { }
-
-            return false;
         }
 
         public void UseItem()
