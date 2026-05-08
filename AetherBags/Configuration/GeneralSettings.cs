@@ -21,6 +21,7 @@ public class GeneralSettings
     public bool LinkItemEnabled { get; set; } = true;
     public bool AnimationEnabled { get; set; } = false;
     public int SearchDelay { get; set; } = 150;
+    public bool ShowRecentlyLooted { get; set; } = true;
     public bool UseUnifiedExternalCategories { get; set; } = false;
 }
 

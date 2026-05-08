@@ -9,7 +9,8 @@ public sealed class CurrencyScrollingAreaNode : ScrollingListNode
     {
         AddNode(new CurrencyGeneralConfigurationNode
         {
-            Width = 600
+            Width = 600,
+            OnLayoutChanged = RecalculateLayout
         });
     }
 }

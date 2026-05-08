@@ -30,6 +30,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
         _itemIdsEditor = new UintListEditorNode
         {
             Label = "Allowed Item IDs:",
+            MaxValue = Services.DataManager.GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveItemName,
             OnSearchButtonClicked = OpenItemPicker,
             OnChanged = () =>
@@ -54,6 +55,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
         _uiCategoriesEditor = new UintListEditorNode
         {
             Label = "UI Categories:",
+            MaxValue = Services.DataManager.GetExcelSheet<ItemUICategory>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveUiCategoryName,
             OnSearchButtonClicked = OpenCategoryPicker,
             OnChanged = () =>

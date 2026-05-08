@@ -1,13 +1,14 @@
 using System;
 using System.Linq;
 using AetherBags.Currency;
+using AetherBags.Nodes.Configuration.Category;
 using KamiToolKit.Premade.Addon.Search;
 using KamiToolKit.Premade.Node.ListItem;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;
 
-public class AddonCurrencyPicker : BaseSearchAddon<Item, ItemListItemNode> {
+public class AddonCurrencyPicker : BaseSearchAddon<Item, ItemListItemWithAddNode> {
     public AddonCurrencyPicker() {
         var allItems = Services.DataManager.GetExcelSheet<Item>();
         var obsoleteTomes = Services.DataManager.GetExcelSheet<TomestonesItem>()

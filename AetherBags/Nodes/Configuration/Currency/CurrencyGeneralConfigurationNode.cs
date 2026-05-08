@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Configuration;
@@ -14,6 +15,7 @@ namespace AetherBags.Nodes.Configuration.Currency;
 public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 {
     private readonly UintListEditorNode? _currencyListEditor;
+    public global::System.Action? OnLayoutChanged { get; set; }
 
     public CurrencyGeneralConfigurationNode()
     {
@@ -136,6 +138,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         _currencyListEditor = new UintListEditorNode
         {
             Label = "Displayed Currencies:",
+            MaxValue = Services.DataManager.GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = id =>
             {
                 return id switch
@@ -150,6 +153,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
                 System.Config.Currency.DisplayedCurrencies = _currencyListEditor!.GetList();
                 RefreshCurrency();
                 RecalculateLayout();
+                OnLayoutChanged?.Invoke();
             }
         };
         _currencyListEditor.SetList(System.Config.Currency.DisplayedCurrencies);
@@ -159,20 +163,21 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
         quickAddRow.AddNode(new TextButtonNode {
             String = "+ Gil", Size = new Vector2(70, 24),
-            OnClick = () => _currencyListEditor?.AddValue(1)
+            OnClick = () => AddCurrencyToList(1)
         });
 
         quickAddRow.AddNode(new TextButtonNode {
             String = "+ Limited Tomestone", Size = new Vector2(150, 24),
-            OnClick = () => _currencyListEditor?.AddValue(CurrencySettings.LimitedTomestoneId)
+            OnClick = () => AddCurrencyToList(CurrencySettings.LimitedTomestoneId)
         });
 
         quickAddRow.AddNode(new TextButtonNode {
             String = "+ Non-Limited", Size = new Vector2(110, 24),
-            OnClick = () => _currencyListEditor?.AddValue(CurrencySettings.NonLimitedTomestoneId)
+            OnClick = () => AddCurrencyToList(CurrencySettings.NonLimitedTomestoneId)
         });
         AddNode(quickAddRow);
         RecalculateLayout();
+        OnLayoutChanged?.Invoke();
     }
 
     private Action<Vector4> CreateColorHandler(Action<Vector4> setter) => newColor =>
@@ -183,13 +188,26 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
 
     private void RefreshCurrency() => System.AddonInventoryWindow.ManualCurrencyRefresh();
 
+    private void AddCurrencyToList(uint id)
+    {
+        if (_currencyListEditor != null)
+        {
+            _currencyListEditor.AddValue(id);
+            RecalculateLayout();
+            OnLayoutChanged?.Invoke();
+        }
+    }
+
     private void OpenCurrencyPicker() {
         var picker = new AddonCurrencyPicker
         {
             Title = "Select Currency to Add",
             InternalName = "AetherBags_CurrencyPicker",
         };
-        picker.SelectionResult = item => _currencyListEditor?.AddValue(item.RowId);
+        picker.SelectionResult = item =>
+        {
+            AddCurrencyToList(item.RowId);
+        };
         picker.Open();
     }
 }

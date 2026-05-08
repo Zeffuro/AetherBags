@@ -29,6 +29,8 @@ public sealed class UintListEditorNode : VerticalListNode
     public Func<uint, string>? LabelResolver { get; init; }
     public Action? OnChanged { get; set; }
 
+    public uint MaxValue { get; init; } = int.MaxValue;
+
     public required ReadOnlySeString Label
     {
         get => _headerLabel.String;
@@ -76,7 +78,7 @@ public sealed class UintListEditorNode : VerticalListNode
         {
             Size = new Vector2(120, RowHeight),
             Min = 0,
-            Max = int.MaxValue,
+            Max = MaxValue > int.MaxValue ? int.MaxValue : (int)MaxValue,
             Value = 0,
         };
         addRow.AddNode(_addInput);
@@ -172,7 +174,7 @@ public sealed class UintListItemNode : HorizontalListNode
             0xFFFF_FFFD => "[Tome]",
             _ => value.ToString()
         };
-        
+
         var displayText = labelResolver is not null
             ? $"{idDisplay} - {labelResolver(value)}"
             : idDisplay;

@@ -25,6 +25,20 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
+        var showRecentlyLootedCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Show Recently Looted Section",
+            IsChecked = config.ShowRecentlyLooted,
+            OnClick = isChecked =>
+            {
+                config.ShowRecentlyLooted = isChecked;
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+            }
+        };
+        AddNode(showRecentlyLootedCheckboxNode);
+
         var showCategoryItemAmountCheckboxNode = new CheckboxNode
         {
             Size = Size with { Y = 18 },

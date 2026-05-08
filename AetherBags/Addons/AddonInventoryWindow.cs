@@ -109,11 +109,17 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         UpdateLootedCategory(lootedItems);
     }
 
+    protected override void RefreshCategoriesCore(bool autosize)
+    {
+        UpdateLootedCategory(System.LootedItemsTracker.LootedItems);
+        base.RefreshCategoriesCore(autosize);
+    }
+
     private void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItems)
     {
         _lootedCategoryNode.UpdateLootedItems(lootedItems);
 
-        if (lootedItems.Count > 0)
+        if (lootedItems.Count > 0 && System.Config.General.ShowRecentlyLooted)
         {
             if (CategoriesNode.HoistedNode != _lootedCategoryNode)
             {
