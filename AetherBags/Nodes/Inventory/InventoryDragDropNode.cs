@@ -1,5 +1,6 @@
 using System.Numerics;
 using AetherBags.Addons;
+using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
@@ -57,7 +58,10 @@ public class InventoryDragDropNode : DragDropNode
         set
         {
             field = value;
-            _quantityTextNode.String = value.ItemCount.ToString();
+            var general = System.Config.General;
+            bool aggregatingUnstackable = general.StackMode == InventoryStackMode.AggregateByItemId && general.AggregateUnstackableItems;
+            bool showCount = value.StackSize > 1 || aggregatingUnstackable;
+            _quantityTextNode.String = showCount ? value.ItemCount.ToString() : string.Empty;
             var decoration = ExternalCategoryManager.GetDecoration(value.Item.ItemId);
             Services.Logger.DebugOnly($"[ItemInfo.set] Item {value.Item.ItemId}: Decoration={decoration.HasValue}, Badge={decoration?.Badge.HasValue ?? false}");
             ApplyDecoration(decoration);

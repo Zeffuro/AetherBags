@@ -37,6 +37,7 @@ public abstract class InventoryStateBase
 
         var config = System.Config;
         InventoryStackMode stackMode = config.General.StackMode;
+        bool aggregateUnstackable = config.General.AggregateUnstackableItems;
 
         AggByKey.Clear();
         ItemInfoByKey.Clear();
@@ -45,7 +46,7 @@ public abstract class InventoryStateBase
         FilteredCategories.Clear();
         ClaimedKeys.Clear();
 
-        InventoryScanner.ScanInventories(inventoryManager, stackMode, AggByKey, SourceType);
+        InventoryScanner.ScanInventories(inventoryManager, stackMode, aggregateUnstackable, AggByKey, SourceType);
         CategoryBucketManager.ResetBuckets(BucketsByKey);
         InventoryScanner.BuildItemInfos(AggByKey, ItemInfoByKey);
 

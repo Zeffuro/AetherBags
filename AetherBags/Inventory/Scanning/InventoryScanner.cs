@@ -2,11 +2,18 @@ using System.Collections.Generic;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Lumina.Excel;
+using LuminaItem = Lumina.Excel.Sheets.Item;
 
 namespace AetherBags.Inventory.Scanning;
 
 public static unsafe class InventoryScanner
 {
+    private static ExcelSheet<LuminaItem>? s_itemSheet;
+    private static ExcelSheet<LuminaItem> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<LuminaItem>();
+
+    private static bool IsAggregatable(uint itemId) => ItemSheet.GetRow(itemId).StackSize > 1;
+
     public static readonly InventoryType[] StandardInventories =
     [
         InventoryType.Inventory1,
@@ -42,6 +49,7 @@ public static unsafe class InventoryScanner
     public static void ScanInventories(
         InventoryManager* inventoryManager,
         InventoryStackMode stackMode,
+        bool aggregateUnstackable,
         Dictionary<ulong, AggregatedItem> aggByKey,
         InventorySourceType source)
     {
@@ -80,7 +88,7 @@ public static unsafe class InventoryScanner
                 int quantity = item.Quantity;
                 bool isHq = (item.Flags & InventoryItem.ItemFlags.HighQuality) != 0;
 
-                ulong key = stackMode == InventoryStackMode.AggregateByItemId
+                ulong key = stackMode == InventoryStackMode.AggregateByItemId && (aggregateUnstackable || IsAggregatable(id))
                     ? MakeAggregatedItemKey(id, isHq)
                     : MakeNaturalSlotKey(inventoryType, slot);
 

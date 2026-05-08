@@ -16,6 +16,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _hideSaddlebagsCheckboxNode;
     private readonly CheckboxNode _hideRetainerbagsCheckboxNode;
     private readonly LabeledEnumDropdownNode<InventoryStackMode> _stackDropDown;
+    private readonly CheckboxNode _aggregateUnstackableCheckboxNode = null!;
 
     public FunctionalConfigurationNode()
     {
@@ -180,9 +181,28 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
             OnOptionSelected = selected =>
             {
                 config.StackMode = selected;
+                _aggregateUnstackableCheckboxNode.IsEnabled = selected == InventoryStackMode.AggregateByItemId;
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
         AddNode(_stackDropDown);
+
+        AddTab(1);
+        _aggregateUnstackableCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            IsEnabled = config.StackMode == InventoryStackMode.AggregateByItemId,
+            String = "Combine unstackable items into a single stack",
+            TextTooltip = "Also merge duplicates of items that don't normally stack (like equipment).\nLeave off to keep each copy in its own slot so distinct materia, dyes, and spiritbond stay visible.",
+            IsChecked = config.AggregateUnstackableItems,
+            OnClick = isChecked =>
+            {
+                config.AggregateUnstackableItems = isChecked;
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+            }
+        };
+        AddNode(_aggregateUnstackableCheckboxNode);
+        SubtractTab(1);
     }
 }
