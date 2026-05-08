@@ -21,6 +21,8 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     private static ExcelSheet<Item>? s_itemSheet;
     private static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
 
+    public static bool IsAggregatable(uint itemId) => ItemSheet.GetRow(itemId).StackSize > 1;
+
     private bool _rowLoaded;
     private Item _row;
 
