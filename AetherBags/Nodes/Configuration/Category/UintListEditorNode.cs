@@ -32,7 +32,7 @@ public sealed class UintListEditorNode : VerticalListNode
 
     public uint MaxValue { get; init; } = int.MaxValue;
 
-    public float LabelWidth { get; init; } = 300f;
+    public float LabelWidth { get; init; } = 280f;
     private float RowWidth => LabelWidth + ButtonsAreaWidth;
 
     public required ReadOnlySeString Label
@@ -208,7 +208,8 @@ public sealed class UintListItemNode : HorizontalListNode
 
         AddNode(new LabelTextNode
         {
-            Size = new Vector2(labelWidth, 24),
+            Size = new Vector2(labelWidth, 28),
+            Position = new Vector2(0, 7),
             String = displayText,
             TextColor = ColorHelper.GetColor(3),
             TextFlags = TextFlags.OverflowHidden | TextFlags.Ellipsis,
