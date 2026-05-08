@@ -39,6 +39,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
     private bool _collapsePending;
     private float _baseHeaderWidth = 96f;
     private string _fullHeaderText = "Recently Looted";
+    private bool _isDisposed;
 
     public event Action<LootedItemsCategoryNode, bool>? HeaderHoverChanged;
     public Action<int>? OnDismissItem { get; set; }
@@ -46,9 +47,10 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     public int ItemsPerLine
     {
-        get => _itemGridNode.ItemsPerLine;
+        get => _isDisposed ? 0 : _itemGridNode.ItemsPerLine;
         set
         {
+            if (_isDisposed) return;
             if (_itemGridNode.ItemsPerLine == value) return;
             _itemGridNode.ItemsPerLine = value;
             RecalculateSize();
@@ -109,6 +111,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     public void UpdateLootedItems(IReadOnlyList<LootedItemInfo> lootedItems)
     {
+        if (_isDisposed) return;
+
         long newHash = ComputeItemsHash(lootedItems);
         bool itemsChanged = lootedItems.Count != _lastItemCount || newHash != _lastItemsHash;
 
@@ -126,6 +130,12 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             }
             RecalculateSize();
         }
+    }
+
+    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    {
+        _isDisposed = true;
+        base.Dispose(disposing, isNativeDestructor);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,11 +161,14 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
             ? $"Recently Looted ({_lootedItems.Count})"
             : "Recently Looted";
 
+        if (_isDisposed) return;
         _headerTextNode.String = _fullHeaderText;
     }
 
     public void BeginHeaderHover()
     {
+        if (_isDisposed) return;
+
         _hoverRefs++;
         _collapsePending = false;
 
@@ -178,19 +191,18 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         {
             if (!_collapsePending) return;
             _collapsePending = false;
+            if (_isDisposed) return;
 
-            try
-            {
-                _headerExpanded = false;
-                ApplyHeaderVisualStateAndSize();
-                HeaderHoverChanged?.Invoke(this, false);
-            }
-            catch (NullReferenceException) { }
+            _headerExpanded = false;
+            ApplyHeaderVisualStateAndSize();
+            HeaderHoverChanged?.Invoke(this, false);
         });
     }
 
     private void ApplyHeaderVisualStateAndSize()
     {
+        if (_isDisposed) return;
+
         var flags = _headerTextNode.TextFlags;
         flags &= ~(TextFlags.WordWrap | TextFlags.MultiLine);
 
@@ -228,6 +240,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     private void SyncItemGrid()
     {
+        if (_isDisposed) return;
+
         _itemGridNode.SyncWithListDataByKey(
             dataList: _lootedItems,
             getKeyFromData: item => item.Index,
@@ -267,6 +281,8 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     public sealed override void RecalculateSize()
     {
+        if (_isDisposed) return;
+
         int itemCount = _lootedItems.Count;
 
         const float cellW = 42f;

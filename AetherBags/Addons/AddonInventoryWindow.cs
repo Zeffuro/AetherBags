@@ -18,7 +18,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 {
     private readonly MainBagState _inventoryState = new();
     private InventoryNotificationNode _notificationNode = null!;
-    private LootedItemsCategoryNode _lootedCategoryNode = null!;
+    private LootedItemsCategoryNode? _lootedCategoryNode;
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
@@ -40,13 +40,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         CategoriesNode.VerticalSpacing = CategorySpacing;
         CategoriesNode.TopPadding = 4.0f;
         CategoriesNode.BottomPadding = 4.0f;
-
-        _lootedCategoryNode = new LootedItemsCategoryNode
-        {
-            ItemsPerLine = 10,
-            OnDismissItem = OnDismissLootedItem,
-            OnClearAll = OnClearAllLootedItems,
-        };
 
         var header = CalculateHeaderLayout(addon);
 
@@ -134,17 +127,20 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     private void UpdateLootedCategory(IReadOnlyList<LootedItemInfo> lootedItems)
     {
-        _lootedCategoryNode.UpdateLootedItems(lootedItems);
+        bool shouldShow = lootedItems.Count > 0 && System.Config.General.ShowRecentlyLooted;
 
-        if (lootedItems.Count > 0 && System.Config.General.ShowRecentlyLooted)
+        if (shouldShow)
         {
+            _lootedCategoryNode ??= CreateLootedCategoryNode();
+            _lootedCategoryNode.UpdateLootedItems(lootedItems);
+
             if (CategoriesNode.HoistedNode != _lootedCategoryNode)
             {
                 CategoriesNode.SetHoistedNode(_lootedCategoryNode);
             }
             AutoSizeWindow();
         }
-        else
+        else if (_lootedCategoryNode is not null)
         {
             using (CategoriesNode.DeferRecalculateLayout())
             {
@@ -153,12 +149,21 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
                     CategoriesNode.SetHoistedNode(null);
                 }
 
+                // RemoveNode disposes the node via SafeDisposeNode, so clear our reference too.
                 CategoriesNode.RemoveNode(_lootedCategoryNode);
+                _lootedCategoryNode = null;
             }
             CategoriesNode.InvalidateLayout();
             AutoSizeWindow();
         }
     }
+
+    private LootedItemsCategoryNode CreateLootedCategoryNode() => new()
+    {
+        ItemsPerLine = 10,
+        OnDismissItem = OnDismissLootedItem,
+        OnClearAll = OnClearAllLootedItems,
+    };
 
     private void OnDismissLootedItem(int index)
     {
@@ -205,6 +210,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     {
         IsSetupComplete = false;
         _lootedCategoryNode?.Dispose();
+        _lootedCategoryNode = null;
 
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
