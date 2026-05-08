@@ -6,8 +6,11 @@
 - Fix compact lookahead overflow.
 - Fix item rarity not properly mapping to item quality.
 - Fix "ghost hovers" when hovering over items in the retainer inventory with official retainer inventory disabled.
-- Fix Recenty Looted Items hover "jumping"
-- Fix Recently Looted Items quantity text color being wrong 
+- Fix Recently Looted Items hover "jumping"
+- Fix Recently Looted Items quantity text color being wrong.
+- The header search bar should now be more centered.
+- Added tooltips to explain compact packing options.
+- Fixed certain errors in the log.
 
 # 1.0.0.0
 - Initial Release
