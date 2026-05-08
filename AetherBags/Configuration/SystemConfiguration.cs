@@ -7,6 +7,7 @@ public class SystemConfiguration
     private GeneralSettings _general = new();
     private CategorySettings _categories = new();
     private CurrencySettings _currency = new();
+    private KeybindSettings _keybinds = new();
 
     public GeneralSettings General
     {
@@ -26,6 +27,12 @@ public class SystemConfiguration
         set => _currency = value ?? new();
     }
 
+    public KeybindSettings Keybinds
+    {
+        get => _keybinds;
+        set => _keybinds = value ?? new();
+    }
+
     /// <summary>
     /// Ensures all nested config objects are initialized. Call after deserialization.
     /// </summary>
@@ -34,6 +41,7 @@ public class SystemConfiguration
         _general ??= new();
         _categories ??= new();
         _currency ??= new();
+        _keybinds ??= new();
         _categories.UserCategories ??= new();
     }
 }

@@ -10,5 +10,7 @@ public interface IInventoryWindow
     void ManualRefresh();
     void ItemRefresh();
     void SetSearchText(string searchText);
+    void FocusSearch();
+    bool TryFocusSearch();
     InventoryStats GetStats();
 }

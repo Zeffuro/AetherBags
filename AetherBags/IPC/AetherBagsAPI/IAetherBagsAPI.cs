@@ -24,6 +24,7 @@ public interface IAetherBagsAPI
     void RegisterSource(IExternalItemSource source);
     void UnregisterSource(string sourceName);
     IReadOnlyList<string> GetRegisteredSourceNames();
+
     string GetConfigurationJson();
     void SetConfigurationJson(string json);
     string GetConfigProperty(string propertyPath);

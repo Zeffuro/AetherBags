@@ -1,3 +1,7 @@
+# 1.0.0.3
+- Add options to IPC to access the AetherBags configuration and make changes.
+- Add configurable keybinds for focusing search and opening bag windows directly into search.
+
 # 1.0.0.2
 - Fix ghost hovers for expanded retainer grid too.
 - Now also properly save when closing the configuration window.

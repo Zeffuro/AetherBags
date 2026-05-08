@@ -4,6 +4,7 @@ using AetherBags.Helpers;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
 using AetherBags.Nodes.Configuration.General;
+using AetherBags.Nodes.Configuration.Keybind;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
@@ -17,6 +18,7 @@ public class AddonConfigurationWindow : NativeAddon
     private GeneralScrollingAreaNode? _generalScrollingAreaNode;
     private CategoryScrollingAreaNode? _categoryScrollingAreaNode;
     private CurrencyScrollingAreaNode? _currencyScrollingAreaNode;
+    private KeybindScrollingAreaNode? _keybindScrollingAreaNode;
 
     private readonly List<NodeBase> _tabContent = new();
 
@@ -59,13 +61,23 @@ public class AddonConfigurationWindow : NativeAddon
         };
         _currencyScrollingAreaNode.AttachNode(this);
 
+        _keybindScrollingAreaNode = new KeybindScrollingAreaNode
+        {
+            Position = ContentStartPosition with { Y = tabContentY },
+            Size = ContentSize with { Y = tabContentHeight },
+            IsVisible = false,
+        };
+        _keybindScrollingAreaNode.AttachNode(this);
+
         _tabContent.Add(_generalScrollingAreaNode);
         _tabContent.Add(_categoryScrollingAreaNode);
         _tabContent.Add(_currencyScrollingAreaNode);
+        _tabContent.Add(_keybindScrollingAreaNode);
 
         _tabBarNode.AddTab("General", () => SwitchTab(0));
         _tabBarNode.AddTab("Categories", () => SwitchTab(1));
         _tabBarNode.AddTab("Currency", () => SwitchTab(2));
+        _tabBarNode.AddTab("Keybinds", () => SwitchTab(3));
 
         base.OnSetup(addon, atkValueSpan);
     }
@@ -88,6 +100,9 @@ public class AddonConfigurationWindow : NativeAddon
         _categoryScrollingAreaNode = null;
         _currencyScrollingAreaNode?.Dispose();
         _currencyScrollingAreaNode = null;
+        _keybindScrollingAreaNode?.Dispose();
+        _keybindScrollingAreaNode = null;
+
         base.OnFinalize(addon);
     }
 }

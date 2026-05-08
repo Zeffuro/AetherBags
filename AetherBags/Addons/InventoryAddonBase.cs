@@ -14,6 +14,7 @@ using AetherBags.Nodes.Input;
 using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
@@ -109,6 +110,27 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             if (IsOpen) SearchInputNode.SearchString = searchText;
             RefreshCategoriesCore(autosize: true);
         }, delayTicks: 3);
+    }
+
+    public void FocusSearch()
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            AtkUnitBase* addon = this;
+            if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return;
+
+            FocusSearch(addon);
+        }, delayTicks: 2);
+    }
+
+    public bool TryFocusSearch()
+    {
+        AtkUnitBase* addon = this;
+        if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return false;
+        if (!IsFocusedAddon(addon)) return false;
+
+        FocusSearch(addon);
+        return true;
     }
 
     private void ExecuteRefresh(bool autosize)
@@ -685,6 +707,21 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }
 
         base.OnUpdate(addon);
+    }
+
+
+    private void FocusSearch(AtkUnitBase* addon)
+        => AtkStage.Instance()->AtkInputManager->SetFocus(SearchInputNode.FocusNode, addon, 0);
+
+    private static bool IsFocusedAddon(AtkUnitBase* addon)
+    {
+        var focusedAddonCount = RaptureAtkUnitManager.Instance()->FocusedUnitsList.Count;
+        if (focusedAddonCount == 0) return false;
+
+        var focusedAddon = RaptureAtkUnitManager.Instance()->FocusedUnitsList.Entries[focusedAddonCount - 1];
+        if (focusedAddon.Value == null || focusedAddon.Value->Id == 0) return false;
+
+        return focusedAddon.Value->Id == addon->Id || focusedAddon.Value->ParentId == addon->Id;
     }
 
     protected override void OnFinalize(AtkUnitBase* addon)

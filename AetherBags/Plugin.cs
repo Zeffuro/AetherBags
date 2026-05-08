@@ -17,6 +17,7 @@ public class Plugin : IDalamudPlugin
 {
     private readonly CommandHandler _commandHandler;
     private readonly InventoryHooks _inventoryHooks;
+    private readonly GlobalKeybindHandler _globalKeybindHandler;
     private readonly InventoryMonitor inventoryMonitor;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
@@ -77,6 +78,7 @@ public class Plugin : IDalamudPlugin
         }
 
         _inventoryHooks = new InventoryHooks();
+        _globalKeybindHandler = new GlobalKeybindHandler();
         inventoryMonitor = new InventoryMonitor();
     }
 
@@ -87,6 +89,7 @@ public class Plugin : IDalamudPlugin
         InventoryAddonContextMenu.Close();
         ItemContextMenuHandler.Dispose();
         _inventoryHooks.Dispose();
+        _globalKeybindHandler.Dispose();
         inventoryMonitor.Dispose();
 
         System.LootedItemsTracker.Dispose();

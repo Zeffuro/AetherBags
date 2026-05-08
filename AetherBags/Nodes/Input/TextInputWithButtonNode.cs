@@ -1,6 +1,6 @@
 using System;
 using System.Numerics;
-using KamiToolKit.Classes;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node.Simple;
 using Lumina.Text.ReadOnly;
@@ -38,6 +38,8 @@ public class TextInputWithButtonNode : SimpleComponentNode {
         get => _textInputNode.OnInputReceived;
         set => _textInputNode.OnInputReceived = value;
     }
+
+    public new unsafe AtkResNode* FocusNode => (AtkResNode*)_textInputNode.CollisionNode.Node;
 
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
