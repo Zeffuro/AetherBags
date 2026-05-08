@@ -1,8 +1,10 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
+using AetherBags.Nodes.Color;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
@@ -38,6 +40,44 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             }
         };
         AddNode(showRecentlyLootedCheckboxNode);
+
+        var recentlyLootedColorHandler = new Action<Vector4>(newColor =>
+        {
+            config.RecentlyLootedHighlightColor = newColor;
+            InventoryOrchestrator.RefreshAll(updateMaps: true);
+        });
+
+        var recentlyLootedColorNode = new ColorInputRow
+        {
+            Label = "Highlight Color",
+            Size = new Vector2(300, 24),
+            CurrentColor = config.RecentlyLootedHighlightColor,
+            DefaultColor = new GeneralSettings().RecentlyLootedHighlightColor,
+            OnColorConfirmed = recentlyLootedColorHandler,
+            OnColorChange = recentlyLootedColorHandler,
+            OnColorCanceled = recentlyLootedColorHandler,
+            OnColorPreviewed = recentlyLootedColorHandler,
+            IsEnabled = config.HighlightRecentlyLootedItems
+        };
+
+        var highlightRecentlyLootedCheckboxNode = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Highlight Recently Looted Items",
+            IsChecked = config.HighlightRecentlyLootedItems,
+            OnClick = isChecked =>
+            {
+                config.HighlightRecentlyLootedItems = isChecked;
+                recentlyLootedColorNode.IsEnabled = isChecked;
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+            }
+        };
+        AddNode(highlightRecentlyLootedCheckboxNode);
+
+        AddTab(1);
+        AddNode(recentlyLootedColorNode);
+        SubtractTab(1);
 
         var showCategoryItemAmountCheckboxNode = new CheckboxNode
         {

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Numerics;
 
 namespace AetherBags.Configuration;
 
@@ -22,6 +23,8 @@ public class GeneralSettings
     public bool AnimationEnabled { get; set; } = false;
     public int SearchDelay { get; set; } = 150;
     public bool ShowRecentlyLooted { get; set; } = true;
+    public bool HighlightRecentlyLootedItems { get; set; } = false;
+    public Vector4 RecentlyLootedHighlightColor { get; set; } = new(0.9f, 0.7f, 0.2f, 0.4f);
     public bool UseUnifiedExternalCategories { get; set; } = false;
 }
 

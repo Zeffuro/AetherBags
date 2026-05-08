@@ -136,9 +136,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
             return;
 
         _cachedVisualAlpha = IsEligibleForContext ? 1.0f : 0.4f;
-        _cachedHighlightColor = System.Config.Categories.BisBuddyEnabled
-            ? HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero
-            : Vector3.Zero;
+        _cachedHighlightColor = HighlightState.GetLabelColor(Item.ItemId) ?? Vector3.Zero;
 
         var entry = HighlightState.GetHighlightEntry(Item.ItemId);
         _cachedIsRelationshipHighlighted = entry != null;

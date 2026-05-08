@@ -10,6 +10,7 @@ public enum HighlightSource
     AllaganTools,
     BiSBuddy,
     Relationship,
+    RecentlyLooted,
 }
 
 public record HighlightEntry(uint ItemId, Vector3 Color);

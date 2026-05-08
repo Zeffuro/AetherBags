@@ -27,6 +27,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     private bool _hasPendingRemoval;
     private int _nextIndex;
 
+    public readonly HashSet<uint> UnseenLootItemIds = new();
+
     public event Action<IReadOnlyList<LootedItemInfo>>? OnLootedItemsChanged;
 
     public IReadOnlyList<LootedItemInfo> LootedItems => _lootedItems;
@@ -40,6 +42,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         _isEnabled = true;
         _lootedItems.Clear();
         _pendingChanges.Clear();
+        UnseenLootItemIds.Clear();
         _batchStartTick = 0;
         _hasPendingRemoval = false;
         _nextIndex = 0;
@@ -56,6 +59,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         Services.Framework.Update -= OnFrameworkUpdate;
         _lootedItems.Clear();
         _pendingChanges.Clear();
+        UnseenLootItemIds.Clear();
         _batchStartTick = 0;
         _hasPendingRemoval = false;
         _nextIndex = 0;
@@ -64,6 +68,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
     public void Clear()
     {
         _lootedItems.Clear();
+        UnseenLootItemIds.Clear();
         _hasPendingRemoval = true;
         _nextIndex = 0;
     }
@@ -102,6 +107,11 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
         foreach (var ((itemId, isHq), (item, delta)) in _pendingChanges)
         {
+            if (delta > 0)
+            {
+                UnseenLootItemIds.Add(itemId);
+            }
+
             int existingIndex = FindExistingItemIndex(itemId, isHq);
 
             if (existingIndex >= 0)
