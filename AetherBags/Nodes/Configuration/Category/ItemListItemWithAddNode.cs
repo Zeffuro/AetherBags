@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node.ListItem;
 using Lumina.Excel.Sheets;
@@ -14,6 +15,9 @@ public class ItemListItemWithAddNode : ItemListItemNode
 
     public ItemListItemWithAddNode()
     {
+        LabelTextNode.AlignmentType = AlignmentType.Left;
+        SubLabelTextNode.IsVisible = false;
+
         _addButton = new TextButtonNode
         {
             String = "Add",
@@ -31,7 +35,7 @@ public class ItemListItemWithAddNode : ItemListItemNode
     {
         base.OnSizeChanged();
         _addButton.Position = new Vector2(Width - 55, (Height - 24) / 2);
-        LabelTextNode.Size = new Vector2(Width - Height - 2.0f - 65.0f, Height / 2.0f);
+        LabelTextNode.Size = new Vector2(Width - Height - 2.0f - 65.0f, Height);
     }
 }
 
