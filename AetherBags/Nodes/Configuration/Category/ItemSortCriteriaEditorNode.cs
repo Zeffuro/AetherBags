@@ -161,9 +161,13 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         for (int i = 0; i < _criteria.Count; i++)
         {
             int index = i;
+            var fieldOptions = GetAvailableFields(_criteria[i].Field);
+            if (_criteria[i].Field != ItemSortField.UseGlobal)
+                fieldOptions.Remove(ItemSortField.UseGlobal);
+
             _itemsContainer.AddNode(new ItemSortCriterionItemNode(
                 _criteria[i],
-                GetAvailableFields(_criteria[i].Field),
+                fieldOptions,
                 isFirst: i == 0,
                 isLast: i == _criteria.Count - 1)
             {
@@ -209,14 +213,12 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         else
         {
             var criterion = _criteria[index];
-            _criteria.RemoveAt(index);
-            _criteria.RemoveAll(existing => existing.Field == field || existing.Field == ItemSortField.UseGlobal);
             criterion.Field = field;
-            _criteria.Insert(Math.Min(index, _criteria.Count), criterion);
-            _criteria.RemoveAll(existing => existing.Field == ItemSortField.UseGlobal);
+            _criteria[index] = criterion;
         }
 
-        RefreshItemsDeferred();
+        RefreshAddOptions();
+        OnChanged?.Invoke();
     }
 
     private void UpdateDirection(int index, SortDirection direction)
@@ -224,7 +226,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         if (index < 0 || index >= _criteria.Count) return;
 
         _criteria[index].Direction = direction;
-        RefreshItemsDeferred();
+        OnChanged?.Invoke();
     }
 
     private void RefreshItemsDeferred()
