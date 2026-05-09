@@ -216,8 +216,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
             _criteria.RemoveAll(existing => existing.Field == ItemSortField.UseGlobal);
         }
 
-        RefreshItems();
-        OnChanged?.Invoke();
+        RefreshItemsDeferred();
     }
 
     private void UpdateDirection(int index, SortDirection direction)
@@ -225,8 +224,16 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         if (index < 0 || index >= _criteria.Count) return;
 
         _criteria[index].Direction = direction;
-        RefreshItems();
-        OnChanged?.Invoke();
+        RefreshItemsDeferred();
+    }
+
+    private void RefreshItemsDeferred()
+    {
+        Services.Framework.RunOnTick(() =>
+        {
+            RefreshItems();
+            OnChanged?.Invoke();
+        }, delayTicks: 2);
     }
 
     private void RemoveCriterion(int index)
@@ -234,11 +241,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         if (index < 0 || index >= _criteria.Count) return;
 
         _criteria.RemoveAt(index);
-        Services.Framework.RunOnTick(() =>
-        {
-            RefreshItems();
-            OnChanged?.Invoke();
-        }, delayTicks: 2);
+        RefreshItemsDeferred();
     }
 
     private void MoveCriterion(int index, int delta)
@@ -247,11 +250,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         if (index < 0 || index >= _criteria.Count || target < 0 || target >= _criteria.Count) return;
 
         (_criteria[index], _criteria[target]) = (_criteria[target], _criteria[index]);
-        Services.Framework.RunOnTick(() =>
-        {
-            RefreshItems();
-            OnChanged?.Invoke();
-        }, delayTicks: 2);
+        RefreshItemsDeferred();
     }
 }
 
