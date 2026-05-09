@@ -17,7 +17,10 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
     {
         InitializeCategoryAddon();
 
-        AddNode(new CategoryGeneralConfigurationNode());
+        AddNode(new CategoryGeneralConfigurationNode
+        {
+            OnLayoutChanged = RefreshLayoutAfterChildChange,
+        });
 
         AddNode(new ExperimentalConfigurationNode());
 
@@ -75,6 +78,12 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
         categoryButtonRow.AddNode(resetButton);
 
         AddNode(categoryButtonRow);
+    }
+
+    private void RefreshLayoutAfterChildChange()
+    {
+        RecalculateLayout();
+        Services.Framework.RunOnTick(RecalculateLayout, delayTicks: 2);
     }
 
     private void HandleBulkImport()

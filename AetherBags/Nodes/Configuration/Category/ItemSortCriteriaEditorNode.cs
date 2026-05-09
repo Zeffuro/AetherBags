@@ -22,6 +22,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
     private const float AddButtonWidth = 72f;
     private const float RowWidth = FieldWidth + DirectionWidth + ButtonSize * 3f + ButtonSpacing * 4f;
     private const float AddRowWidth = FieldWidth + DirectionWidth + AddButtonWidth + ButtonSpacing * 2f;
+    private const float ItemContainerRowSpacing = 2f;
 
     private readonly bool _allowUseGlobal;
     private readonly bool _allowCustomOrder;
@@ -57,9 +58,9 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         _itemsContainer = new VerticalListNode
         {
             Size = new Vector2(RowWidth, 0),
-            ItemSpacing = 2.0f,
+            ItemSpacing = ItemContainerRowSpacing,
             FitContents = true,
-            FirstItemSpacing = 2,
+            FirstItemSpacing = ItemContainerRowSpacing,
         };
         AddNode(_itemsContainer);
 
@@ -96,6 +97,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         RefreshAddOptions();
         RecalculateLayout();
     }
+
 
     public List<ItemSortCriterion> GetCriteria() => _criteria
         .Select(criterion => new ItemSortCriterion
@@ -139,6 +141,7 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
         if (field == ItemSortField.UseGlobal)
         {
             _criteria = [new ItemSortCriterion { Field = ItemSortField.UseGlobal, Direction = SortDirection.Ascending }];
+            RefreshItemsDeferred();
         }
         else if (_criteria.All(criterion => criterion.Field != field))
         {
@@ -148,10 +151,8 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
                 Field = field,
                 Direction = _addDirectionDropdown.SelectedOption,
             });
+            RefreshItemsDeferred();
         }
-
-        RefreshItems();
-        OnChanged?.Invoke();
     }
 
     private unsafe void RefreshItems()
@@ -217,7 +218,6 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
             _criteria[index] = criterion;
         }
 
-        RefreshAddOptions();
         OnChanged?.Invoke();
     }
 

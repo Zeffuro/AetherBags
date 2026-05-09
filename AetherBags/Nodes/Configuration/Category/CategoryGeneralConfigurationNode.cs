@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
@@ -7,22 +8,31 @@ using AetherBags.Inventory.Context;
 using AetherBags.Nodes.Color;
 using AetherBags.Nodes.Input;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
+using KamiToolKit.Premade.Node.Simple;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
+public sealed class CategoryGeneralConfigurationNode : VerticalListNode
 {
+    private const float TabSize = 18.0f;
+
+    public Action? OnLayoutChanged { get; init; }
+
+    private readonly List<IndentedConfigurationRowNode> _indentedRows = new();
     private readonly CheckboxNode _allaganToolsCheckbox;
+
     public CategoryGeneralConfigurationNode()
     {
         CategorySettings config = System.Config.Categories;
         config.NormalizeCategorySourceDisplayOrder();
         config.NormalizeItemSortSettings();
 
-        ItemVerticalSpacing = 2;
+        FitContents = true;
+        ItemSpacing = 2;
 
         LabelTextNode titleNode = new LabelTextNode
         {
@@ -31,9 +41,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             TextColor = ColorHelper.GetColor(2),
             TextOutlineColor = ColorHelper.GetColor(0),
         };
-        AddNode(titleNode);
-
-        AddTab(1);
+        AddIndented(titleNode);
 
         CheckboxNode categoriesEnabled = new CheckboxNode
         {
@@ -48,9 +56,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(categoriesEnabled);
-
-        AddTab(1);
+        AddIndented(categoriesEnabled, 1);
 
         CheckboxNode gameCategoriesEnabled = new CheckboxNode
         {
@@ -65,7 +71,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(gameCategoriesEnabled);
+        AddIndented(gameCategoriesEnabled, 2);
 
         CheckboxNode userCategoriesEnabled = new CheckboxNode
         {
@@ -80,7 +86,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(userCategoriesEnabled);
+        AddIndented(userCategoriesEnabled, 2);
 
         bool bisBuddyReady = System.IPC.BisBuddy?.IsReady ?? false;
 
@@ -122,8 +128,8 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(bisBuddyEnabled);
-        AddNode(1, bbModeDropdown);
+        AddIndented(bisBuddyEnabled, 2);
+        AddIndented(bbModeDropdown, 3);
 
         bool allaganReady = System.IPC.AllaganTools?.IsReady ?? false;
 
@@ -170,9 +176,9 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(_allaganToolsCheckbox);
+        AddIndented(_allaganToolsCheckbox, 2);
 
-        AddNode(1, atModeDropdown);
+        AddIndented(atModeDropdown, 3);
 
         CheckboxNode blankMiscCategoryName = new CheckboxNode
         {
@@ -187,25 +193,22 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
                 RefreshInventory();
             }
         };
-        AddNode(blankMiscCategoryName);
+        AddIndented(blankMiscCategoryName, 2);
 
-        SubtractTab(1);
-
-        AddNode(new ResNode { Height = 8 });
+        AddIndented(new ResNode { Height = 8 });
 
         var defaultItemSortEditor = new ItemSortCriteriaEditorNode("Default Item Sort Priority:", allowUseGlobal: false, allowCustomOrder: false);
         defaultItemSortEditor.OnChanged = () =>
         {
             config.DefaultItemSortCriteria = defaultItemSortEditor.GetCriteria();
-            RecalculateLayout();
             RefreshInventory();
         };
-        defaultItemSortEditor.OnLayoutChanged = RecalculateLayout;
+        defaultItemSortEditor.OnLayoutChanged = HandleLayoutChanged;
         defaultItemSortEditor.SetCriteria(config.DefaultItemSortCriteria);
         config.DefaultItemSortCriteria = defaultItemSortEditor.GetCriteria();
-        AddNode(defaultItemSortEditor);
+        AddIndented(defaultItemSortEditor, 1);
 
-        AddNode(new ResNode { Height = 8 });
+        AddIndented(new ResNode { Height = 8 });
 
         CategorySourceOrderEditorNode? categorySourceOrderEditor = null;
         var editor = categorySourceOrderEditor;
@@ -218,8 +221,58 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
             }
         };
         categorySourceOrderEditor.SetOrder(config.CategorySourceDisplayOrder);
-        AddNode(categorySourceOrderEditor);
+        AddIndented(categorySourceOrderEditor, 1);
+    }
+
+    private void AddIndented(NodeBase? node, int tabIndex = 0)
+    {
+        if (node is null) return;
+
+        if (tabIndex <= 0)
+        {
+            AddNode(node);
+            return;
+        }
+
+        float indent = tabIndex * TabSize;
+        var row = new IndentedConfigurationRowNode(node, indent);
+        row.RecalculateLayout();
+        _indentedRows.Add(row);
+        AddNode(row);
+    }
+
+    private void HandleLayoutChanged()
+    {
+        foreach (var row in _indentedRows)
+            row.RecalculateLayout();
+
+        RecalculateLayout();
+        OnLayoutChanged?.Invoke();
     }
 
     private void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+}
+
+public sealed class IndentedConfigurationRowNode : SimpleComponentNode
+{
+    private readonly NodeBase _content;
+    private readonly float _indent;
+
+    public IndentedConfigurationRowNode(NodeBase content, float indent)
+    {
+        _content = content;
+        _indent = indent;
+
+        content.AttachNode(this);
+        RecalculateLayout();
+    }
+
+    public void RecalculateLayout()
+    {
+        if (_content is LayoutListNode layoutListNode)
+            layoutListNode.RecalculateLayout();
+
+        _content.Position = new Vector2(_indent, 0.0f);
+        Size = new Vector2(_indent + _content.Width, _content.Height);
+    }
 }
