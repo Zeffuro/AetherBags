@@ -119,7 +119,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             AtkUnitBase* addon = this;
             if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return;
 
-            FocusSearch(addon);
+            SearchInputNode.SetInputFocus();
         }, delayTicks: 2);
     }
 
@@ -129,7 +129,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return false;
         if (!IsFocusedAddon(addon)) return false;
 
-        FocusSearch(addon);
+        SearchInputNode.SetInputFocus();
         return true;
     }
 
@@ -764,10 +764,6 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         base.OnUpdate(addon);
     }
-
-
-    private void FocusSearch(AtkUnitBase* addon)
-        => AtkStage.Instance()->AtkInputManager->SetFocus(SearchInputNode.FocusNode, addon, 0);
 
     private static bool IsFocusedAddon(AtkUnitBase* addon)
     {
