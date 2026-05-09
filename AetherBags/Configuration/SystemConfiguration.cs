@@ -4,6 +4,8 @@ public class SystemConfiguration
 {
     public const string FileName = "AetherBags.json";
 
+    public int Version { get; set; } = ConfigMigrator.CurrentVersion;
+
     private GeneralSettings _general = new();
     private CategorySettings _categories = new();
     private CurrencySettings _currency = new();
@@ -42,7 +44,9 @@ public class SystemConfiguration
         _categories ??= new();
         _currency ??= new();
         _keybinds ??= new();
+        Version = ConfigMigrator.CurrentVersion;
         _categories.UserCategories ??= new();
+        _categories.NormalizeItemSortSettings();
         _general.InventoryWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Inventory);
         _general.SaddleBagWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.SaddleBag);
         _general.RetainerWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Retainer);

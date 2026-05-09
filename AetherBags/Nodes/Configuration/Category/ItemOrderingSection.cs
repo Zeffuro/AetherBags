@@ -1,11 +1,8 @@
 using System;
 using System.Linq;
-using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Configuration;
-using AetherBags.Nodes.Input;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -16,7 +13,7 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
 {
     public Action? OnLayoutChanged { get; init; }
 
-    private LabeledEnumDropdownNode<ItemSortMode>? _sortModeDropdown;
+    private ItemSortCriteriaEditorNode? _sortCriteriaEditor;
     private UintListEditorNode? _customOrderEditor;
     private AddonItemPicker? _itemPicker;
     private bool _initialized;
@@ -26,21 +23,16 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
         if (_initialized) return;
         _initialized = true;
 
-        _sortModeDropdown = new LabeledEnumDropdownNode<ItemSortMode>
+        var sortCriteriaEditor = new ItemSortCriteriaEditorNode("Item Sort Priority:", allowUseGlobal: true, allowCustomOrder: true);
+        sortCriteriaEditor.OnLayoutChanged = RefreshOrderingLayout;
+        sortCriteriaEditor.OnChanged = () =>
         {
-            Size = new Vector2(500, 20),
-            LabelText = "Item Sort",
-            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetValues<ItemSortMode>().ToList(),
-            SelectedOption = CategoryDefinition.ItemSortMode,
-            OnOptionSelected = selected =>
-            {
-                CategoryDefinition.ItemSortMode = selected;
-                OnValueChanged?.Invoke();
-                RefreshCustomOrderVisibility();
-            }
+            CategoryDefinition.ItemSortCriteria = sortCriteriaEditor.GetCriteria();
+            OnValueChanged?.Invoke();
+            RefreshCustomOrderVisibility();
         };
-        AddNode(_sortModeDropdown);
+        _sortCriteriaEditor = sortCriteriaEditor;
+        AddNode(_sortCriteriaEditor);
 
         _customOrderEditor = new UintListEditorNode
         {
@@ -82,7 +74,7 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
     private void RefreshCustomOrderVisibility()
     {
         if (_customOrderEditor is not null)
-            _customOrderEditor.IsVisible = CategoryDefinition.ItemSortMode == ItemSortMode.CustomOrder;
+            _customOrderEditor.IsVisible = CategoryDefinition.ItemSortCriteria.Any(criterion => criterion.Field == ItemSortField.CustomOrder);
 
         RefreshOrderingLayout();
     }
@@ -109,7 +101,8 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
     {
         EnsureInitialized();
 
-        _sortModeDropdown!.SelectedOption = CategoryDefinition.ItemSortMode;
+        _sortCriteriaEditor!.SetCriteria(CategoryDefinition.ItemSortCriteria);
+        CategoryDefinition.ItemSortCriteria = _sortCriteriaEditor.GetCriteria();
         _customOrderEditor!.SetList(CategoryDefinition.CustomItemOrder);
         RefreshCustomOrderVisibility();
     }

@@ -16,7 +16,7 @@ public class CategorySettings
     public PluginFilterMode BisBuddyMode { get; set; } = PluginFilterMode.Highlight;
     public bool AllaganToolsCategoriesEnabled { get; set; } = false;
     public PluginFilterMode AllaganToolsFilterMode { get; set; } = PluginFilterMode.Highlight;
-    public ItemSortMode DefaultItemSortMode { get; set; } = ItemSortMode.QuantityDescending;
+    public List<ItemSortCriterion> DefaultItemSortCriteria { get; set; } = new();
     public bool BlankMiscCategoryName { get; set; } = false;
     public List<CategorySource> CategorySourceDisplayOrder { get; set; } = GetDefaultCategorySourceOrder();
 
@@ -49,6 +49,54 @@ public class CategorySettings
 
         CategorySourceDisplayOrder = normalized;
     }
+
+    public void NormalizeItemSortSettings()
+    {
+        DefaultItemSortCriteria = NormalizeItemSortCriteria(DefaultItemSortCriteria, allowUseGlobal: false);
+
+        foreach (var category in UserCategories ?? [])
+        {
+            category.CustomItemOrder ??= new();
+            category.ItemSortCriteria = NormalizeItemSortCriteria(category.ItemSortCriteria, allowUseGlobal: true);
+        }
+    }
+
+    public static List<ItemSortCriterion> NormalizeItemSortCriteria(List<ItemSortCriterion>? criteria, bool allowUseGlobal)
+    {
+        var normalized = new List<ItemSortCriterion>();
+        var seenFields = new HashSet<ItemSortField>();
+
+        foreach (var criterion in criteria ?? [])
+        {
+            if (!Enum.IsDefined(criterion.Field) || !Enum.IsDefined(criterion.Direction))
+                continue;
+
+            if (criterion.Field == ItemSortField.UseGlobal)
+            {
+                if (allowUseGlobal)
+                    return [new ItemSortCriterion { Field = ItemSortField.UseGlobal, Direction = SortDirection.Ascending }];
+
+                continue;
+            }
+
+            if (seenFields.Add(criterion.Field))
+            {
+                normalized.Add(new ItemSortCriterion
+                {
+                    Field = criterion.Field,
+                    Direction = criterion.Direction,
+                });
+            }
+        }
+
+        return normalized.Count > 0
+            ? normalized
+            : GetDefaultItemSortCriteria(allowUseGlobal);
+    }
+
+    public static List<ItemSortCriterion> GetDefaultItemSortCriteria(bool allowUseGlobal) => allowUseGlobal
+        ? [new ItemSortCriterion { Field = ItemSortField.UseGlobal, Direction = SortDirection.Ascending }]
+        : [new ItemSortCriterion { Field = ItemSortField.Quantity, Direction = SortDirection.Descending }];
 }
 
 public class UserCategoryDefinition
@@ -62,10 +110,52 @@ public class UserCategoryDefinition
     public int Order { get; set; }
     public int Priority { get; set; } = 100;
     public Vector4 Color { get; set; } = ColorHelper.GetColor(50);
-    public ItemSortMode ItemSortMode { get; set; } = ItemSortMode.UseGlobal;
+    public List<ItemSortCriterion> ItemSortCriteria { get; set; } = new();
     public List<uint> CustomItemOrder { get; set; } = new();
 
     public CategoryRuleSet Rules { get; set; } = new();
+}
+
+public class ItemSortCriterion
+{
+    public ItemSortField Field { get; set; } = ItemSortField.Quantity;
+    public SortDirection Direction { get; set; } = SortDirection.Descending;
+}
+
+public enum ItemSortField
+{
+    [Description("Use Global Default")]
+    UseGlobal = 0,
+
+    [Description("Quantity")]
+    Quantity = 1,
+
+    [Description("Name")]
+    Name = 2,
+
+    [Description("Rarity")]
+    Rarity = 3,
+
+    [Description("Item ID")]
+    ItemId = 4,
+
+    [Description("Custom Item Order")]
+    CustomOrder = 5,
+
+    [Description("Game Category")]
+    GameCategory = 6,
+
+    [Description("Item Level")]
+    ItemLevel = 7,
+}
+
+public enum SortDirection
+{
+    [Description("Ascending")]
+    Ascending = 0,
+
+    [Description("Descending")]
+    Descending = 1,
 }
 
 public class CategoryRuleSet
@@ -143,32 +233,3 @@ public enum CategorySource
     Misc = 4,
 }
 
-public enum ItemSortMode
-{
-    [Description("Use Global Default")]
-    UseGlobal = 0,
-
-    [Description("Quantity (High to Low)")]
-    QuantityDescending = 1,
-
-    [Description("Name (A to Z)")]
-    NameAscending = 2,
-
-    [Description("Rarity (High to Low)")]
-    RarityDescending = 3,
-
-    [Description("Rarity (Low to High)")]
-    RarityAscending = 4,
-
-    [Description("Item ID (Low to High)")]
-    ItemIdAscending = 5,
-
-    [Description("Item ID (High to Low)")]
-    ItemIdDescending = 6,
-
-    [Description("Custom Item Order")]
-    CustomOrder = 7,
-
-    [Description("Game Category")]
-    GameCategory = 8,
-}

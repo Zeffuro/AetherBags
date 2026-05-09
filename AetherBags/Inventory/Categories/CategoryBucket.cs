@@ -11,7 +11,7 @@ public sealed class CategoryBucket
     public CategoryInfo Category = null!;
     public List<ItemInfo> Items = null!;
     public List<ItemInfo> FilteredItems = null!;
-    public ItemSortMode ItemSortMode = ItemSortMode.UseGlobal;
+    public List<ItemSortCriterion>? ItemSortCriteria;
     public List<uint>? CustomItemOrder;
     public bool Used;
     public bool NeedsSorting = true;
@@ -19,14 +19,16 @@ public sealed class CategoryBucket
 
 public sealed class ItemSortComparer : IComparer<ItemInfo>
 {
-    private readonly ItemSortMode _sortMode;
+    private readonly IReadOnlyList<ItemSortCriterion> _criteria;
     private readonly Dictionary<uint, int>? _customOrder;
 
-    public ItemSortComparer(ItemSortMode sortMode, List<uint>? customItemOrder = null)
+    public ItemSortComparer(IReadOnlyList<ItemSortCriterion> criteria, List<uint>? customItemOrder = null)
     {
-        _sortMode = sortMode == ItemSortMode.UseGlobal ? ItemSortMode.QuantityDescending : sortMode;
+        _criteria = criteria.Count > 0
+            ? criteria
+            : CategorySettings.GetDefaultItemSortCriteria(allowUseGlobal: false);
 
-        if (_sortMode == ItemSortMode.CustomOrder && customItemOrder is { Count: > 0 })
+        if (customItemOrder is { Count: > 0 } && ContainsCustomOrder(_criteria))
         {
             _customOrder = new Dictionary<uint, int>(customItemOrder.Count);
             for (int i = 0; i < customItemOrder.Count; i++)
@@ -42,63 +44,67 @@ public sealed class ItemSortComparer : IComparer<ItemInfo>
         if (left is null) return 1;
         if (right is null) return -1;
 
-        return _sortMode switch
+        foreach (var criterion in _criteria)
         {
-            ItemSortMode.NameAscending => CompareNameAscending(left, right),
-            ItemSortMode.RarityDescending => CompareRarity(left, right, descending: true),
-            ItemSortMode.RarityAscending => CompareRarity(left, right, descending: false),
-            ItemSortMode.ItemIdAscending => CompareItemId(left, right, descending: false),
-            ItemSortMode.ItemIdDescending => CompareItemId(left, right, descending: true),
-            ItemSortMode.CustomOrder => CompareCustomOrder(left, right),
-            ItemSortMode.GameCategory => CompareGameCategory(left, right),
-            _ => CompareQuantityDescending(left, right),
+            int result = CompareCriterion(left, right, criterion);
+            if (result != 0)
+                return result;
+        }
+
+        return CompareFallback(left, right);
+    }
+
+    private static bool ContainsCustomOrder(IReadOnlyList<ItemSortCriterion> criteria)
+    {
+        for (int i = 0; i < criteria.Count; i++)
+        {
+            if (criteria[i].Field == ItemSortField.CustomOrder)
+                return true;
+        }
+
+        return false;
+    }
+
+    private int CompareCriterion(ItemInfo left, ItemInfo right, ItemSortCriterion criterion)
+    {
+        if (criterion.Field == ItemSortField.CustomOrder)
+            return CompareCustomOrder(left, right, criterion.Direction);
+
+        int result = criterion.Field switch
+        {
+            ItemSortField.Quantity => CompareQuantity(left, right),
+            ItemSortField.Name => CompareName(left, right),
+            ItemSortField.Rarity => left.Rarity.CompareTo(right.Rarity),
+            ItemSortField.ItemId => left.Item.ItemId.CompareTo(right.Item.ItemId),
+            ItemSortField.GameCategory => left.UiCategory.RowId.CompareTo(right.UiCategory.RowId),
+            ItemSortField.ItemLevel => left.ItemLevel.CompareTo(right.ItemLevel),
+            _ => 0,
         };
+
+        return criterion.Direction == SortDirection.Descending ? -result : result;
     }
 
     private static int CompareQuantityDescending(ItemInfo left, ItemInfo right)
     {
+        int quantity = CompareQuantity(left, right);
+        return quantity == 0 ? 0 : -quantity;
+    }
+
+    private static int CompareQuantity(ItemInfo left, ItemInfo right)
+    {
         int leftCount = left.ItemCount;
         int rightCount = right.ItemCount;
 
-        if (leftCount > rightCount) return -1;
-        if (leftCount < rightCount) return 1;
-        return 0;
+        return leftCount.CompareTo(rightCount);
     }
 
-    private static int CompareNameAscending(ItemInfo left, ItemInfo right)
-    {
-        int name = string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
-        if (name != 0) return name;
+    private static int CompareName(ItemInfo left, ItemInfo right)
+        => string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
 
-        return CompareFallback(left, right);
-    }
-
-    private static int CompareRarity(ItemInfo left, ItemInfo right, bool descending)
-    {
-        int rarity = descending
-            ? right.Rarity.CompareTo(left.Rarity)
-            : left.Rarity.CompareTo(right.Rarity);
-
-        if (rarity != 0) return rarity;
-
-        return CompareFallback(left, right);
-    }
-
-    private static int CompareItemId(ItemInfo left, ItemInfo right, bool descending)
-    {
-        int itemId = descending
-            ? right.Item.ItemId.CompareTo(left.Item.ItemId)
-            : left.Item.ItemId.CompareTo(right.Item.ItemId);
-
-        if (itemId != 0) return itemId;
-
-        return CompareFallback(left, right);
-    }
-
-    private int CompareCustomOrder(ItemInfo left, ItemInfo right)
+    private int CompareCustomOrder(ItemInfo left, ItemInfo right, SortDirection direction)
     {
         if (_customOrder is null)
-            return CompareQuantityDescending(left, right);
+            return 0;
 
         bool leftHasRank = _customOrder.TryGetValue(left.Item.ItemId, out int leftRank);
         bool rightHasRank = _customOrder.TryGetValue(right.Item.ItemId, out int rightRank);
@@ -106,6 +112,9 @@ public sealed class ItemSortComparer : IComparer<ItemInfo>
         if (leftHasRank && rightHasRank)
         {
             int rank = leftRank.CompareTo(rightRank);
+            if (direction == SortDirection.Descending)
+                rank = -rank;
+
             if (rank != 0) return rank;
         }
         else if (leftHasRank)
@@ -117,15 +126,7 @@ public sealed class ItemSortComparer : IComparer<ItemInfo>
             return 1;
         }
 
-        return CompareFallback(left, right);
-    }
-
-    private static int CompareGameCategory(ItemInfo left, ItemInfo right)
-    {
-        int uiCategory = left.UiCategory.RowId.CompareTo(right.UiCategory.RowId);
-        if (uiCategory != 0) return uiCategory;
-
-        return CompareFallback(left, right);
+        return 0;
     }
 
     private static int CompareFallback(ItemInfo left, ItemInfo right)

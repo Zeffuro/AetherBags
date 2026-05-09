@@ -20,6 +20,7 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
     {
         CategorySettings config = System.Config.Categories;
         config.NormalizeCategorySourceDisplayOrder();
+        config.NormalizeItemSortSettings();
 
         ItemVerticalSpacing = 2;
 
@@ -192,22 +193,17 @@ public sealed class CategoryGeneralConfigurationNode : TabbedVerticalListNode
 
         AddNode(new ResNode { Height = 8 });
 
-        var defaultItemSortDropdown = new LabeledEnumDropdownNode<ItemSortMode>
+        var defaultItemSortEditor = new ItemSortCriteriaEditorNode("Default Item Sort Priority:", allowUseGlobal: false, allowCustomOrder: false);
+        defaultItemSortEditor.OnChanged = () =>
         {
-            Size = new Vector2(500, 20),
-            LabelText = "Default Item Sort",
-            LabelTextFlags = TextFlags.AutoAdjustNodeSize,
-            Options = Enum.GetValues<ItemSortMode>()
-                .Where(mode => mode is not ItemSortMode.UseGlobal and not ItemSortMode.CustomOrder)
-                .ToList(),
-            SelectedOption = config.DefaultItemSortMode,
-            OnOptionSelected = selected =>
-            {
-                config.DefaultItemSortMode = selected;
-                RefreshInventory();
-            }
+            config.DefaultItemSortCriteria = defaultItemSortEditor.GetCriteria();
+            RecalculateLayout();
+            RefreshInventory();
         };
-        AddNode(defaultItemSortDropdown);
+        defaultItemSortEditor.OnLayoutChanged = RecalculateLayout;
+        defaultItemSortEditor.SetCriteria(config.DefaultItemSortCriteria);
+        config.DefaultItemSortCriteria = defaultItemSortEditor.GetCriteria();
+        AddNode(defaultItemSortEditor);
 
         AddNode(new ResNode { Height = 8 });
 

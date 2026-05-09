@@ -1,7 +1,7 @@
 # 1.0.0.3
 - Add options to IPC to access the AetherBags configuration and make changes.
 - Add configurable keybinds for focusing search and opening bag windows directly into search.
-- Added custom per category sorting options.
+- Added custom per category multisort options.
 - Added an option to hide the fallback misc category label.
 - Added sorting options for the user, plugin, game and misc category display order.
 - Added options to control the window sizes for the various bag windows.

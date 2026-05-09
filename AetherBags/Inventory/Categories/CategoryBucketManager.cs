@@ -101,7 +101,7 @@ public static class CategoryBucketManager
                     },
                     Items = new List<ItemInfo>(capacity: 16),
                     FilteredItems = new List<ItemInfo>(capacity: 16),
-                    ItemSortMode = category.ItemSortMode,
+                    ItemSortCriteria = category.ItemSortCriteria,
                     CustomItemOrder = category.CustomItemOrder,
                     Used = true,
                 };
@@ -114,7 +114,7 @@ public static class CategoryBucketManager
                 bucketRef.Category.Color = category.Color;
                 bucketRef.Category.IsPinned = category.Pinned;
                 bucketRef.Category.Order = category.Order;
-                bucketRef.ItemSortMode = category.ItemSortMode;
+                bucketRef.ItemSortCriteria = category.ItemSortCriteria;
                 bucketRef.CustomItemOrder = category.CustomItemOrder;
             }
 
@@ -416,14 +416,8 @@ public static class CategoryBucketManager
             // Only sort if items changed
             if (bucket.NeedsSorting)
             {
-                ItemSortMode sortMode = bucket.ItemSortMode == ItemSortMode.UseGlobal
-                    ? System.Config.Categories.DefaultItemSortMode
-                    : bucket.ItemSortMode;
-
-                if (sortMode == ItemSortMode.UseGlobal || sortMode == ItemSortMode.CustomOrder && bucket.CustomItemOrder is not { Count: > 0 })
-                    sortMode = ItemSortMode.QuantityDescending;
-
-                bucket.Items.Sort(new ItemSortComparer(sortMode, bucket.CustomItemOrder));
+                var criteria = ResolveSortCriteria(bucket);
+                bucket.Items.Sort(new ItemSortComparer(criteria, bucket.CustomItemOrder));
                 bucket.NeedsSorting = false;
             }
             sortedCategoryKeys.Add(bucket.Key);
@@ -465,6 +459,20 @@ public static class CategoryBucketManager
 
             return left.CompareTo(right);
         });
+    }
+
+    private static List<ItemSortCriterion> ResolveSortCriteria(CategoryBucket bucket)
+    {
+        var categorySettings = System.Config.Categories;
+        var criteria = CategorySettings.NormalizeItemSortCriteria(bucket.ItemSortCriteria, allowUseGlobal: true);
+
+        if (criteria.Count == 1 && criteria[0].Field == ItemSortField.UseGlobal)
+            criteria = CategorySettings.NormalizeItemSortCriteria(categorySettings.DefaultItemSortCriteria, allowUseGlobal: false);
+
+        if (criteria.Count == 1 && criteria[0].Field == ItemSortField.CustomOrder && bucket.CustomItemOrder is not { Count: > 0 })
+            criteria = CategorySettings.GetDefaultItemSortCriteria(allowUseGlobal: false);
+
+        return criteria;
     }
 
     public static void BuildCategorizedList(

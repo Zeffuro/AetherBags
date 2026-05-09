@@ -76,7 +76,20 @@ public static class Util
         => SerializeCompressed(config, ConfigJsonOptions);
 
     public static SystemConfiguration? DeserializeConfig(string input)
-        => DeserializeCompressed<SystemConfiguration>(input, ConfigJsonOptions);
+    {
+        try
+        {
+            var json = DecompressFromBase64(input);
+            json = ConfigMigrator.Migrate(json, out _);
+            var config = JsonSerializer.Deserialize<SystemConfiguration>(json, ConfigJsonOptions);
+            config?.EnsureInitialized();
+            return config;
+        }
+        catch
+        {
+            return default;
+        }
+    }
 
     public static void SaveConfig(SystemConfiguration config)
     {
@@ -88,14 +101,37 @@ public static class Util
     private static SystemConfiguration LoadConfig()
     {
         FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
-        var config = JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName);
+
+        if (!file.Exists)
+        {
+            var newConfig = new SystemConfiguration();
+            JsonFileHelper.SaveFile(newConfig, file.FullName);
+            return newConfig;
+        }
+
+        SystemConfiguration config;
+        try
+        {
+            var fileText = File.ReadAllText(file.FullName);
+            var migratedText = ConfigMigrator.Migrate(fileText, out bool migrated);
+            config = JsonSerializer.Deserialize<SystemConfiguration>(migratedText, ConfigJsonOptions) ?? new SystemConfiguration();
+            if (migrated)
+                JsonFileHelper.SaveFile(config, file.FullName);
+        }
+        catch (Exception e)
+        {
+            Services.Logger.Error(e, $"Error trying to load file {file.FullName}, creating a new one instead.");
+            config = new SystemConfiguration();
+            JsonFileHelper.SaveFile(config, file.FullName);
+        }
+
         config.EnsureInitialized();
         return config;
     }
 
     public static SystemConfiguration LoadConfigOrDefault()
     {
-        var config = LoadConfig() ?? new SystemConfiguration();
+        var config = LoadConfig();
         config.EnsureInitialized();
         return config;
     }

@@ -133,7 +133,7 @@ public static class CategoryImportExport
                     existing.Color = incoming.Color;
                     existing.Enabled = incoming.Enabled;
                     existing.Pinned = incoming.Pinned;
-                    existing.ItemSortMode = incoming.ItemSortMode;
+                    existing.ItemSortCriteria = CategorySettings.NormalizeItemSortCriteria(incoming.ItemSortCriteria, allowUseGlobal: true);
                     existing.CustomItemOrder = incoming.CustomItemOrder;
                     existing.Rules = incoming.Rules;
                 }
@@ -147,6 +147,7 @@ public static class CategoryImportExport
         }
 
         config.Categories.UserCategoriesEnabled = true;
+        config.Categories.NormalizeItemSortSettings();
         Util.SaveConfig(config);
 
         Services.NotificationManager.AddNotification(

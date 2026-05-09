@@ -152,7 +152,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         _categoryDefinition.Color = imported.Color;
         _categoryDefinition.Enabled = imported.Enabled;
         _categoryDefinition.Pinned = imported.Pinned;
-        _categoryDefinition.ItemSortMode = imported.ItemSortMode;
+        _categoryDefinition.ItemSortCriteria = CategorySettings.NormalizeItemSortCriteria(imported.ItemSortCriteria, allowUseGlobal: true);
         _categoryDefinition.CustomItemOrder = imported.CustomItemOrder;
         _categoryDefinition.Rules = imported.Rules;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.IPC.ExternalCategorySystem;
 
@@ -118,6 +119,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
     {
         try
         {
+            json = ConfigMigrator.Migrate(json, out _);
             var config = JsonSerializer.Deserialize<Configuration.SystemConfiguration>(json);
             if (config != null)
             {
