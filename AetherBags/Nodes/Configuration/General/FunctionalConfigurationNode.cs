@@ -150,6 +150,21 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(animationCheckBox);
 
+        var frameBatchingCheckBox = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Enable frame batching",
+            TextTooltip = "Populates inventory items over several frames while opening windows. Disable only if you prefer immediate population and can tolerate a larger one-frame hitch.",
+            IsChecked = config.FrameBatchingEnabled,
+            OnClick = isChecked =>
+            {
+                config.FrameBatchingEnabled = isChecked;
+                InventoryOrchestrator.RefreshAll(updateMaps: true);
+            }
+        };
+        AddNode(frameBatchingCheckBox);
+
         AddNode(new ResNode
         {
             Height = 6

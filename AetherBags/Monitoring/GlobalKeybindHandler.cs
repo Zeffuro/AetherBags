@@ -5,6 +5,7 @@ using AetherBags.Configuration;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AetherBags.Monitoring;
 
@@ -75,24 +76,25 @@ public sealed unsafe class GlobalKeybindHandler : IDisposable
 
     private static void OpenInventoryWithSearchFocus(ref bool isHandled)
     {
-        OpenWithSearchFocus(System.AddonInventoryWindow);
+        InventoryAddonBase window = System.AddonInventoryWindow;
+        if (!window.IsOpen)
+        {
+            window.Open();
+        }
+        window.FocusSearch();
         isHandled = true;
     }
 
     private static void OpenSaddlebagsWithSearchFocus(ref bool isHandled)
     {
-        OpenWithSearchFocus(System.AddonSaddleBagWindow);
-        isHandled = true;
-    }
-
-    private static void OpenWithSearchFocus(InventoryAddonBase window)
-    {
+        InventoryAddonBase window = System.AddonInventoryWindow;
         if (!window.IsOpen)
         {
-            window.Open();
+            var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.InventoryBuddy);
+            agent->Show();
         }
-
         window.FocusSearch();
+        isHandled = true;
     }
 
     private void ResetPressedState()

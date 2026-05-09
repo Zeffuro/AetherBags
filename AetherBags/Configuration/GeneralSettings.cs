@@ -22,6 +22,7 @@ public class GeneralSettings
     public bool ShowCategoryItemCount { get; set; } = false;
     public bool LinkItemEnabled { get; set; } = true;
     public bool AnimationEnabled { get; set; } = false;
+    public bool FrameBatchingEnabled { get; set; } = true;
     public int SearchDelay { get; set; } = 150;
     public bool ShowRecentlyLooted { get; set; } = true;
     public bool HighlightRecentlyLootedItems { get; set; } = false;

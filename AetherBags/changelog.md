@@ -5,6 +5,8 @@
 - Added an option to hide the fallback misc category label.
 - Added sorting options for the user, plugin, game and misc category display order.
 - Added options to control the window sizes for the various bag windows.
+- Updated KTK that should make opening the bag feel better.
+- Added a toggle for frame batching for people who prefer the single hitch.
 
 # 1.0.0.2
 - Fix ghost hovers for expanded retainer grid too.

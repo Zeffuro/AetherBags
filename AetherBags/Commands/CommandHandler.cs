@@ -299,26 +299,27 @@ public class CommandHandler : IDisposable
     private void HandleBatching(string args)
     {
         var subCmd = args.Trim().ToLowerInvariant();
+        var config = System.Config.General;
 
         switch (subCmd)
         {
             case "":
             case "toggle":
-                InventoryAddonBase.DisableBatching = !InventoryAddonBase.DisableBatching;
+                config.FrameBatchingEnabled = !config.FrameBatchingEnabled;
                 break;
 
             case "on":
             case "enable":
-                InventoryAddonBase.DisableBatching = false;
+                config.FrameBatchingEnabled = true;
                 break;
 
             case "off":
             case "disable":
-                InventoryAddonBase.DisableBatching = true;
+                config.FrameBatchingEnabled = false;
                 break;
 
             case "status":
-                PrintChat($"Frame batching is {(InventoryAddonBase.DisableBatching ? "DISABLED" : "enabled")}.");
+                PrintChat($"Frame batching is {(config.FrameBatchingEnabled ? "enabled" : "DISABLED")}.");
                 return;
 
             default:
@@ -326,7 +327,8 @@ public class CommandHandler : IDisposable
                 return;
         }
 
-        PrintChat($"Frame batching is now {(InventoryAddonBase.DisableBatching ? "DISABLED" : "enabled")}. Refreshing inventory…");
+        Util.SaveConfig(System.Config);
+        PrintChat($"Frame batching is now {(config.FrameBatchingEnabled ? "enabled" : "DISABLED")}. Refreshing inventory…");
         InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 

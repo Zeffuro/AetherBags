@@ -76,8 +76,6 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     private bool _initialPopulationComplete;
     private const int ItemsPerFrame = 40;
 
-    public static bool DisableBatching;
-
     protected abstract InventoryStateBase InventoryState { get; }
 
     protected virtual bool HasFooter => true;
@@ -214,7 +212,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         float maxContentWidth = CategoriesNode.Width > 0 ? CategoriesNode.Width : ContentSize.X;
         int maxItemsPerLine = CalculateOptimalItemsPerLine(maxContentWidth);
 
-        bool deferItems = !DisableBatching && !_deferredPopulationInProgress && !_initialPopulationComplete;
+        bool deferItems = config.FrameBatchingEnabled && !_deferredPopulationInProgress && !_initialPopulationComplete;
 
         CategoriesNode.SyncWithListDataByKey<CategorizedInventory, InventoryCategoryNode, uint>(
             dataList: categories,
