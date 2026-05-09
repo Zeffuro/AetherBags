@@ -25,6 +25,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
     private bool _suppressSelectionListRefresh;
     private bool _pendingSelectionListRefresh;
+    private bool _selectionListRefreshQueued;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
@@ -97,7 +98,6 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         _categoryWrappers.Add(newWrapper);
 
         RefreshSelectionList();
-        _selectionListNode?.RefreshList();
         InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
@@ -122,7 +122,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             if (_pendingSelectionListRefresh)
             {
                 _pendingSelectionListRefresh = false;
-                _selectionListNode?.RefreshList();
+                RefreshSelectionList();
             }
         }
     }
@@ -151,14 +151,32 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             return;
         }
 
-        _selectionListNode?.RefreshList();
+        QueueSelectionListRefresh();
+    }
+
+    private void QueueSelectionListRefresh()
+    {
+        if (_selectionListRefreshQueued) return;
+
+        _selectionListRefreshQueued = true;
+        Services.Framework.RunOnTick(() =>
+        {
+            _selectionListRefreshQueued = false;
+            _selectionListNode?.RefreshList();
+        });
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        _selectionListRefreshQueued = false;
+
+        _selectionListNode?.Dispose();
         _selectionListNode = null;
+        _configNode?.Dispose();
         _configNode = null;
+        _separatorLine?.Dispose();
         _separatorLine = null;
+        _nothingSelectedTextNode?.Dispose();
         _nothingSelectedTextNode = null;
         base.OnFinalize(addon);
     }

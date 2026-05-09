@@ -20,6 +20,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
     private NumericInputNode? _orderInput;
 
     private bool _initialized;
+    private bool _isRefreshing;
 
     private void EnsureInitialized()
     {
@@ -32,6 +33,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             String = "Enabled",
             OnClick = isChecked =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Enabled = isChecked;
                 OnPropertyChanged?.Invoke();
             },
@@ -44,6 +46,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             String = "Pinned",
             OnClick = isChecked =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Pinned = isChecked;
                 OnPropertyChanged?.Invoke();
             },
@@ -57,6 +60,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             PlaceholderString = "Category Name",
             OnInputReceived = input =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Name = input.ExtractText();
                 OnPropertyChanged?.Invoke();
             },
@@ -70,6 +74,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             PlaceholderString = "Optional description",
             OnInputReceived = input =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Description = input.ExtractText();
                 OnValueChanged?.Invoke();
             },
@@ -82,10 +87,10 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             Size = new Vector2(300, 28),
             CurrentColor = new UserCategoryDefinition().Color,
             DefaultColor = new UserCategoryDefinition().Color,
-            OnColorConfirmed = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
-            OnColorCanceled = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
-            OnColorPreviewed = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
-            OnColorChange = color => { CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorConfirmed = color => { if (_isRefreshing) return; CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorCanceled = color => { if (_isRefreshing) return; CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorPreviewed = color => { if (_isRefreshing) return; CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
+            OnColorChange = color => { if (_isRefreshing) return; CategoryDefinition.Color = color; OnValueChanged?.Invoke(); },
         };
         AddNode(_colorInput);
 
@@ -98,6 +103,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             Step = 1,
             OnValueUpdate = value =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Priority = value;
                 OnValueChanged?.Invoke();
             },
@@ -113,6 +119,7 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
             Step = 1,
             OnValueUpdate = val =>
             {
+                if (_isRefreshing) return;
                 CategoryDefinition.Order = val;
                 OnPropertyChanged?.Invoke();
             },
@@ -126,15 +133,23 @@ public sealed class BasicSettingsSection(Func<UserCategoryDefinition> getCategor
     {
         EnsureInitialized();
 
-        _enabledCheckbox!.IsChecked = CategoryDefinition.Enabled;
-        _pinnedCheckbox!.IsChecked = CategoryDefinition.Pinned;
-        _nameInput!.String = CategoryDefinition.Name;
-        _nameInput.PlaceholderString = CategoryDefinition.Name.IsNullOrWhitespace() ? "Category Name" : "";
-        _descriptionInput!.String = CategoryDefinition.Description;
-        _descriptionInput.PlaceholderString = CategoryDefinition.Description.IsNullOrWhitespace() ? "Optional description" : "";
-        _colorInput!.CurrentColor = CategoryDefinition.Color;
-        _priorityInput!.Value = CategoryDefinition.Priority;
-        _orderInput!.Value = CategoryDefinition.Order;
+        _isRefreshing = true;
+        try
+        {
+            _enabledCheckbox!.IsChecked = CategoryDefinition.Enabled;
+            _pinnedCheckbox!.IsChecked = CategoryDefinition.Pinned;
+            _nameInput!.String = CategoryDefinition.Name;
+            _nameInput.PlaceholderString = CategoryDefinition.Name.IsNullOrWhitespace() ? "Category Name" : "";
+            _descriptionInput!.String = CategoryDefinition.Description;
+            _descriptionInput.PlaceholderString = CategoryDefinition.Description.IsNullOrWhitespace() ? "Optional description" : "";
+            _colorInput!.CurrentColor = CategoryDefinition.Color;
+            _priorityInput!.Value = CategoryDefinition.Priority;
+            _orderInput!.Value = CategoryDefinition.Order;
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
 
         RecalculateLayout();
     }

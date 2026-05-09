@@ -119,7 +119,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
         {
             if (_categoryConfigurationAddon != null)
             {
-                _categoryConfigurationAddon.Close();
+                _categoryConfigurationAddon.Dispose();
                 _categoryConfigurationAddon = null;
             }
         }
