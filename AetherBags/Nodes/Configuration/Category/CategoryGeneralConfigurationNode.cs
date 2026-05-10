@@ -180,6 +180,38 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
 
         AddIndented(atModeDropdown, 3);
 
+        CheckboxNode crystalsEnabled = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Crystals",
+            IsChecked = config.CrystalsEnabled,
+            TextTooltip = "Group elemental shards, crystals, and clusters into a 'Crystals' category.\nRequires External Category Support (Experimental).",
+            OnClick = isChecked =>
+            {
+                config.CrystalsEnabled = isChecked;
+                System.IPC?.RefreshExternalSources();
+                RefreshInventory();
+            }
+        };
+        AddIndented(crystalsEnabled, 2);
+
+        CheckboxNode keyItemsEnabled = new CheckboxNode
+        {
+            Size = Size with { Y = 18 },
+            IsVisible = true,
+            String = "Key Items",
+            IsChecked = config.KeyItemsEnabled,
+            TextTooltip = "Show quest and event-tied key items in a 'Key Items' category.\nRequires External Category Support (Experimental).",
+            OnClick = isChecked =>
+            {
+                config.KeyItemsEnabled = isChecked;
+                System.IPC?.RefreshExternalSources();
+                RefreshInventory();
+            }
+        };
+        AddIndented(keyItemsEnabled, 2);
+
         CheckboxNode blankMiscCategoryName = new CheckboxNode
         {
             Size = Size with { Y = 18 },
@@ -210,15 +242,11 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
 
         AddIndented(new ResNode { Height = 8 });
 
-        CategorySourceOrderEditorNode? categorySourceOrderEditor = null;
-        var editor = categorySourceOrderEditor;
-        categorySourceOrderEditor = new CategorySourceOrderEditorNode
+        var categorySourceOrderEditor = new CategorySourceOrderEditorNode();
+        categorySourceOrderEditor.OnChanged = () =>
         {
-            OnChanged = () =>
-            {
-                config.CategorySourceDisplayOrder = editor!.GetOrder();
-                RefreshInventory();
-            }
+            config.CategorySourceDisplayOrder = categorySourceOrderEditor.GetOrder();
+            RefreshInventory();
         };
         categorySourceOrderEditor.SetOrder(config.CategorySourceDisplayOrder);
         AddIndented(categorySourceOrderEditor, 1);

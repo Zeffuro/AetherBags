@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Nodes.Configuration.Category;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -11,6 +12,7 @@ using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
+using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;
 
@@ -72,16 +74,31 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             Size = ContentSize - new Vector2(250.0f + 16.0f, 0.0f),
             IsVisible = false,
             OnCategoryChanged = RefreshSelectionList,
+            OnOverrideRequested = OverrideGameCategory,
         };
 
         _configNode.AttachNode(this);
     }
 
-    private List<CategoryWrapper> CreateCategoryWrappers()
+    private static List<CategoryWrapper> CreateCategoryWrappers()
     {
-        return System.Config.Categories.UserCategories
-            .Select(categoryDefinition => new CategoryWrapper(categoryDefinition))
-            .ToList();
+        var wrappers = new List<CategoryWrapper>();
+
+        foreach (var def in System.Config.Categories.UserCategories)
+            wrappers.Add(CategoryWrapper.ForUserOrOverride(def));
+
+        var disabledGameIds = System.Config.Categories.DisabledGameCategoryIds;
+        var sheet = Services.DataManager.GetExcelSheet<ItemUICategory>();
+        foreach (var row in sheet)
+        {
+            if (row.RowId == 0) continue;
+            if (disabledGameIds.Contains(row.RowId)) continue;
+            var name = row.Name.ToString();
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            wrappers.Add(CategoryWrapper.ForGameCategory(row.RowId));
+        }
+
+        return wrappers;
     }
 
     private void OnAddNewCategory()
@@ -94,11 +111,47 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
         System.Config.Categories.UserCategories.Add(newCategory);
 
-        var newWrapper = new CategoryWrapper(newCategory);
+        var newWrapper = CategoryWrapper.ForUserOrOverride(newCategory);
         _categoryWrappers.Add(newWrapper);
 
         RefreshSelectionList();
         InventoryOrchestrator.RefreshAll(updateMaps: true);
+    }
+
+    private void OverrideGameCategory(uint gameCategoryId)
+    {
+        if (System.Config.Categories.DisabledGameCategoryIds.Contains(gameCategoryId))
+            return;
+
+        var sourceName = CategoryWrapper.ResolveGameCategoryName(gameCategoryId);
+
+        var existingGame = _categoryWrappers.FirstOrDefault(w =>
+            w.Kind == CategoryWrapperKind.GameCategory && w.GameCategoryId == gameCategoryId);
+
+        var newCategory = new UserCategoryDefinition
+        {
+            Name = sourceName,
+            Order = System.Config.Categories.UserCategories.Count,
+            OverrideSourceKey = CategoryOverrideKey.ForGameCategory(gameCategoryId),
+            Rules = new CategoryRuleSet
+            {
+                AllowedUiCategoryIds = new List<uint> { gameCategoryId },
+            },
+        };
+
+        System.Config.Categories.UserCategories.Add(newCategory);
+        System.Config.Categories.DisabledGameCategoryIds.Add(gameCategoryId);
+
+        var newWrapper = CategoryWrapper.ForUserOrOverride(newCategory);
+        _categoryWrappers.Add(newWrapper);
+        if (existingGame is not null)
+            _categoryWrappers.Remove(existingGame);
+
+        Util.SaveConfig(System.Config);
+        RefreshSelectionList();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
+
+        OnOptionChanged(newWrapper);
     }
 
     private void OnOptionChanged(CategoryWrapper? newOption)
@@ -129,11 +182,21 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
     {
+        if (categoryWrapper.Kind == CategoryWrapperKind.GameCategory)
+            return;
         if (categoryWrapper.CategoryDefinition is null) return;
+
+        if (categoryWrapper.Kind == CategoryWrapperKind.Override
+            && CategoryOverrideKey.TryParseGameCategory(categoryWrapper.CategoryDefinition.OverrideSourceKey, out uint gameId))
+        {
+            System.Config.Categories.DisabledGameCategoryIds.Remove(gameId);
+            _categoryWrappers.Add(CategoryWrapper.ForGameCategory(gameId));
+        }
 
         System.Config.Categories.UserCategories.Remove(categoryWrapper.CategoryDefinition);
         _categoryWrappers.Remove(categoryWrapper);
 
+        Util.SaveConfig(System.Config);
         RefreshSelectionList();
 
         if (_configNode is not null && ReferenceEquals(_configNode.ConfigurationOption, categoryWrapper))
