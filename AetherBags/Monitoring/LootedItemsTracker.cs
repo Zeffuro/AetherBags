@@ -79,11 +79,22 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         {
             if (_lootedItems[i].Index == index)
             {
+                uint itemId = _lootedItems[i].Item.ItemId;
                 _lootedItems.RemoveAt(i);
+                RemoveHighlightIfUnreferenced(itemId);
                 _hasPendingRemoval = true;
                 return;
             }
         }
+    }
+
+    private void RemoveHighlightIfUnreferenced(uint itemId)
+    {
+        for (int i = 0; i < _lootedItems.Count; i++)
+        {
+            if (_lootedItems[i].Item.ItemId == itemId) return;
+        }
+        UnseenLootItemIds.Remove(itemId);
     }
 
     public void FlushPendingChanges()
@@ -120,7 +131,10 @@ public sealed unsafe class LootedItemsTracker : IDisposable
                 int newQty = current.Quantity + delta;
 
                 if (newQty <= 0)
+                {
                     _lootedItems.RemoveAt(existingIndex);
+                    RemoveHighlightIfUnreferenced(itemId);
+                }
                 else
                     _lootedItems[existingIndex] = current with { Quantity = newQty };
             }
