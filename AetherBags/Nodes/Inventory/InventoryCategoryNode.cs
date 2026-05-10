@@ -177,7 +177,23 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     private static ulong ComputeItemsHash(ReadOnlySpan<ItemInfo> items)
     {
         ulong hash = 14695981039346656037UL;
-        foreach (var item in items) { hash ^= item.Key; hash *= 1099511628211UL; }
+        foreach (var item in items)
+        {
+            InventoryItem inventoryItem = item.Item;
+
+            hash ^= item.Key;
+            hash *= 1099511628211UL;
+            hash ^= (uint)item.ItemCount;
+            hash *= 1099511628211UL;
+            hash ^= inventoryItem.ItemId;
+            hash *= 1099511628211UL;
+            hash ^= (uint)inventoryItem.Quantity;
+            hash *= 1099511628211UL;
+            hash ^= (uint)inventoryItem.Flags;
+            hash *= 1099511628211UL;
+            hash ^= inventoryItem.SpiritbondOrCollectability;
+            hash *= 1099511628211UL;
+        }
         return hash;
     }
 
