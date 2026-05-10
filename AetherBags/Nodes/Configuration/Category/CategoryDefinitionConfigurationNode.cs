@@ -9,6 +9,8 @@ using AetherBags.Inventory;
 using AetherBags.Nodes.Layout;
 using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using AetherBags.Addons;
+using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
@@ -31,6 +33,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
     private UserCategoryDefinition _categoryDefinition = new();
 
     private readonly HorizontalListNode _headerButtonsList;
+    private readonly TextNode _overrideSourceLabel;
     private readonly ScrollingAreaNode<VerticalListNode> _scrollingArea;
     private readonly List<ConfigurationSection> _sections = new();
 
@@ -63,6 +66,19 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
             TextTooltip = "Export Category to Clipboard",
             OnClick = HandleExportCategory,
         });
+
+        _overrideSourceLabel = new TextNode
+        {
+            Position = new Vector2(0, 8),
+            Size = new Vector2(400, 18),
+            FontSize = 12,
+            FontType = FontType.Axis,
+            AlignmentType = AlignmentType.Left,
+            TextColor = ColorHelper.GetColor(3),
+            TextFlags = TextFlags.OverflowHidden | TextFlags.Ellipsis,
+            IsVisible = false,
+        };
+        _overrideSourceLabel.AttachNode(this);
 
         _scrollingArea = new ScrollingAreaNode<VerticalListNode> {
             AutoHideScrollBar = true,
@@ -107,6 +123,8 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         _headerButtonsList.Position = new Vector2(0, 0);
         _headerButtonsList.RecalculateLayout();
 
+        _overrideSourceLabel.Size = new Vector2(Width - 80, 18);
+
         _scrollingArea.Position = new Vector2(0, 34);
         _scrollingArea.Size = Size with { Y = Size.Y - 34 };
 
@@ -120,8 +138,22 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
     public void SetCategory(UserCategoryDefinition newCategory)
     {
         _categoryDefinition = newCategory;
+        UpdateOverrideLabel();
         foreach (var section in _sections) section.Refresh();
         HandleLayoutChange();
+    }
+
+    private void UpdateOverrideLabel()
+    {
+        var key = _categoryDefinition.OverrideSourceKey;
+        if (string.IsNullOrEmpty(key))
+        {
+            _overrideSourceLabel.IsVisible = false;
+            return;
+        }
+
+        _overrideSourceLabel.String = $"⊕ Overrides: {CategoryWrapper.ResolveOverrideSourceName(key)}";
+        _overrideSourceLabel.IsVisible = true;
     }
 
     private void HandleLayoutChange()
