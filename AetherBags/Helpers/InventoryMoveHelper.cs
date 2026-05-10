@@ -4,19 +4,15 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using KamiToolKit.Classes;
 
-namespace AetherBags. Helpers;
+namespace AetherBags.Helpers;
 
 public static unsafe class InventoryMoveHelper
 {
-    /* Unused method, here for reference in case we ever need to swap back to the other method
-    public static void MoveItem(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
+    public static void MoveItemDirect(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
-        Services.Logger.DebugOnly($"[MoveItem] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
+        Services.Logger.DebugOnly($"[MoveItemDirect] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
         InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
-        Services.Framework.DelayTicks(3);
-        Services.Framework.RunOnFrameworkThread(System.AddonInventoryWindow.ManualRefresh);
     }
-    */
 
     public static void HandleItemMovePayload(DragDropPayload source, DragDropPayload target)
     {
