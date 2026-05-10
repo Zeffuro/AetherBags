@@ -16,38 +16,74 @@ public class CategorySettings
     public PluginFilterMode BisBuddyMode { get; set; } = PluginFilterMode.Highlight;
     public bool AllaganToolsCategoriesEnabled { get; set; } = false;
     public PluginFilterMode AllaganToolsFilterMode { get; set; } = PluginFilterMode.Highlight;
+    public bool CrystalsEnabled { get; set; } = true;
+    public bool KeyItemsEnabled { get; set; } = true;
     public List<ItemSortCriterion> DefaultItemSortCriteria { get; set; } = new();
     public bool BlankMiscCategoryName { get; set; } = false;
-    public List<CategorySource> CategorySourceDisplayOrder { get; set; } = GetDefaultCategorySourceOrder();
+    public List<string> CategorySourceDisplayOrder { get; set; } = GetDefaultCategorySourceOrder();
+
+    public HashSet<uint> DisabledGameCategoryIds { get; set; } = new();
 
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
 
-    public static List<CategorySource> GetDefaultCategorySourceOrder() =>
+    public static List<string> GetDefaultCategorySourceOrder() =>
     [
-        CategorySource.UserCategories,
-        CategorySource.BisBuddy,
-        CategorySource.AllaganTools,
-        CategorySource.GameCategories,
-        CategorySource.Misc,
+        CategorySourceIds.UserCategories,
+        CategorySourceIds.BisBuddy,
+        CategorySourceIds.AllaganTools,
+        CategorySourceIds.GameCategories,
+        CategorySourceIds.Misc,
     ];
 
     public void NormalizeCategorySourceDisplayOrder()
     {
-        var normalized = new List<CategorySource>(GetDefaultCategorySourceOrder().Count);
+        var normalized = new List<string>(8);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var source in CategorySourceDisplayOrder ?? [])
+        foreach (var id in CategorySourceDisplayOrder ?? [])
         {
-            if (Enum.IsDefined(source) && !normalized.Contains(source))
-                normalized.Add(source);
+            if (string.IsNullOrEmpty(id)) continue;
+            if (seen.Add(id)) normalized.Add(id);
         }
 
-        foreach (var source in GetDefaultCategorySourceOrder())
+        foreach (var id in GetDefaultCategorySourceOrder())
         {
-            if (!normalized.Contains(source))
-                normalized.Add(source);
+            if (seen.Add(id)) normalized.Add(id);
+        }
+
+        foreach (var source in IPC.ExternalCategorySystem.ExternalCategoryManager.RegisteredSources)
+        {
+            if (seen.Contains(source.SourceName)) continue;
+            int insertAt = FindInsertPosition(normalized, source.DefaultDisplayOrder);
+            normalized.Insert(insertAt, source.SourceName);
+            seen.Add(source.SourceName);
         }
 
         CategorySourceDisplayOrder = normalized;
+    }
+
+    private static int FindInsertPosition(List<string> ordered, int newHint)
+    {
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            int existingHint = HintFor(ordered[i]);
+            if (newHint < existingHint) return i;
+        }
+        return ordered.Count;
+    }
+
+    private static int HintFor(string id)
+    {
+        if (CategorySourceIds.BuiltInDisplayOrderHints.TryGetValue(id, out int hint))
+            return hint;
+
+        foreach (var source in IPC.ExternalCategorySystem.ExternalCategoryManager.RegisteredSources)
+        {
+            if (string.Equals(source.SourceName, id, StringComparison.Ordinal))
+                return source.DefaultDisplayOrder;
+        }
+
+        return 999;
     }
 
     public void NormalizeItemSortSettings()
@@ -113,7 +149,26 @@ public class UserCategoryDefinition
     public List<ItemSortCriterion> ItemSortCriteria { get; set; } = new();
     public List<uint> CustomItemOrder { get; set; } = new();
 
+    // JSON name kept as "ForkedFromKey" for backward-compat with existing saves.
+    [JsonPropertyName("ForkedFromKey")]
+    public string? OverrideSourceKey { get; set; }
+
     public CategoryRuleSet Rules { get; set; } = new();
+}
+
+public static class CategoryOverrideKey
+{
+    private const string GamePrefix = "game:";
+
+    public static string ForGameCategory(uint id) => $"{GamePrefix}{id}";
+
+    public static bool TryParseGameCategory(string? key, out uint id)
+    {
+        id = 0;
+        return key is not null
+            && key.StartsWith(GamePrefix, StringComparison.Ordinal)
+            && uint.TryParse(key.AsSpan(GamePrefix.Length), out id);
+    }
 }
 
 public class ItemSortCriterion
@@ -231,5 +286,26 @@ public enum CategorySource
 
     [Description("Misc")]
     Misc = 4,
+}
+
+public static class CategorySourceIds
+{
+    public const string UserCategories = nameof(CategorySource.UserCategories);
+    public const string BisBuddy = nameof(CategorySource.BisBuddy);
+    public const string AllaganTools = nameof(CategorySource.AllaganTools);
+    public const string GameCategories = nameof(CategorySource.GameCategories);
+    public const string Misc = nameof(CategorySource.Misc);
+
+    public static readonly Dictionary<string, int> BuiltInDisplayOrderHints = new(StringComparer.Ordinal)
+    {
+        [UserCategories] = 10,
+        [BisBuddy]       = 20,
+        [AllaganTools]   = 30,
+        [GameCategories] = 40,
+        [Misc]           = 50,
+    };
+
+    public static bool TryParseBuiltIn(string id, out CategorySource source)
+        => Enum.TryParse(id, out source);
 }
 

@@ -6,11 +6,12 @@ namespace AetherBags.Configuration;
 
 public static class ConfigMigrator
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     private static readonly IConfigMigration[] Migrations =
     [
         new V1ItemSortSettingsMigration(),
+        new V2CategorySourceOrderMigration(),
     ];
 
     public static string Migrate(string json, out bool migrated)

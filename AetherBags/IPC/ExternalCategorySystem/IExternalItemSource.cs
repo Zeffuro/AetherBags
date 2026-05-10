@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Inventory.Scanning;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace AetherBags.IPC.ExternalCategorySystem;
 
@@ -17,11 +20,33 @@ public interface IExternalItemSource
     SourceCapabilities Capabilities { get; }
     ConflictBehavior ConflictBehavior { get; }
 
+    // Slot hint for first appearance in the user's display order; built-ins use 10/20/30/40/50.
+    int DefaultDisplayOrder => 100;
+
     IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments();
     IReadOnlyDictionary<uint, ItemDecoration>? GetItemDecorations();
     IReadOnlyList<ContextMenuEntry>? GetContextMenuEntries(uint itemId);
     IReadOnlyDictionary<uint, string[]>? GetSearchTags();
     IReadOnlyList<ItemRelationship>? GetItemRelationships(uint itemId);
+}
+
+public interface IInventoryTypeProvidingSource : IExternalItemSource
+{
+    IReadOnlyList<InventoryType> AdditionalInventoryTypes { get; }
+
+    IReadOnlyList<InventoryType> AdditionalInventoryTypesFor(InventorySourceType sourceType)
+        => sourceType == InventorySourceType.MainBags
+            ? AdditionalInventoryTypes
+            : Array.Empty<InventoryType>();
+
+    bool LocksDragOut => true;
+    bool LocksDragIn => true;
+
+    DragDropType GetDragDropTypeFor(InventoryType container) => DragDropType.Item;
+
+    // Send drops with InventoryType.Invalid + slot 0xFFFF so the game picks the slot by item type
+    // (RetainerCrystals deposits work this way; each slot is fixed to one element).
+    bool AutoRoutesDeposits(InventoryType container) => false;
 }
 
 [Flags]

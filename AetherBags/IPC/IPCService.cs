@@ -9,6 +9,8 @@ public class IPCService : IDisposable
     public WotsItIPC WotsIt { get; } = new();
     public BisBuddyIPC BisBuddy { get; } = new();
     public TestExternalSource TestSource { get; } = new();
+    public CrystalExternalSource Crystals { get; } = new();
+    public KeyItemExternalSource KeyItems { get; } = new();
 
     private bool _unifiedEnabled;
 
@@ -44,6 +46,12 @@ public class IPCService : IDisposable
             BisBuddy.EnableExternalCategorySupport();
         else
             BisBuddy.DisableExternalCategorySupport();
+
+        bool crystalsShouldBeActive = _unifiedEnabled && categoriesEnabled && config.CrystalsEnabled;
+        if (crystalsShouldBeActive) Crystals.Enable(); else Crystals.Disable();
+
+        bool keyItemsShouldBeActive = _unifiedEnabled && categoriesEnabled && config.KeyItemsEnabled;
+        if (keyItemsShouldBeActive) KeyItems.Enable(); else KeyItems.Disable();
     }
 
     public void ToggleTestSource()
@@ -60,5 +68,7 @@ public class IPCService : IDisposable
         WotsIt.Dispose();
         BisBuddy.Dispose();
         TestSource.Dispose();
+        Crystals.Dispose();
+        KeyItems.Dispose();
     }
 }

@@ -19,12 +19,20 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     public required int ItemCount { get; set; }
 
     private static ExcelSheet<Item>? s_itemSheet;
+    private static ExcelSheet<EventItem>? s_eventItemSheet;
     private static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
+    private static ExcelSheet<EventItem> EventItemSheet => s_eventItemSheet ??= Services.DataManager.GetExcelSheet<EventItem>();
 
-    public static bool IsAggregatable(uint itemId) => ItemSheet.GetRow(itemId).StackSize > 1;
+    public static bool IsAggregatable(uint itemId)
+        => ItemSheet.TryGetRow(itemId, out var row) && row.StackSize > 1;
 
     private bool _rowLoaded;
+    private bool _rowFound;
     private Item _row;
+
+    private bool _eventRowLoaded;
+    private bool _eventRowFound;
+    private EventItem _eventRow;
 
     private string? _name;
     private string? _description;
@@ -36,47 +44,79 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     private Vector3 _cachedHighlightColor;
     private bool _cachedIsRelationshipHighlighted;
 
-    private ref readonly Item Row
+    // Default Lumina row's internal pool ref is null; accessors must guard before touching _row.
+    private bool HasRow
     {
         get
         {
             if (!_rowLoaded)
             {
-                _row = ItemSheet.GetRow(Item.ItemId);
+                _rowFound = ItemSheet.TryGetRow(Item.ItemId, out _row);
                 _rowLoaded = true;
             }
-            return ref _row;
+            return _rowFound;
         }
     }
 
-    public Vector4 RarityColor => Row.RarityColor;
-    public uint IconId => Row.Icon;
+    private bool HasEventRow
+    {
+        get
+        {
+            if (!_eventRowLoaded)
+            {
+                _eventRowFound = EventItemSheet.TryGetRow(Item.ItemId, out _eventRow);
+                _eventRowLoaded = true;
+            }
+            return _eventRowFound;
+        }
+    }
 
-    public string Name => _name ??= Row.Name.ToString();
+    public Vector4 RarityColor => HasRow ? _row.RarityColor : Vector4.One;
 
-    public int Level => Row.LevelEquip;
-    public int ItemLevel => (int)Row.LevelItem.RowId;
+    public uint IconId
+    {
+        get
+        {
+            if (HasRow) return _row.Icon;
+            if (HasEventRow) return _eventRow.Icon;
+            return 0u;
+        }
+    }
+
+    public string Name
+    {
+        get
+        {
+            if (_name != null) return _name;
+            if (HasRow) return _name = _row.Name.ToString();
+            if (HasEventRow) return _name = _eventRow.Name.ToString();
+            return _name = string.Empty;
+        }
+    }
+
+    public int Level => HasRow ? _row.LevelEquip : 0;
+    public int ItemLevel => HasRow ? (int)_row.LevelItem.RowId : 0;
     private string LevelString => _levelString ??= Level.ToString();
     private string ItemLevelString => _itemLevelString ??= ItemLevel.ToString();
-    public int Rarity => Row.Rarity;
-    public uint VendorPrice => Row.PriceLow;
-    public uint StackSize => Row.StackSize;
+    public int Rarity => HasRow ? _row.Rarity : 0;
+    public uint VendorPrice => HasRow ? _row.PriceLow : 0u;
+    public uint StackSize => HasRow ? _row.StackSize : 0u;
 
-    public RowRef<ItemUICategory> UiCategory => Row.ItemUICategory;
+    public RowRef<ItemUICategory> UiCategory => HasRow ? _row.ItemUICategory : default;
 
-    public bool IsUntradable => Row.IsUntradable;
-    public bool IsUnique => Row.IsUnique;
-    public bool IsCollectable => Row.IsCollectable;
-    public bool IsDyeable => Row.DyeCount > 0;
-    public bool IsRepairable => Row.ItemRepair.RowId != 0;
+    public bool IsUntradable => HasRow && _row.IsUntradable;
+    public bool IsUnique => HasRow && _row.IsUnique;
+    public bool IsCollectable => HasRow && _row.IsCollectable;
+    public bool IsDyeable => HasRow && _row.DyeCount > 0;
+    public bool IsRepairable => HasRow && _row.ItemRepair.RowId != 0;
 
     public bool IsHq => Item.Flags.HasFlag(InventoryItem.ItemFlags.HighQuality);
-    public bool IsDesynthesizable => Row.Desynth > 0;
-    public bool IsCraftable => Row.ItemAction.RowId != 0 || Row.CanBeHq;
-    public bool IsGlamourable => Row.IsGlamorous;
+    public bool IsDesynthesizable => HasRow && _row.Desynth > 0;
+    public bool IsCraftable => HasRow && (_row.ItemAction.RowId != 0 || _row.CanBeHq);
+    public bool IsGlamourable => HasRow && _row.IsGlamorous;
     public bool IsSpiritbonded => Item.SpiritbondOrCollectability >= 10000; // 100% = 10000
 
-    private string Description => _description ??= Row.Description.ToString();
+    private string Description => _description ??= HasRow ? _row.Description.ToString() : string.Empty;
 
     public InventoryMappedLocation VisualLocation => InventoryContextState.GetVisualLocation(Item.Container, Item.Slot);
 

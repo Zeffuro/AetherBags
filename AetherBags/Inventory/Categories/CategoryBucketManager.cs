@@ -174,6 +174,8 @@ public static class CategoryBucketManager
         HashSet<ulong> claimedKeys,
         bool userCategoriesEnabled)
     {
+        var disabledGameIds = System.Config.Categories.DisabledGameCategoryIds;
+
         foreach (var itemKvp in itemInfoByKey)
         {
             ulong itemKey = itemKvp.Key;
@@ -183,6 +185,9 @@ public static class CategoryBucketManager
                 continue;
 
             uint categoryKey = info.UiCategory.RowId;
+
+            if (disabledGameIds.Count > 0 && disabledGameIds.Contains(categoryKey))
+                continue;
 
             ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, categoryKey, out bool exists);
 
@@ -428,18 +433,20 @@ public static class CategoryBucketManager
 
         sortedCategoryKeys.Sort((left, right) =>
         {
-            CategorySource GetSource(uint key)
+            string GetSourceId(uint key)
             {
-                if (IsUserCategoryKey(key)) return CategorySource.UserCategories;
-                if (IsBisBuddyKey(key)) return CategorySource.BisBuddy;
-                if (IsAllaganFilterKey(key)) return CategorySource.AllaganTools;
-                if (key == 0) return CategorySource.Misc;
-                return CategorySource.GameCategories;
+                if (IsUserCategoryKey(key)) return CategorySourceIds.UserCategories;
+                if (IsBisBuddyKey(key)) return CategorySourceIds.BisBuddy;
+                if (IsAllaganFilterKey(key)) return CategorySourceIds.AllaganTools;
+                if (key == 0) return CategorySourceIds.Misc;
+                if (IPC.ExternalCategorySystem.ExternalCategoryManager.TryGetSourceForBucketKey(key, out var sourceName))
+                    return sourceName;
+                return CategorySourceIds.GameCategories;
             }
 
             int GetPriority(uint key)
             {
-                int index = categorySettings.CategorySourceDisplayOrder.IndexOf(GetSource(key));
+                int index = categorySettings.CategorySourceDisplayOrder.IndexOf(GetSourceId(key));
                 return index >= 0 ? index : int.MaxValue;
             }
 

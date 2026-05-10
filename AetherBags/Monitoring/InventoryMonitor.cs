@@ -145,12 +145,35 @@ public class InventoryMonitor : IDisposable
     values[7] = can use Saddlebags (Agent InventoryBuddy IsActivatable)
     */
 
+    private static readonly HashSet<InventoryType> RefreshTriggerContainers = BuildRefreshTriggerContainers();
+
+    private static HashSet<InventoryType> BuildRefreshTriggerContainers()
+    {
+        var set = new HashSet<InventoryType>(InventoryScanner.StandardInventories)
+        {
+            InventoryType.SaddleBag1,
+            InventoryType.SaddleBag2,
+            InventoryType.PremiumSaddleBag1,
+            InventoryType.PremiumSaddleBag2,
+            InventoryType.RetainerPage1,
+            InventoryType.RetainerPage2,
+            InventoryType.RetainerPage3,
+            InventoryType.RetainerPage4,
+            InventoryType.RetainerPage5,
+            InventoryType.RetainerPage6,
+            InventoryType.RetainerPage7,
+            InventoryType.RetainerCrystals,
+            InventoryType.RetainerEquippedItems,
+        };
+        return set;
+    }
+
     private void OnInventoryChangedRaw(IReadOnlyCollection<InventoryEventArgs> events)
     {
         bool needsRefresh = false;
         foreach (var inventoryEventArgs in events)
         {
-            if (InventoryScanner.StandardInventories.Contains((InventoryType)inventoryEventArgs.Item.ContainerType))
+            if (RefreshTriggerContainers.Contains((InventoryType)inventoryEventArgs.Item.ContainerType))
             {
                 needsRefresh = true;
                 break;

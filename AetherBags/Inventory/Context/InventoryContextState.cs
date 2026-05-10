@@ -161,14 +161,12 @@ public static unsafe class InventoryContextState
         if (VisualLocationMap.TryGetValue(key, out var result))
             return result;
 
-        // default fallback: use the agent container id for the real container (works for Inventory1..4, RetainerPageN, etc.)
-        var defaultAgentId = (int)realContainer.AgentItemContainerId;
-        if (defaultAgentId == 0)
-        {
-            // final fallback: Inventory1 base at 48
-            defaultAgentId = 48;
-        }
+        var agentId = (int)realContainer.AgentItemContainerId;
+        if (agentId != 0)
+            return new InventoryMappedLocation(agentId, slot);
 
-        return new InventoryMappedLocation(defaultAgentId, slot);
+        // No agent mapping (Crystals, RetainerCrystals): return the real id. Falling back to
+        // Inventory1's agent id (48) caused destructive same-slot swaps in the main bag.
+        return new InventoryMappedLocation((int)realContainer, slot);
     }
 }

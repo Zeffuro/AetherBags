@@ -13,7 +13,9 @@ public static class DragDropPayloadExtensions
             payload.Type is DragDropType.Inventory_Item
                 or DragDropType.Inventory_Crystal
                 or DragDropType.RemoteInventory_Item
-                or DragDropType.Item;
+                or DragDropType.Item
+                or DragDropType.Crystal
+                or DragDropType.EventItem;
 
         public bool IsSameBaseContainer(DragDropPayload otherPayload) {
             if (payload.InventoryLocation.Container.IsSameContainerGroup(otherPayload.InventoryLocation.Container))

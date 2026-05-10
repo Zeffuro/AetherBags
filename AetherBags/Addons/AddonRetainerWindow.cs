@@ -180,6 +180,10 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         if (!IsAnyRetainerWindowLoaded()) return;
         var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Retainer);
         agent->SendCommand(0, [0]);
+
+        // InventoryChangedRaw lags the server round-trip; nudge both views to catch up.
+        Services.Framework.RunOnTick(() => InventoryOrchestrator.RefreshAll(updateMaps: true), delayTicks: 30);
+        Services.Framework.RunOnTick(() => InventoryOrchestrator.RefreshAll(updateMaps: true), delayTicks: 90);
     }
 
     protected override void OnFinalize(AtkUnitBase* addon)

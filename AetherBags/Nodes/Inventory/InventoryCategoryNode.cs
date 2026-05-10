@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using AetherBags.Helpers;
+using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
@@ -326,7 +327,6 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         {
             Size = new Vector2(44, 48),
             IsVisible = true,
-            AcceptedType = DragDropType.Item,
             IsClickable = true,
             OnDiscard = n => { if (n is InventoryDragDropNode dn) OnDiscard(n, dn.ItemInfo); },
             OnEnd = _ => OnDragEnd?.Invoke(),
@@ -345,10 +345,13 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         InventoryItem item = data.Item;
         InventoryMappedLocation vis = data.VisualLocation;
         var visInvType = InventoryType.GetInventoryTypeFromContainerId(vis.Container);
+        var dragDropType = ExternalCategoryManager.GetDragDropTypeForContainer(item.Container);
 
         node.IconId = item.IconId;
         node.Alpha = data.VisualAlpha;
-        node.IsDraggable = !data.IsSlotBlocked;
+        node.IsDraggable = !data.IsSlotBlocked && !ExternalCategoryManager.IsContainerDragOutLocked(item.Container);
+        // Must match emitted type or AtkComponentDragDrop rejects matching payloads from other windows.
+        node.AcceptedType = dragDropType;
         node.IconNode.IconExtras.AntsNode.IsVisible = data.IsRelationshipHighlighted;
 
         if (data.IsRelationshipHighlighted && config.AnimationEnabled)
@@ -361,7 +364,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
         node.Payload = new DragDropPayload
         {
-            Type = DragDropType.Item,
+            Type = dragDropType,
             Int1 = vis.Container,
             Int2 = vis.Slot,
             ReferenceIndex = (short)(visInvType.GetInventoryStartIndex + vis.Slot)
@@ -397,7 +400,8 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             Vector3 color = deco ?? info.HighlightOverlayColor;
             if (itemNode.IconNode.AddColor != color) itemNode.IconNode.AddColor = color;
 
-            if (itemNode.IsDraggable != !info.IsSlotBlocked) itemNode.IsDraggable = !info.IsSlotBlocked;
+            bool draggable = !info.IsSlotBlocked && !ExternalCategoryManager.IsContainerDragOutLocked(info.Item.Container);
+            if (itemNode.IsDraggable != draggable) itemNode.IsDraggable = draggable;
 
             bool ants = info.IsRelationshipHighlighted;
             if (itemNode.IconNode.IconExtras.AntsNode.IsVisible != ants) itemNode.IconNode.IconExtras.AntsNode.IsVisible = ants;
@@ -416,15 +420,56 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         try
         {
+            Services.Logger.Information($"[OnPayload] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), target={targetItemInfo.Item.Container}@{targetItemInfo.Item.Slot}");
             var nodePayload = new DragDropPayload
             {
-                Type = DragDropType.Item,
+                Type = ExternalCategoryManager.GetDragDropTypeForContainer(targetItemInfo.Item.Container),
                 Int1 = targetItemInfo.VisualLocation.Container,
                 Int2 = targetItemInfo.VisualLocation.Slot,
                 ReferenceIndex = (short)(targetItemInfo.Item.Container.GetInventoryStartIndex + targetItemInfo.VisualLocation.Slot)
             };
 
             if (!acceptedPayload.IsValidInventoryPayload || !nodePayload.IsValidInventoryPayload) return;
+
+            if (ExternalCategoryManager.IsContainerDragInLocked(targetItemInfo.Item.Container)) return;
+
+            var dstContainer = targetItemInfo.Item.Container;
+            bool dstExternal = ExternalCategoryManager.IsContainerClaimedByExternalSource(dstContainer);
+            var (srcContainer, srcSlot) = ResolveRealSource(acceptedPayload);
+            bool srcExternal = ExternalCategoryManager.IsContainerClaimedByExternalSource(srcContainer);
+
+            if (srcExternal || dstExternal)
+            {
+                Services.Logger.Information($"[OnPayload] external move detected: src={srcContainer}@{srcSlot} (external={srcExternal}) -> dst={dstContainer}@{targetItemInfo.Item.Slot} (external={dstExternal})");
+                if (srcContainer == InventoryType.Crystals && dstContainer == InventoryType.RetainerCrystals)
+                {
+                    if (RetainerCommands.TryEntrust(srcContainer, srcSlot))
+                    {
+                        OnRefreshRequested?.Invoke();
+                        return;
+                    }
+                }
+                else if (srcContainer == InventoryType.RetainerCrystals && dstContainer == InventoryType.Crystals)
+                {
+                    if (RetainerCommands.TryRetrieve(srcContainer, srcSlot))
+                    {
+                        OnRefreshRequested?.Invoke();
+                        return;
+                    }
+                }
+
+                ushort dstSlot = (ushort)targetItemInfo.Item.Slot;
+                var resolvedDst = dstContainer;
+                if (ExternalCategoryManager.ShouldAutoRouteDeposit(dstContainer))
+                {
+                    resolvedDst = InventoryType.Invalid;
+                    dstSlot = ushort.MaxValue;
+                }
+
+                InventoryMoveHelper.MoveItemDirect(srcContainer, srcSlot, resolvedDst, dstSlot);
+                OnRefreshRequested?.Invoke();
+                return;
+            }
 
             if (acceptedPayload.IsSameBaseContainer(nodePayload))
             {
@@ -437,6 +482,21 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             OnRefreshRequested?.Invoke();
         }
         catch (Exception ex) { Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance"); }
+    }
+
+    private static (InventoryType container, ushort slot) ResolveRealSource(DragDropPayload payload)
+    {
+        int int1 = payload.Int1;
+        ushort int2 = (ushort)payload.Int2;
+
+        var mapped = InventoryType.GetInventoryTypeFromContainerId(int1);
+        if (mapped != 0)
+        {
+            var real = mapped.GetRealItemLocation(int2);
+            return (real.Container, real.Slot);
+        }
+
+        return ((InventoryType)int1, int2);
     }
 
     #endregion

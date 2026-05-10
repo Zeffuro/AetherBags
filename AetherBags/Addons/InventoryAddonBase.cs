@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
+using AetherBags.Hooks;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Context;
@@ -398,7 +399,10 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             IconId = 0,
             IsDraggable = false,
             IsClickable = false,
-            AcceptedType = DragDropType.Item,
+            // Everything = catch-all so Crystal / EventItem payloads from our other windows
+            // (or vanilla) reach OnBackgroundPayloadAccepted; the handler branches per payload
+            // type and rejects anything we don't know how to route.
+            AcceptedType = DragDropType.Everything,
         };
 
         BackgroundDropTarget.DragDropBackgroundNode.IsVisible = false;
@@ -435,6 +439,34 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     private void OnBackgroundPayloadAccepted(DragDropNode node, DragDropPayload acceptedPayload)
     {
         if (!acceptedPayload.IsValidInventoryPayload) return;
+
+        Services.Logger.Information($"[BackgroundDrop] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), windowSource={InventoryState.SourceType}");
+
+        var mapped = InventoryType.GetInventoryTypeFromContainerId(acceptedPayload.Int1);
+        InventoryType srcContainer = mapped != 0 ? mapped : (InventoryType)acceptedPayload.Int1;
+        ushort srcSlot = (ushort)acceptedPayload.Int2;
+
+        if (acceptedPayload.Type == DragDropType.Crystal)
+        {
+            if (InventoryState.SourceType == InventorySourceType.Retainer
+                && srcContainer == InventoryType.Crystals)
+            {
+                if (RetainerCommands.TryEntrust(srcContainer, srcSlot))
+                {
+                    ManualRefresh();
+                    return;
+                }
+            }
+            else if (InventoryState.SourceType == InventorySourceType.MainBags
+                     && srcContainer == InventoryType.RetainerCrystals)
+            {
+                if (RetainerCommands.TryRetrieve(srcContainer, srcSlot))
+                {
+                    ManualRefresh();
+                    return;
+                }
+            }
+        }
 
         InventoryLocation emptyLocation = InventoryScanner.GetFirstEmptySlot(InventoryState.SourceType);
 

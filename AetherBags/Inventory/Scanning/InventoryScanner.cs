@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
+using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AetherBags.Inventory.Scanning;
@@ -29,6 +31,7 @@ public static unsafe class InventoryScanner
         InventoryType.ArmoryRings,
         InventoryType.Currency,
         InventoryType.Crystals,
+        InventoryType.KeyItems,
         InventoryType.ArmorySoulCrystal,
     ];
 
@@ -49,7 +52,15 @@ public static unsafe class InventoryScanner
     {
         aggByKey.Clear();
 
-        var inventories = InventorySourceDefinitions.GetInventories(source);
+        InventoryType[] inventories = InventorySourceDefinitions.GetInventories(source);
+
+        var extras = ExternalCategoryManager.GetActiveInventoryTypes(source);
+        if (extras.Count > 0)
+        {
+            var combined = new HashSet<InventoryType>(inventories);
+            foreach (var t in extras) combined.Add(t);
+            inventories = combined.ToArray();
+        }
 
         int scannedSlots = 0;
         int nonEmptySlots = 0;

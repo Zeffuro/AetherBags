@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace AetherBags.IPC.ExternalCategorySystem;
 
@@ -14,9 +15,95 @@ public static class ExternalCategoryManager
     private static readonly Dictionary<uint, ExternalCategoryAssignment> CategoryCache = new();
     private static readonly Dictionary<uint, ItemDecoration> DecorationCache = new();
     private static readonly Dictionary<uint, List<string>> SearchTagCache = new();
+    private static readonly Dictionary<uint, string> BucketKeyToSourceName = new();
     private static int _lastCombinedVersion;
 
     public static IReadOnlyList<IExternalItemSource> RegisteredSources => Sources;
+
+    public static IReadOnlyList<InventoryType> GetActiveInventoryTypes()
+        => GetActiveInventoryTypes(Inventory.Scanning.InventorySourceType.MainBags);
+
+    public static IReadOnlyList<InventoryType> GetActiveInventoryTypes(Inventory.Scanning.InventorySourceType sourceType)
+    {
+        HashSet<InventoryType>? set = null;
+        foreach (var source in Sources)
+        {
+            if (!source.IsReady) continue;
+            if (source is not IInventoryTypeProvidingSource provider) continue;
+            foreach (var type in provider.AdditionalInventoryTypesFor(sourceType))
+            {
+                set ??= new HashSet<InventoryType>();
+                set.Add(type);
+            }
+        }
+        return set is null ? Array.Empty<InventoryType>() : set.ToArray();
+    }
+
+    public static bool IsContainerDragOutLocked(InventoryType container)
+        => IsContainerLocked(container, dragOut: true);
+
+    public static bool IsContainerDragInLocked(InventoryType container)
+        => IsContainerLocked(container, dragOut: false);
+
+    private static bool IsContainerLocked(InventoryType container, bool dragOut)
+    {
+        foreach (var source in Sources)
+        {
+            if (!source.IsReady) continue;
+            if (source is not IInventoryTypeProvidingSource provider) continue;
+            bool locked = dragOut ? provider.LocksDragOut : provider.LocksDragIn;
+            if (!locked) continue;
+            foreach (var type in provider.AdditionalInventoryTypes)
+            {
+                if (type == container) return true;
+            }
+        }
+        return false;
+    }
+
+    public static bool IsContainerClaimedByExternalSource(InventoryType container)
+    {
+        foreach (var source in Sources)
+        {
+            if (!source.IsReady) continue;
+            if (source is not IInventoryTypeProvidingSource provider) continue;
+            foreach (var type in provider.AdditionalInventoryTypes)
+            {
+                if (type == container) return true;
+            }
+        }
+        return false;
+    }
+
+    public static FFXIVClientStructs.FFXIV.Component.GUI.DragDropType GetDragDropTypeForContainer(InventoryType container)
+    {
+        foreach (var source in Sources)
+        {
+            if (!source.IsReady) continue;
+            if (source is not IInventoryTypeProvidingSource provider) continue;
+            foreach (var type in provider.AdditionalInventoryTypes)
+            {
+                if (type == container)
+                    return provider.GetDragDropTypeFor(container);
+            }
+        }
+        return FFXIVClientStructs.FFXIV.Component.GUI.DragDropType.Item;
+    }
+
+    public static bool ShouldAutoRouteDeposit(InventoryType container)
+    {
+        foreach (var source in Sources)
+        {
+            if (!source.IsReady) continue;
+            if (source is not IInventoryTypeProvidingSource provider) continue;
+            foreach (var type in provider.AdditionalInventoryTypes)
+            {
+                if (type == container)
+                    return provider.AutoRoutesDeposits(container);
+            }
+        }
+        return false;
+    }
 
     public static void RegisterSource(IExternalItemSource source)
     {
@@ -49,6 +136,13 @@ public static class ExternalCategoryManager
         CategoryCache.Clear();
         DecorationCache.Clear();
         SearchTagCache.Clear();
+        BucketKeyToSourceName.Clear();
+    }
+
+    public static bool TryGetSourceForBucketKey(uint bucketKey, out string sourceName)
+    {
+        RebuildCacheIfNeeded();
+        return BucketKeyToSourceName.TryGetValue(bucketKey, out sourceName!);
     }
 
     private static int ComputeCombinedVersion()
@@ -70,6 +164,7 @@ public static class ExternalCategoryManager
         CategoryCache.Clear();
         DecorationCache.Clear();
         SearchTagCache.Clear();
+        BucketKeyToSourceName.Clear();
 
         foreach (var source in Sources)
         {
@@ -85,6 +180,7 @@ public static class ExternalCategoryManager
                     foreach (var (itemId, assignment) in categories)
                     {
                         CategoryCache.TryAdd(itemId, assignment);
+                        BucketKeyToSourceName.TryAdd(assignment.CategoryKey, source.SourceName);
                     }
                 }
             }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
-using AetherBags.Extensions;
+using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
@@ -15,13 +15,13 @@ namespace AetherBags.Nodes.Configuration.Category;
 public sealed class CategorySourceOrderEditorNode : VerticalListNode
 {
     private const float RowHeight = 28f;
-    private const float SourceLabelWidth = 180f;
+    private const float SourceLabelWidth = 220f;
     private const float ButtonSize = 28f;
     private const float ButtonSpacing = 4f;
     private const float ButtonAreaWidth = ButtonSize * 2f + ButtonSpacing;
     private const float RowWidth = SourceLabelWidth + ButtonAreaWidth;
 
-    private List<CategorySource> _order = CategorySettings.GetDefaultCategorySourceOrder();
+    private List<string> _order = CategorySettings.GetDefaultCategorySourceOrder();
     private readonly VerticalListNode _itemsContainer;
 
     public Action? OnChanged { get; set; }
@@ -37,7 +37,7 @@ public sealed class CategorySourceOrderEditorNode : VerticalListNode
             Size = new Vector2(RowWidth, 18),
             String = "Category Source Display Order:",
             TextColor = ColorHelper.GetColor(8),
-            TextTooltip = "Use the arrows to choose which category sources are shown first. This changes display order only, not which category claims an item.",
+            TextTooltip = "Use the arrows to choose which category sources are shown first. This changes display order only, not which category claims an item.\nNew sources are inserted at their requested default position; reordering is preserved.",
         });
 
         _itemsContainer = new VerticalListNode
@@ -50,31 +50,18 @@ public sealed class CategorySourceOrderEditorNode : VerticalListNode
         AddNode(_itemsContainer);
     }
 
-    public List<CategorySource> GetOrder() => _order.ToList();
+    public List<string> GetOrder() => _order.ToList();
 
-    public void SetOrder(List<CategorySource> newOrder)
+    public void SetOrder(List<string> newOrder)
     {
-        _order = Normalize(newOrder);
+        // Reuse the runtime normalizer so editor and bucket pipeline stay in sync.
+        var settings = System.Config.Categories;
+        var savedReference = settings.CategorySourceDisplayOrder;
+        settings.CategorySourceDisplayOrder = newOrder?.ToList() ?? [];
+        settings.NormalizeCategorySourceDisplayOrder();
+        _order = settings.CategorySourceDisplayOrder.ToList();
+        settings.CategorySourceDisplayOrder = savedReference;
         RefreshItems();
-    }
-
-    private static List<CategorySource> Normalize(List<CategorySource> order)
-    {
-        var normalized = new List<CategorySource>(CategorySettings.GetDefaultCategorySourceOrder().Count);
-
-        foreach (var source in order)
-        {
-            if (Enum.IsDefined(source) && !normalized.Contains(source))
-                normalized.Add(source);
-        }
-
-        foreach (var source in CategorySettings.GetDefaultCategorySourceOrder())
-        {
-            if (!normalized.Contains(source))
-                normalized.Add(source);
-        }
-
-        return normalized;
     }
 
     private unsafe void RefreshItems()
@@ -83,8 +70,8 @@ public sealed class CategorySourceOrderEditorNode : VerticalListNode
 
         for (int i = 0; i < _order.Count; i++)
         {
-            CategorySource source = _order[i];
-            _itemsContainer.AddNode(CreateItemNode(source, isFirst: i == 0, isLast: i == _order.Count - 1));
+            string id = _order[i];
+            _itemsContainer.AddNode(CreateItemNode(id, isFirst: i == 0, isLast: i == _order.Count - 1));
         }
 
         _itemsContainer.RecalculateLayout();
@@ -95,16 +82,16 @@ public sealed class CategorySourceOrderEditorNode : VerticalListNode
             addon->UpdateCollisionNodeList(false);
     }
 
-    private CategorySourceOrderItemNode CreateItemNode(CategorySource source, bool isFirst, bool isLast) => new(source, isFirst, isLast, SourceLabelWidth, ButtonSize, ButtonSpacing)
+    private CategorySourceOrderItemNode CreateItemNode(string id, bool isFirst, bool isLast) => new(id, isFirst, isLast, SourceLabelWidth, ButtonSize, ButtonSpacing)
     {
         Size = new Vector2(RowWidth, RowHeight),
-        OnMoveUp = () => MoveSource(source, -1),
-        OnMoveDown = () => MoveSource(source, +1),
+        OnMoveUp = () => MoveSource(id, -1),
+        OnMoveDown = () => MoveSource(id, +1),
     };
 
-    private void MoveSource(CategorySource source, int delta)
+    private void MoveSource(string id, int delta)
     {
-        int index = _order.IndexOf(source);
+        int index = _order.IndexOf(id);
         if (index < 0) return;
 
         int target = index + delta;
@@ -124,7 +111,7 @@ public sealed class CategorySourceOrderItemNode : HorizontalListNode
     public Action? OnMoveUp { get; init; }
     public Action? OnMoveDown { get; init; }
 
-    public CategorySourceOrderItemNode(CategorySource source, bool isFirst, bool isLast, float sourceLabelWidth, float buttonSize, float buttonSpacing)
+    public CategorySourceOrderItemNode(string id, bool isFirst, bool isLast, float sourceLabelWidth, float buttonSize, float buttonSpacing)
     {
         ItemSpacing = buttonSpacing;
 
@@ -132,7 +119,7 @@ public sealed class CategorySourceOrderItemNode : HorizontalListNode
         {
             Size = new Vector2(sourceLabelWidth, 28),
             Position = new Vector2(0, 0),
-            String = source.Description,
+            String = ResolveDisplayName(id),
             TextColor = ColorHelper.GetColor(3),
         });
 
@@ -153,5 +140,19 @@ public sealed class CategorySourceOrderItemNode : HorizontalListNode
             IsEnabled = !isLast,
             OnClick = () => OnMoveDown?.Invoke(),
         });
+    }
+
+    private static string ResolveDisplayName(string id)
+    {
+        if (CategorySourceIds.TryParseBuiltIn(id, out var builtIn))
+            return builtIn.Description;
+
+        foreach (var source in ExternalCategoryManager.RegisteredSources)
+        {
+            if (string.Equals(source.SourceName, id, StringComparison.Ordinal))
+                return source.DisplayName;
+        }
+
+        return id;
     }
 }
