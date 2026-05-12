@@ -15,9 +15,6 @@ public class ItemListItemWithAddNode : ItemListItemNode
 
     public ItemListItemWithAddNode()
     {
-        LabelTextNode.AlignmentType = AlignmentType.Left;
-        SubLabelTextNode.IsVisible = false;
-
         _addButton = new TextButtonNode
         {
             String = "Add",
@@ -31,11 +28,33 @@ public class ItemListItemWithAddNode : ItemListItemNode
         _addButton.AttachNode(this);
     }
 
+    protected override void SetNodeData(Item itemData)
+    {
+        base.SetNodeData(itemData);
+
+        bool hasSubLabel = !SubLabelTextNode.String.IsEmpty;
+        SubLabelTextNode.IsVisible = hasSubLabel;
+        LabelTextNode.AlignmentType = hasSubLabel ? AlignmentType.BottomLeft : AlignmentType.Left;
+        ApplyLabelLayout();
+    }
+
     protected override void OnSizeChanged()
     {
         base.OnSizeChanged();
         _addButton.Position = new Vector2(Width - 55, (Height - 24) / 2);
-        LabelTextNode.Size = new Vector2(Width - Height - 2.0f - 65.0f, Height);
+        ApplyLabelLayout();
+    }
+
+    private void ApplyLabelLayout()
+    {
+        if (Width <= 0 || Height <= 0) return;
+
+        float labelWidth = Width - Height - 2.0f - 65.0f;
+        float labelHeight = SubLabelTextNode.IsVisible ? Height / 2.0f : Height;
+        LabelTextNode.Size = new Vector2(labelWidth, labelHeight);
+
+        if (SubLabelTextNode.IsVisible)
+            SubLabelTextNode.Size = new Vector2(labelWidth - 10.0f, Height / 2.0f);
     }
 }
 
