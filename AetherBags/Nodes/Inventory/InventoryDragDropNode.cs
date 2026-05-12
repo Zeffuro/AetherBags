@@ -59,9 +59,15 @@ public class InventoryDragDropNode : DragDropNode
         {
             field = value;
             var general = System.Config.General;
+            bool isCollectable = value.Item.Flags.HasFlag(InventoryItem.ItemFlags.Collectable);
             bool aggregatingUnstackable = general.StackMode == InventoryStackMode.AggregateByItemId && general.AggregateUnstackableItems;
-            bool showCount = value.StackSize > 1 || aggregatingUnstackable;
+            bool showCount = !isCollectable && (value.StackSize > 1 || aggregatingUnstackable);
             _quantityTextNode.String = showCount ? value.ItemCount.ToString() : string.Empty;
+
+            bool blockUnmarketable = InventoryContextState.IsMarketSellFlow && !value.IsMarketable;
+            IconNode.IsIconDisabled = blockUnmarketable;
+            IsDraggable = !blockUnmarketable;
+
             var decoration = ExternalCategoryManager.GetDecoration(value.Item.ItemId);
             Services.Logger.DebugOnly($"[ItemInfo.set] Item {value.Item.ItemId}: Decoration={decoration.HasValue}, Badge={decoration?.Badge.HasValue ?? false}");
             ApplyDecoration(decoration);
@@ -149,7 +155,7 @@ public class InventoryDragDropNode : DragDropNode
         }
     }
 
-    private void ApplyBorder(BorderStyle style)
+private void ApplyBorder(BorderStyle style)
     {
         if (_borderContainerNode == null)
         {
@@ -279,6 +285,7 @@ public class InventoryDragDropNode : DragDropNode
     }
 
     private unsafe void OnItemMouseDown(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+        if (IconNode.IsIconDisabled) return;
         InventoryItem item = ItemInfo.Item;
         if (Services.KeyState[VirtualKey.SHIFT] && atkEventData->IsLeftClick && System.Config.General.LinkItemEnabled)
         {
@@ -299,6 +306,7 @@ public class InventoryDragDropNode : DragDropNode
 
     private unsafe void OnItemClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {
+        if (IconNode.IsIconDisabled) return;
         if (Services.KeyState[VirtualKey.SHIFT] && System.Config.General.LinkItemEnabled) return;
         InventoryItem item = ItemInfo.Item;
         if (!atkEventData->IsLeftClick) return;
@@ -319,27 +327,24 @@ public class InventoryDragDropNode : DragDropNode
             _borderContainerNode?.Timeline?.PlayAnimation(label);
         }
 
-        if (System.Config.General.UseUnifiedExternalCategories)
+        var relatedItems = ExternalCategoryManager.GetRelatedItemIds(itemId, RelationshipType.SameSet);
+        if (relatedItems != null && relatedItems.Count > 0)
         {
-            var relatedItems = ExternalCategoryManager.GetRelatedItemIds(itemId, RelationshipType.SameSet);
-            if (relatedItems != null && relatedItems.Count > 0)
+            var relationships = ExternalCategoryManager.GetItemRelationships(itemId);
+            Vector3? highlightColor = null;
+            if (relationships != null)
             {
-                var relationships = ExternalCategoryManager.GetItemRelationships(itemId);
-                Vector3? highlightColor = null;
-                if (relationships != null)
+                foreach (var rel in relationships)
                 {
-                    foreach (var rel in relationships)
+                    if (rel.Type == RelationshipType.SameSet && rel.HighlightColor.HasValue)
                     {
-                        if (rel.Type == RelationshipType.SameSet && rel.HighlightColor.HasValue)
-                        {
-                            highlightColor = rel.HighlightColor;
-                            break;
-                        }
+                        highlightColor = rel.HighlightColor;
+                        break;
                     }
                 }
-                HighlightState.SetRelationshipHighlight(relatedItems, highlightColor);
-                InventoryOrchestrator.RefreshHighlights();
             }
+            HighlightState.SetRelationshipHighlight(relatedItems, highlightColor);
+            InventoryOrchestrator.RefreshHighlights();
         }
     }
 
@@ -354,11 +359,8 @@ public class InventoryDragDropNode : DragDropNode
             _borderContainerNode?.Timeline?.PlayAnimation(label);
         }
 
-        if (System.Config.General.UseUnifiedExternalCategories)
-        {
-            HighlightState.SetRelationshipHighlight(null, null);
-            InventoryOrchestrator.RefreshHighlights();
-        }
+        HighlightState.SetRelationshipHighlight(null, null);
+        InventoryOrchestrator.RefreshHighlights();
     }
 
     public void ResetForReuse()
@@ -370,6 +372,7 @@ public class InventoryDragDropNode : DragDropNode
         _quantityTextNode.String = string.Empty;
         Alpha = 1.0f;
         IconNode.AddColor = Vector3.Zero;
+        IconNode.IsIconDisabled = false;
         IsDraggable = true;
         IconNode.IconExtras.AntsNode.IsVisible = false;
     }

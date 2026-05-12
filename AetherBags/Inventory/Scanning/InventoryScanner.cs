@@ -92,8 +92,9 @@ public static unsafe class InventoryScanner
 
                 int quantity = item.Quantity;
                 bool isHq = (item.Flags & InventoryItem.ItemFlags.HighQuality) != 0;
+                bool isCollectable = (item.Flags & InventoryItem.ItemFlags.Collectable) != 0;
 
-                ulong key = stackMode == InventoryStackMode.AggregateByItemId && (aggregateUnstackable || ItemInfo.IsAggregatable(id))
+                ulong key = !isCollectable && stackMode == InventoryStackMode.AggregateByItemId && (aggregateUnstackable || ItemInfo.IsAggregatable(id))
                     ? MakeAggregatedItemKey(id, isHq)
                     : MakeNaturalSlotKey(inventoryType, slot);
 

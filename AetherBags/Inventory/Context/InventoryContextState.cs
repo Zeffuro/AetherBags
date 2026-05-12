@@ -20,6 +20,8 @@ public static unsafe class InventoryContextState
 
     public static bool HasActiveContext => _lastContextId != 0;
 
+    public static bool IsMarketSellFlow => _lastContextId == (uint)InventoryNotificationType.Markets;
+
     public static void RefreshMaps()
     {
         EligibleSlots.Clear();
