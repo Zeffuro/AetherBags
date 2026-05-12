@@ -168,13 +168,15 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     private void OnDismissLootedItem(int index)
     {
         System.LootedItemsTracker.RemoveByIndex(index);
-        System.LootedItemsTracker.FlushPendingChanges();
+        // Defer flush: removing the last item disposes _lootedCategoryNode, which would tear
+        // down the AtkUldManager while we're still inside this child's click handler.
+        Services.Framework.RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
     }
 
     private void OnClearAllLootedItems()
     {
         System.LootedItemsTracker.Clear();
-        System.LootedItemsTracker.FlushPendingChanges();
+        Services.Framework.RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
     }
 
     public void ManualCurrencyRefresh()
@@ -209,8 +211,15 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         IsSetupComplete = false;
-        _lootedCategoryNode?.Dispose();
-        _lootedCategoryNode = null;
+        // Unhoist + RemoveNode disposes safely. Calling Dispose() directly leaves the parent
+        // CategoriesNode holding a freed pointer, which crashes base.OnFinalize's tree walk.
+        if (_lootedCategoryNode is not null)
+        {
+            if (CategoriesNode.HoistedNode == _lootedCategoryNode)
+                CategoriesNode.SetHoistedNode(null);
+            CategoriesNode.RemoveNode(_lootedCategoryNode);
+            _lootedCategoryNode = null;
+        }
 
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
