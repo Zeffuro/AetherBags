@@ -1,6 +1,12 @@
 # 1.0.0.4
+- Unified Category System is now the that default system.
 - Added Crystal and Key Item support.
+- Updated the way large quantities are displayed to be more compact and easier to read.
 - Fixed inventory quantities not updating when not moving the full stack.
+- Fixed Collectable items being stacked when they shouldn't.
+- When listing items at your retainer's Market Board, items that can't be sold on the market are greyed out and locked.
+- Fixed a crash when dismissing the last recently-looted item.
+- Fixed a crash when closing the inventory window with the recently-looted strip still visible.
 
 # 1.0.0.3
 - Add options to IPC to access the AetherBags configuration and make changes.
