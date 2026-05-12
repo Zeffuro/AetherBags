@@ -17,7 +17,7 @@ public sealed class GeneralScrollingAreaNode : ScrollingListNode
 
         AddNode(new FunctionalConfigurationNode());
 
-        AddNode(new LayoutConfigurationNode());
+        AddNode(new LayoutConfigurationNode(RecalculateLayout));
 
         AddNode(new DtrConfigurationNode());
 

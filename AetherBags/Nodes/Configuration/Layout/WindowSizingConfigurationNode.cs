@@ -18,8 +18,12 @@ internal sealed class WindowSizingConfigurationNode : TabbedVerticalListNode
         new("Retainers", config => config.RetainerWindowSizing, InventoryWindowSizingLimits.Retainer),
     ];
 
-    public WindowSizingConfigurationNode()
+    private readonly Action? _onLayoutChanged;
+
+    public WindowSizingConfigurationNode(Action? onLayoutChanged = null)
     {
+        _onLayoutChanged = onLayoutChanged;
+
         GeneralSettings config = System.Config.General;
 
         var titleNode = new CategoryTextNode
@@ -35,11 +39,17 @@ internal sealed class WindowSizingConfigurationNode : TabbedVerticalListNode
             AddNode(new WindowSizingRowNode(definition, config)
             {
                 Width = WindowSizingRowNode.RowWidth,
-                OnLayoutChanged = RecalculateLayout,
+                OnLayoutChanged = RefreshLayout,
             });
         }
 
         SubtractTab(1);
+    }
+
+    private void RefreshLayout()
+    {
+        RecalculateLayout();
+        _onLayoutChanged?.Invoke();
     }
 
     internal static void NotifySizingChanged() => InventoryOrchestrator.RefreshAll(updateMaps: false);
@@ -262,9 +272,9 @@ internal sealed class WindowSizingRowNode : SimpleComponentNode
         _maxHeightNode.IsVisible = boundsVisible;
 
         var rowHeight = boundsVisible ? BoundsRowHeight : CompactRowHeight;
-        if (Math.Abs(Height - rowHeight) < 0.1f) return;
+        if (Math.Abs(Height - rowHeight) >= 0.1f)
+            Height = rowHeight;
 
-        Height = rowHeight;
         OnLayoutChanged?.Invoke();
     }
 }

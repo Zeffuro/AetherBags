@@ -56,6 +56,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
         InventoryOrchestrator.CloseAll();
         ImportExportResetHelper.TryResetConfig();
         System.AddonConfigurationWindow.Close();
+        InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
     private static void ImportConfig()

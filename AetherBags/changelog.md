@@ -9,6 +9,7 @@
 - Fixed a crash when closing the inventory window with the recently-looted strip still visible.
 - Add option to display bag stats in the server info bar.
 - Fix sublabel spacing in item/currency picker.
+- Add changelog window to the configuration window.
 
 # 1.0.0.3
 - Add options to IPC to access the AetherBags configuration and make changes.

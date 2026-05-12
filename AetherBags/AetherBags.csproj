@@ -21,7 +21,9 @@
 
     <ItemGroup>
       <Content Include=".gitignore" />
-      <Content Include="changelog.md" />
+      <Content Include="changelog.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
         <Content Include="Assets\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>

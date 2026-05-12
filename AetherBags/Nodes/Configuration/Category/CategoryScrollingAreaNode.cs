@@ -70,6 +70,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
             CheckAndCloseCategoryAddon();
 
             CategoryImportExport.ResetAllCategories(System.Config);
+            InventoryOrchestrator.RefreshAll(updateMaps: true);
             resetButton.Reset();
         };
 

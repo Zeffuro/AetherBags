@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using AetherBags.Helpers;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
@@ -13,6 +14,7 @@ namespace AetherBags.Addons;
 
 public class AddonConfigurationWindow : NativeAddon
 {
+    private CircleButtonNode? _changelogButtonNode;
     private TabBarNode? _tabBarNode;
 
     private GeneralScrollingAreaNode? _generalScrollingAreaNode;
@@ -24,6 +26,17 @@ public class AddonConfigurationWindow : NativeAddon
 
     protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
+        if (WindowNode is not WindowNode windowNode) return;
+
+        _changelogButtonNode = new CircleButtonNode
+        {
+            Position = new Vector2(Size.X - 66f, 6f),
+            Size = new Vector2(28f),
+            Icon = ButtonIcon.QuestionMark,
+            OnClick = System.AddonChangelogWindow.Toggle,
+        };
+        _changelogButtonNode.AttachNode(windowNode.HeaderContainerNode);
+
         var tabContentY = ContentStartPosition.Y + 40;
         var tabContentHeight = ContentSize.Y - 40;
 
@@ -82,6 +95,10 @@ public class AddonConfigurationWindow : NativeAddon
         base.OnSetup(addon, atkValueSpan);
     }
 
+    private void AddChangelogButton()
+    {
+    }
+
     private void SwitchTab(int index)
     {
         for (var i = 0; i < _tabContent.Count; i++)
@@ -102,6 +119,8 @@ public class AddonConfigurationWindow : NativeAddon
         _currencyScrollingAreaNode = null;
         _keybindScrollingAreaNode?.Dispose();
         _keybindScrollingAreaNode = null;
+        _changelogButtonNode?.Dispose();
+        _changelogButtonNode = null;
 
         base.OnFinalize(addon);
     }

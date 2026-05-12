@@ -14,8 +14,12 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _preferLargestFitCheckboxNode = null!;
     private readonly CheckboxNode _useStableInsertCheckboxNode = null!;
 
-    public LayoutConfigurationNode()
+    private readonly Action? _onLayoutChanged;
+
+    public LayoutConfigurationNode(Action? onLayoutChanged = null)
     {
+        _onLayoutChanged = onLayoutChanged;
+
         GeneralSettings config = System.Config.General;
 
         var titleNode = new CategoryTextNode
@@ -27,7 +31,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
 
         AddTab(1);
 
-        AddNode(new WindowSizingConfigurationNode());
+        AddNode(new WindowSizingConfigurationNode(RefreshLayout));
 
         AddNode(new ResNode
         {
@@ -156,5 +160,11 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
             Size = new Vector2(320, 20)
         };
         AddNode(_compactLookaheadNode);
+    }
+
+    private void RefreshLayout()
+    {
+        RecalculateLayout();
+        _onLayoutChanged?.Invoke();
     }
 }

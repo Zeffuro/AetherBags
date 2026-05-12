@@ -62,6 +62,13 @@ public class Plugin : IDalamudPlugin
             Size = new Vector2(640, 512),
         };
 
+        System.AddonChangelogWindow = new AddonChangelogWindow
+        {
+            InternalName = "AetherBags_Changelog",
+            Title = "AetherBags Changelog",
+            Size = new Vector2(640, 512),
+        };
+
         Services.PluginInterface.UiBuilder.OpenMainUi += System.AddonInventoryWindow.Toggle;
         Services.PluginInterface.UiBuilder.OpenConfigUi += System.AddonConfigurationWindow.Toggle;
 
@@ -102,6 +109,7 @@ public class Plugin : IDalamudPlugin
         System.AddonSaddleBagWindow.Dispose();
         System.AddonRetainerWindow.Dispose();
         System.AddonConfigurationWindow.Dispose();
+        System.AddonChangelogWindow.Dispose();
 
         Util.SaveConfig(System.Config);
         KamiToolKitLibrary.Dispose();
@@ -125,5 +133,6 @@ public class Plugin : IDalamudPlugin
         System.AddonSaddleBagWindow.Close();
         System.AddonRetainerWindow.Close();
         System.AddonConfigurationWindow.Close();
+        System.AddonChangelogWindow.Close();
     }
 }
