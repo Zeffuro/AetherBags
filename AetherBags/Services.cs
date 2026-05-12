@@ -12,6 +12,7 @@ public class Services
     [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] public static ICondition Condition { get; private set; } = null!;
     [PluginService] public static IDataManager DataManager { get; set; } = null!;
+    [PluginService] public static IDtrBar DtrBar { get; private set; } = null!;
     [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] public static IFramework Framework { get; private set; } = null!;
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;

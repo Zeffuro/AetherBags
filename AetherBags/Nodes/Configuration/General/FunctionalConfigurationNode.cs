@@ -165,6 +165,7 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(frameBatchingCheckBox);
 
+
         AddNode(new ResNode
         {
             Height = 6

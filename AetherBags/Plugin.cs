@@ -78,6 +78,7 @@ public class Plugin : IDalamudPlugin
 
         _inventoryHooks = new InventoryHooks();
         _globalKeybindHandler = new GlobalKeybindHandler();
+        System.DtrService = new DtrService();
         inventoryMonitor = new InventoryMonitor();
     }
 
@@ -89,6 +90,7 @@ public class Plugin : IDalamudPlugin
         ItemContextMenuHandler.Dispose();
         _inventoryHooks.Dispose();
         _globalKeybindHandler.Dispose();
+        System.DtrService.Dispose();
         inventoryMonitor.Dispose();
 
         System.LootedItemsTracker.Dispose();

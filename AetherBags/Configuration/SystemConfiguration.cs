@@ -10,6 +10,7 @@ public class SystemConfiguration
     private CategorySettings _categories = new();
     private CurrencySettings _currency = new();
     private KeybindSettings _keybinds = new();
+    private DtrSettings _dtr = new();
 
     public GeneralSettings General
     {
@@ -35,6 +36,12 @@ public class SystemConfiguration
         set => _keybinds = value ?? new();
     }
 
+    public DtrSettings Dtr
+    {
+        get => _dtr;
+        set => _dtr = value ?? new();
+    }
+
     /// <summary>
     /// Ensures all nested config objects are initialized. Call after deserialization.
     /// </summary>
@@ -44,6 +51,7 @@ public class SystemConfiguration
         _categories ??= new();
         _currency ??= new();
         _keybinds ??= new();
+        _dtr ??= new();
         Version = ConfigMigrator.CurrentVersion;
         _categories.UserCategories ??= new();
         _categories.NormalizeItemSortSettings();

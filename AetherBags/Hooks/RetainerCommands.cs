@@ -33,6 +33,8 @@ public static unsafe class RetainerCommands
     public static bool TryMarketBoardSell(InventoryType retainerContainer, uint retainerSlot)
         => Dispatch(retainerContainer, retainerSlot, RetainerContextEvent.MarketBoardSell);
 
+    // TODO: Swap to CS when it becomes available in mainline Dalamud
+    // https://github.com/aers/FFXIVClientStructs/blob/da8321b92026a228634d09789da284ebac5e1644/FFXIVClientStructs/FFXIV/Client/UI/Agent/AgentInventoryContext.cs#L85
     private static bool Dispatch(InventoryType container, uint slot, RetainerContextEvent command)
     {
         var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.Retainer);

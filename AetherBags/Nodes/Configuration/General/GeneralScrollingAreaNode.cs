@@ -19,6 +19,8 @@ public sealed class GeneralScrollingAreaNode : ScrollingListNode
 
         AddNode(new LayoutConfigurationNode());
 
+        AddNode(new DtrConfigurationNode());
+
         AddNode(new CheckboxNode
         {
             Size = new Vector2(300, 20),

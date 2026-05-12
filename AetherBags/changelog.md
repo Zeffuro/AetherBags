@@ -7,6 +7,8 @@
 - When listing items at your retainer's Market Board, items that can't be sold on the market are greyed out and locked.
 - Fixed a crash when dismissing the last recently-looted item.
 - Fixed a crash when closing the inventory window with the recently-looted strip still visible.
+- Add option to display bag stats in the server info bar.
+- Fix sublabel spacing in item/currency picker.
 
 # 1.0.0.3
 - Add options to IPC to access the AetherBags configuration and make changes.

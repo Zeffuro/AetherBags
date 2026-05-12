@@ -17,4 +17,5 @@ public static class System
     public static AetherBagsIPCProvider? AetherBagsAPI { get; set; }
     public static SystemConfiguration Config { get; set; } = null!;
     public static LootedItemsTracker LootedItemsTracker { get; set; } = null!;
+    public static DtrService DtrService { get; set; } = null!;
 }
