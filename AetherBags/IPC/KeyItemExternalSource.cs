@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Inventory.Items;
 using AetherBags.IPC.ExternalCategorySystem;
-using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -14,6 +14,8 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
 
     private static readonly InventoryType[] InventoryTypesArray = { InventoryType.KeyItems };
 
+    private static IReadOnlyDictionary<uint, ExternalCategoryAssignment>? s_assignments;
+
     private int _version;
     private bool _isEnabled;
 
@@ -23,7 +25,6 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
     public bool IsReady => _isEnabled;
     public int Version => _version;
     public int DefaultDisplayOrder => 36;
-    // KeyItems only contribute to MainBags, so per-slot AcceptedType=EventItem keeps other windows from accepting these payloads.
     public bool LocksDragOut => false;
     public bool LocksDragIn => false;
     public event Action? OnDataChanged;
@@ -40,7 +41,6 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
         if (_isEnabled) return;
         _isEnabled = true;
         _version++;
-        Services.GameInventory.InventoryChangedRaw += OnInventoryChanged;
         ExternalCategoryManager.RegisterSource(this);
         OnDataChanged?.Invoke();
         Services.Logger.Information("[KeyItemSource] Enabled");
@@ -50,49 +50,33 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
     {
         if (!_isEnabled) return;
         _isEnabled = false;
-        Services.GameInventory.InventoryChangedRaw -= OnInventoryChanged;
         ExternalCategoryManager.UnregisterSource(SourceName);
         Services.Logger.Information("[KeyItemSource] Disabled");
-    }
-
-    private void OnInventoryChanged(IReadOnlyCollection<InventoryEventArgs> events)
-    {
-        foreach (var ev in events)
-        {
-            if (ev.Item.ContainerType == (Dalamud.Game.Inventory.GameInventoryType)InventoryType.KeyItems)
-            {
-                _version++;
-                OnDataChanged?.Invoke();
-                return;
-            }
-        }
     }
 
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
     {
         if (!_isEnabled) return null;
+        return s_assignments ??= BuildAssignments();
+    }
 
-        var inventoryManager = InventoryManager.Instance();
-        if (inventoryManager is null) return null;
-
-        var container = inventoryManager->GetInventoryContainer(InventoryType.KeyItems);
-        if (container is null) return null;
-
+    private static Dictionary<uint, ExternalCategoryAssignment> BuildAssignments()
+    {
         var assignment = new ExternalCategoryAssignment(
             CategoryKey: KeyItemCategoryKey,
             CategoryName: "Key Items",
             CategoryDescription: "Quest and event-tied key items",
             CategoryColor: new Vector4(1.0f, 0.85f, 0.4f, 1.0f),
             ItemOverlayColor: null,
-            SubPriority: 20
+            SubPriority: 20,
+            IsPinned: true
         );
 
-        var result = new Dictionary<uint, ExternalCategoryAssignment>(container->Size);
-        for (int i = 0; i < container->Size; i++)
+        var result = new Dictionary<uint, ExternalCategoryAssignment>();
+        foreach (var row in ItemInfo.EventItemSheet)
         {
-            uint id = container->Items[i].ItemId;
-            if (id == 0) continue;
-            result[id] = assignment;
+            if (row.RowId == 0) continue;
+            result[row.RowId] = assignment;
         }
         return result;
     }

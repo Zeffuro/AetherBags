@@ -280,6 +280,7 @@ public static class ExternalCategoryManager
                         Name = assignment.CategoryName,
                         Description = assignment.CategoryDescription ?? string.Empty,
                         Color = assignment.CategoryColor,
+                        IsPinned = assignment.IsPinned,
                     },
                     Items = new List<ItemInfo>(16),
                     FilteredItems = new List<ItemInfo>(16),
@@ -292,6 +293,7 @@ public static class ExternalCategoryManager
                 bucketRef.Category.Name = assignment.CategoryName;
                 bucketRef.Category.Description = assignment.CategoryDescription ?? string.Empty;
                 bucketRef.Category.Color = assignment.CategoryColor;
+                bucketRef.Category.IsPinned = assignment.IsPinned;
             }
 
             bucketRef!.Items.Add(item);

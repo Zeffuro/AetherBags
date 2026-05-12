@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AetherBags.Inventory.Items;
 using AetherBags.Inventory.Scanning;
 using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -11,14 +12,9 @@ namespace AetherBags.IPC;
 public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInventoryTypeProvidingSource, IDisposable
 {
     private const uint CrystalCategoryKey = 0xFFFE_0001;
+    private const uint CrystalUiCategoryId = 59;
 
-    // Item IDs 2-19: 6 elements x (shard, crystal, cluster).
-    private static readonly uint[] AllCrystalItemIds =
-    {
-        2, 3, 4, 5, 6, 7,
-        8, 9, 10, 11, 12, 13,
-        14, 15, 16, 17, 18, 19,
-    };
+    private static IReadOnlyDictionary<uint, ExternalCategoryAssignment>? s_assignments;
 
     private static readonly InventoryType[] InventoryTypesArray =
         { InventoryType.Crystals, InventoryType.RetainerCrystals };
@@ -45,7 +41,6 @@ public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInvento
 
     public DragDropType GetDragDropTypeFor(InventoryType container) => DragDropType.Crystal;
 
-    // Retainer-side deposit op must use destination=Invalid; player-side accepts explicit moves.
     public bool AutoRoutesDeposits(InventoryType container) => container == InventoryType.RetainerCrystals;
 
     public IReadOnlyList<InventoryType> AdditionalInventoryTypesFor(InventorySourceType sourceType) => sourceType switch
@@ -76,18 +71,27 @@ public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInvento
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
     {
         if (!_isEnabled) return null;
+        return s_assignments ??= BuildAssignments();
+    }
 
+    private static Dictionary<uint, ExternalCategoryAssignment> BuildAssignments()
+    {
         var assignment = new ExternalCategoryAssignment(
             CategoryKey: CrystalCategoryKey,
             CategoryName: "Crystals",
             CategoryDescription: "Elemental shards, crystals, and clusters",
             CategoryColor: new Vector4(0.6f, 0.85f, 1.0f, 1.0f),
             ItemOverlayColor: null,
-            SubPriority: 10
+            SubPriority: 10,
+            IsPinned: true
         );
 
-        var result = new Dictionary<uint, ExternalCategoryAssignment>(AllCrystalItemIds.Length);
-        foreach (var id in AllCrystalItemIds) result[id] = assignment;
+        var result = new Dictionary<uint, ExternalCategoryAssignment>();
+        foreach (var row in ItemInfo.ItemSheet)
+        {
+            if (row.ItemUICategory.RowId == CrystalUiCategoryId)
+                result[row.RowId] = assignment;
+        }
         return result;
     }
 

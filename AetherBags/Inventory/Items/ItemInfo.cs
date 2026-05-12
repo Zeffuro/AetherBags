@@ -20,8 +20,8 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     private static ExcelSheet<Item>? s_itemSheet;
     private static ExcelSheet<EventItem>? s_eventItemSheet;
-    private static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
-    private static ExcelSheet<EventItem> EventItemSheet => s_eventItemSheet ??= Services.DataManager.GetExcelSheet<EventItem>();
+    internal static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
+    internal static ExcelSheet<EventItem> EventItemSheet => s_eventItemSheet ??= Services.DataManager.GetExcelSheet<EventItem>();
 
     public static bool IsAggregatable(uint itemId)
         => ItemSheet.TryGetRow(itemId, out var row) && row.StackSize > 1;
@@ -106,6 +106,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     public bool IsUntradable => HasRow && _row.IsUntradable;
     public bool IsUnique => HasRow && _row.IsUnique;
+    public bool IsMarketable => HasRow && _row.ItemSearchCategory.RowId != 0;
     public bool IsCollectable => HasRow && _row.IsCollectable;
     public bool IsDyeable => HasRow && _row.DyeCount > 0;
     public bool IsRepairable => HasRow && _row.ItemRepair.RowId != 0;

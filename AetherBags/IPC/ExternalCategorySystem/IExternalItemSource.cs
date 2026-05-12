@@ -75,7 +75,8 @@ public readonly record struct ExternalCategoryAssignment(
     string? CategoryDescription,
     Vector4 CategoryColor,
     Vector3? ItemOverlayColor,
-    int SubPriority
+    int SubPriority,
+    bool IsPinned = false
 );
 
 public record struct ItemDecoration
