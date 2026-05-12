@@ -22,7 +22,6 @@ public static class ItemContextMenuHandler
     public static bool TryShowExternalMenu(ItemInfo item)
     {
         if (_itemMenu == null) return false;
-        if (!System.Config.General.UseUnifiedExternalCategories) return false;
 
         var entries = ExternalCategoryManager.GetContextMenuEntries(item.Item.ItemId);
         if (entries == null || entries.Count == 0) return false;

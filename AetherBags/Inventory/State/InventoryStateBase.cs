@@ -89,58 +89,17 @@ public abstract class InventoryStateBase
             );
         }
 
-        bool useUnified = config.General.UseUnifiedExternalCategories;
+        ExternalCategoryManager.BucketItems(ItemInfoByKey, BucketsByKey, ClaimedKeys);
 
-        if (useUnified)
-        {
-            ExternalCategoryManager.BucketItems(ItemInfoByKey, BucketsByKey, ClaimedKeys);
-
-            if (allaganCategoriesEnabled && config.Categories.AllaganToolsFilterMode == PluginFilterMode.Highlight)
-                UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
-            else
-                HighlightState.ClearFilter(HighlightSource.AllaganTools);
-
-            if (bisCategoriesEnabled && config.Categories.BisBuddyMode == PluginFilterMode.Highlight)
-                UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
-            else
-                HighlightState.ClearFilter(HighlightSource.BiSBuddy);
-        }
+        if (allaganCategoriesEnabled && config.Categories.AllaganToolsFilterMode == PluginFilterMode.Highlight)
+            UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
         else
-        {
-            if (allaganCategoriesEnabled)
-            {
-                if (config.Categories.AllaganToolsFilterMode == PluginFilterMode.Categorize)
-                {
-                    CategoryBucketManager.BucketByAllaganFilters(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
-                    HighlightState.ClearFilter(HighlightSource.AllaganTools);
-                }
-                else
-                {
-                    UpdateAllaganHighlight(HighlightState.SelectedAllaganToolsFilterKey);
-                }
-            }
-            else
-            {
-                HighlightState.ClearFilter(HighlightSource.AllaganTools);
-            }
+            HighlightState.ClearFilter(HighlightSource.AllaganTools);
 
-            if (bisCategoriesEnabled)
-            {
-                if (config.Categories.BisBuddyMode == PluginFilterMode.Categorize)
-                {
-                    CategoryBucketManager.BucketByBisBuddyItems(ItemInfoByKey, BucketsByKey, ClaimedKeys, true);
-                    HighlightState.ClearFilter(HighlightSource.BiSBuddy);
-                }
-                else
-                {
-                    UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
-                }
-            }
-            else
-            {
-                HighlightState.ClearFilter(HighlightSource.BiSBuddy);
-            }
-        }
+        if (bisCategoriesEnabled && config.Categories.BisBuddyMode == PluginFilterMode.Highlight)
+            UpdateBisBuddyHighlight(HighlightState.SelectedBisBuddyFilterKey);
+        else
+            HighlightState.ClearFilter(HighlightSource.BiSBuddy);
 
         if (gameCategoriesEnabled)
         {

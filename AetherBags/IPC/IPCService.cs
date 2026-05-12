@@ -12,14 +12,6 @@ public class IPCService : IDisposable
     public CrystalExternalSource Crystals { get; } = new();
     public KeyItemExternalSource KeyItems { get; } = new();
 
-    private bool _unifiedEnabled;
-
-    public void UpdateUnifiedCategorySupport(bool enabled)
-    {
-        _unifiedEnabled = enabled;
-        RefreshExternalSources();
-    }
-
     public void RefreshExternalSources()
     {
         var config = System.Config?.Categories;
@@ -27,18 +19,16 @@ public class IPCService : IDisposable
 
         bool categoriesEnabled = config.CategoriesEnabled;
 
-        bool allaganShouldBeActive = _unifiedEnabled &&
-                                      categoriesEnabled &&
-                                      config.AllaganToolsCategoriesEnabled &&
-                                      config.AllaganToolsFilterMode == PluginFilterMode.Categorize;
+        bool allaganShouldBeActive = categoriesEnabled &&
+                                     config.AllaganToolsCategoriesEnabled &&
+                                     config.AllaganToolsFilterMode == PluginFilterMode.Categorize;
 
         if (allaganShouldBeActive)
             AllaganTools.EnableExternalCategorySupport();
         else
             AllaganTools.DisableExternalCategorySupport();
 
-        bool bisBuddyShouldBeActive = _unifiedEnabled &&
-                                       categoriesEnabled &&
+        bool bisBuddyShouldBeActive = categoriesEnabled &&
                                        config.BisBuddyEnabled &&
                                        config.BisBuddyMode == PluginFilterMode.Categorize;
 
@@ -47,10 +37,10 @@ public class IPCService : IDisposable
         else
             BisBuddy.DisableExternalCategorySupport();
 
-        bool crystalsShouldBeActive = _unifiedEnabled && categoriesEnabled && config.CrystalsEnabled;
+        bool crystalsShouldBeActive = categoriesEnabled && config.CrystalsEnabled;
         if (crystalsShouldBeActive) Crystals.Enable(); else Crystals.Disable();
 
-        bool keyItemsShouldBeActive = _unifiedEnabled && categoriesEnabled && config.KeyItemsEnabled;
+        bool keyItemsShouldBeActive = categoriesEnabled && config.KeyItemsEnabled;
         if (keyItemsShouldBeActive) KeyItems.Enable(); else KeyItems.Disable();
     }
 

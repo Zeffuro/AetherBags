@@ -3,7 +3,6 @@ using AetherBags.Addons;
 using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
-using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using AetherBags.IPC;
 using AetherBags.IPC.AetherBagsAPI;
@@ -31,7 +30,7 @@ public class Plugin : IDalamudPlugin
         KamiToolKitLibrary.Initialize(pluginInterface);
 
         System.IPC = new IPCService();
-        System.IPC.UpdateUnifiedCategorySupport(System.Config.General.UseUnifiedExternalCategories);
+        System.IPC.RefreshExternalSources();
         ItemContextMenuHandler.Initialize();
         System.LootedItemsTracker = new LootedItemsTracker();
 
@@ -109,7 +108,7 @@ public class Plugin : IDalamudPlugin
     private void OnLogin()
     {
         System.Config = Util.LoadConfigOrDefault();
-        System.IPC.UpdateUnifiedCategorySupport(System.Config.General.UseUnifiedExternalCategories);
+        System.IPC.RefreshExternalSources();
         System.LootedItemsTracker.Enable();
 
         System.AddonInventoryWindow.DebugOpen();

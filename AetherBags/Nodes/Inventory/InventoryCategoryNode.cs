@@ -375,7 +375,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         else
             node.IconNode.IconExtras.AntsNode.Timeline?.StopAnimation();
 
-        Vector3? deco = config.UseUnifiedExternalCategories ? ExternalCategoryManager.GetItemOverlayColor(item.ItemId) : null;
+        Vector3? deco = ExternalCategoryManager.GetItemOverlayColor(item.ItemId);
         node.IconNode.AddColor = deco ?? data.HighlightOverlayColor;
 
         node.Payload = new DragDropPayload
@@ -412,7 +412,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             if (MathF.Abs(itemNode.Alpha - info.VisualAlpha) > 0.001f) itemNode.Alpha = info.VisualAlpha;
 
-            Vector3? deco = config.UseUnifiedExternalCategories ? ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId) : null;
+            Vector3? deco = ExternalCategoryManager.GetItemOverlayColor(info.Item.ItemId);
             Vector3 color = deco ?? info.HighlightOverlayColor;
             if (itemNode.IconNode.AddColor != color) itemNode.IconNode.AddColor = color;
 

@@ -186,7 +186,7 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
             IsVisible = true,
             String = "Crystals",
             IsChecked = config.CrystalsEnabled,
-            TextTooltip = "Group elemental shards, crystals, and clusters into a 'Crystals' category.\nRequires External Category Support (Experimental).",
+            TextTooltip = "Group elemental shards, crystals, and clusters into a 'Crystals' category.",
             OnClick = isChecked =>
             {
                 config.CrystalsEnabled = isChecked;
@@ -202,7 +202,7 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
             IsVisible = true,
             String = "Key Items",
             IsChecked = config.KeyItemsEnabled,
-            TextTooltip = "Show quest and event-tied key items in a 'Key Items' category.\nRequires External Category Support (Experimental).",
+            TextTooltip = "Show quest and event-tied key items in a 'Key Items' category.",
             OnClick = isChecked =>
             {
                 config.KeyItemsEnabled = isChecked;

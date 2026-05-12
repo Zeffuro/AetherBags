@@ -22,8 +22,6 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
             OnLayoutChanged = RefreshLayoutAfterChildChange,
         });
 
-        AddNode(new ExperimentalConfigurationNode());
-
         AddNode(new ResNode{ Height = 10 });
 
         var categoryButtonRow = new HorizontalListNode
