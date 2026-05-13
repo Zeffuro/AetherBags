@@ -61,7 +61,7 @@ public class InventoryDragDropNode : DragDropNode
             var general = System.Config.General;
             bool isCollectable = value.Item.Flags.HasFlag(InventoryItem.ItemFlags.Collectable);
             bool aggregatingUnstackable = general.StackMode == InventoryStackMode.AggregateByItemId && general.AggregateUnstackableItems;
-            bool showCount = !isCollectable && (value.StackSize > 1 || aggregatingUnstackable);
+            bool showCount = !isCollectable && (value.StackSize > 1 || (aggregatingUnstackable && value.ItemCount > 1));
             _quantityTextNode.String = showCount ? value.ItemCount.ToString() : string.Empty;
 
             bool blockUnmarketable = InventoryContextState.IsMarketSellFlow && !value.IsMarketable;

@@ -277,15 +277,27 @@ public sealed class ItemSortCriterionItemNode : HorizontalListNode
         };
         AddNode(fieldDropdown);
 
-        var directionDropdown = new EnumDropDownNode<SortDirection>
+        if (criterion.Field == ItemSortField.UseGlobal)
         {
-            Size = new Vector2(ItemSortCriteriaEditorNode.DirectionWidth, 28),
-            Options = Enum.GetValues<SortDirection>().ToList(),
-            SelectedOption = criterion.Direction,
-            IsEnabled = criterion.Field != ItemSortField.UseGlobal,
-            OnOptionSelected = direction => OnDirectionChanged?.Invoke(direction),
-        };
-        AddNode(directionDropdown);
+            AddNode(new LabelTextNode
+            {
+                Size = new Vector2(ItemSortCriteriaEditorNode.DirectionWidth, 28),
+                String = "(Global)",
+                TextColor = ColorHelper.GetColor(3),
+                AlignmentType = AlignmentType.Center,
+            });
+        }
+        else
+        {
+            var directionDropdown = new EnumDropDownNode<SortDirection>
+            {
+                Size = new Vector2(ItemSortCriteriaEditorNode.DirectionWidth, 28),
+                Options = Enum.GetValues<SortDirection>().ToList(),
+                SelectedOption = criterion.Direction,
+                OnOptionSelected = direction => OnDirectionChanged?.Invoke(direction),
+            };
+            AddNode(directionDropdown);
+        }
 
         AddNode(new CircleButtonNode
         {

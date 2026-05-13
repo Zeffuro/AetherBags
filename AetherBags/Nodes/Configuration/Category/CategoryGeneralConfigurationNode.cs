@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
+using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
-using AetherBags.Nodes.Color;
 using AetherBags.Nodes.Input;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
@@ -246,6 +246,7 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
         categorySourceOrderEditor.OnChanged = () =>
         {
             config.CategorySourceDisplayOrder = categorySourceOrderEditor.GetOrder();
+            Util.SaveConfig(System.Config);
             RefreshInventory();
         };
         categorySourceOrderEditor.SetOrder(config.CategorySourceDisplayOrder);
