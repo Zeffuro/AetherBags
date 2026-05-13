@@ -1,5 +1,10 @@
+# 1.0.0.5
+- Added the ability to hide/show game categories in the Category Configuration.
+- Added the ability to hide/show external/built-in categories in the Category Configuration.
+- Fixed a crash that can occur when closing the Changelog window.
+
 # 1.0.0.4
-- Unified Category System is now the that default system.
+- Unified Category System is now the default system.
 - Added Crystal and Key Item support.
 - Updated the way large quantities are displayed to be more compact and easier to read.
 - Fixed inventory quantities not updating when not moving the full stack.
