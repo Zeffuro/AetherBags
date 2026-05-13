@@ -132,6 +132,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         if (shouldShow)
         {
             _lootedCategoryNode ??= CreateLootedCategoryNode();
+            _lootedCategoryNode.IsVisible = true;
             _lootedCategoryNode.UpdateLootedItems(lootedItems);
 
             if (CategoriesNode.HoistedNode != _lootedCategoryNode)
@@ -142,17 +143,12 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         }
         else if (_lootedCategoryNode is not null)
         {
-            using (CategoriesNode.DeferRecalculateLayout())
-            {
-                if (CategoriesNode.HoistedNode == _lootedCategoryNode)
-                {
-                    CategoriesNode.SetHoistedNode(null);
-                }
-
-                // RemoveNode disposes the node via SafeDisposeNode, so clear our reference too.
-                CategoriesNode.RemoveNode(_lootedCategoryNode);
-                _lootedCategoryNode = null;
-            }
+            // Hide instead of removing. Disposing the category while its grid still holds the
+            // dismissed display node's AtkComponentIcon crashes during native Deinitialize.
+            // The category is torn down in OnFinalize where the event state has long settled.
+            if (CategoriesNode.HoistedNode == _lootedCategoryNode)
+                CategoriesNode.SetHoistedNode(null);
+            _lootedCategoryNode.IsVisible = false;
             CategoriesNode.InvalidateLayout();
             AutoSizeWindow();
         }
@@ -211,16 +207,6 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         IsSetupComplete = false;
-        // Unhoist + RemoveNode disposes safely. Calling Dispose() directly leaves the parent
-        // CategoriesNode holding a freed pointer, which crashes base.OnFinalize's tree walk.
-        if (_lootedCategoryNode is not null)
-        {
-            if (CategoriesNode.HoistedNode == _lootedCategoryNode)
-                CategoriesNode.SetHoistedNode(null);
-            CategoriesNode.RemoveNode(_lootedCategoryNode);
-            _lootedCategoryNode = null;
-        }
-
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
         System.LootedItemsTracker.UnseenLootItemIds.Clear();

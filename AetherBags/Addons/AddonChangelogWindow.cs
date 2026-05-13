@@ -73,13 +73,5 @@ public sealed class AddonChangelogWindow : NativeAddon
 
         yield return remaining;
     }
-
-    protected override unsafe void OnFinalize(AtkUnitBase* addon)
-    {
-        _scrollingAreaNode?.Dispose();
-        _scrollingAreaNode = null;
-
-        base.OnFinalize(addon);
-    }
 }
 
