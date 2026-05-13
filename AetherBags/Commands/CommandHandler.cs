@@ -134,7 +134,7 @@ public class CommandHandler : IDisposable
         {
             case "":
             case "help":
-                PrintChat("Debug commands:\n  /ab debug saddle                  - Toggle saddlebag window\n  /ab debug retainer                - Toggle retainer window\n  /ab debug test [arg]              - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug batching [arg]          - Frame batching (toggle/on/off/status)\n  /ab debug vanilla-bypass [arg]    - Vanilla inventory bypass (status/acquire/release)\n  /ab debug help                    - Show this message");
+                PrintChat("Debug commands:\n  /ab debug saddle                  - Toggle saddlebag window\n  /ab debug retainer                - Toggle retainer window\n  /ab debug changelog               - Toggle changelog window\n  /ab debug test [arg]              - Test IPC source (toggle/on/off/refresh/status)\n  /ab debug batching [arg]          - Frame batching (toggle/on/off/status)\n  /ab debug vanilla-bypass [arg]    - Vanilla inventory bypass (status/acquire/release)\n  /ab debug help                    - Show this message");
                 break;
 
             case "saddle":
@@ -143,6 +143,10 @@ public class CommandHandler : IDisposable
 
             case "retainer":
                 System.AddonRetainerWindow.Toggle();
+                break;
+
+            case "changelog":
+                System.AddonChangelogWindow.Toggle();
                 break;
 
             case "test":
