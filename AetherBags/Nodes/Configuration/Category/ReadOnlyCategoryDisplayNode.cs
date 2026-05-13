@@ -86,6 +86,14 @@ public sealed class ReadOnlyCategoryDisplayNode : SimpleComponentNode
         IsVisible = true;
         _headerLabel.String = wrapper.GetLabel();
         _kindLabel.String = wrapper.GetSubLabel();
+        _explanationLabel.String = wrapper.Kind switch
+        {
+            CategoryWrapperKind.ExternalSource =>
+                "This category is provided by a built-in source. It groups its items automatically and cannot be renamed, recolored, or removed.",
+            _ =>
+                "This is a built-in game category. To customize it (rename, recolor, change items, pin), you must first override it.\n\n" +
+                "Overriding creates an editable user copy that takes over those items. The original will be hidden from your list until the override is deleted.",
+        };
         _overrideButton.IsVisible = wrapper.Kind == CategoryWrapperKind.GameCategory;
         _overrideButton.Reset();
     }

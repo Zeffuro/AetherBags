@@ -18,6 +18,8 @@ namespace AetherBags.Addons;
 
 public class AddonCategoryConfigurationWindow : NativeAddon
 {
+    private const float LeftColumnWidth = 250.0f;
+
     private ModifyListNode<CategoryWrapper, CategoryListItemNode>? _selectionListNode;
     private VerticalLineNode? _separatorLine;
     private CategoryConfigurationNode? _configNode;
@@ -36,7 +38,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         _selectionListNode = new ModifyListNode<CategoryWrapper, CategoryListItemNode>
         {
             Position = ContentStartPosition,
-            Size = ContentSize with { X = 250.0f },
+            Size = ContentSize with { X = LeftColumnWidth },
             Options = _categoryWrappers,
             SelectionChanged = OnOptionChanged,
             AddNewEntry = OnAddNewCategory,
@@ -74,6 +76,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             Size = ContentSize - new Vector2(250.0f + 16.0f, 0.0f),
             IsVisible = false,
             OnCategoryChanged = RefreshSelectionList,
+            OnGeneralSettingsChanged = RebuildCategoryList,
             OnOverrideRequested = OverrideGameCategory,
         };
 
@@ -83,22 +86,52 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     private static List<CategoryWrapper> CreateCategoryWrappers()
     {
         var wrappers = new List<CategoryWrapper>();
+        var categoryConfig = System.Config.Categories;
 
-        foreach (var def in System.Config.Categories.UserCategories)
+        wrappers.Add(CategoryWrapper.ForGeneralSettings());
+
+        foreach (var def in categoryConfig.UserCategories)
             wrappers.Add(CategoryWrapper.ForUserOrOverride(def));
 
-        var disabledGameIds = System.Config.Categories.DisabledGameCategoryIds;
-        var sheet = Services.DataManager.GetExcelSheet<ItemUICategory>();
-        foreach (var row in sheet)
+        var overriddenByBuiltIn = new HashSet<uint>();
+        foreach (var source in IPC.ExternalCategorySystem.ExternalCategoryManager.RegisteredSources)
         {
-            if (row.RowId == 0) continue;
-            if (disabledGameIds.Contains(row.RowId)) continue;
-            var name = row.Name.ToString();
-            if (string.IsNullOrWhiteSpace(name)) continue;
-            wrappers.Add(CategoryWrapper.ForGameCategory(row.RowId));
+            if (!source.IsBuiltIn) continue;
+            foreach (var id in source.OverriddenGameCategoryIds)
+                overriddenByBuiltIn.Add(id);
+        }
+
+        foreach (var source in IPC.ExternalCategorySystem.ExternalCategoryManager.RegisteredSources)
+        {
+            if (source.IsBuiltIn && !categoryConfig.ShowBuiltInSourcesInConfig) continue;
+            if (!source.IsBuiltIn && !categoryConfig.ShowExternalSourcesInConfig) continue;
+            wrappers.Add(CategoryWrapper.ForExternalSource(source));
+        }
+
+        if (categoryConfig.ShowGameCategoriesInConfig)
+        {
+            var disabledGameIds = categoryConfig.DisabledGameCategoryIds;
+            var sheet = Services.DataManager.GetExcelSheet<ItemUICategory>();
+            foreach (var row in sheet)
+            {
+                if (row.RowId == 0) continue;
+                if (disabledGameIds.Contains(row.RowId)) continue;
+                if (overriddenByBuiltIn.Contains(row.RowId)) continue;
+                var name = row.Name.ToString();
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                wrappers.Add(CategoryWrapper.ForGameCategory(row.RowId));
+            }
         }
 
         return wrappers;
+    }
+
+    private void RebuildCategoryList()
+    {
+        var refreshed = CreateCategoryWrappers();
+        _categoryWrappers.Clear();
+        _categoryWrappers.AddRange(refreshed);
+        RefreshSelectionList();
     }
 
     private void OnAddNewCategory()
@@ -182,8 +215,9 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
     private void OnRemoveCategory(CategoryWrapper categoryWrapper)
     {
-        if (categoryWrapper.Kind == CategoryWrapperKind.GameCategory)
-            return;
+        if (categoryWrapper.Kind == CategoryWrapperKind.GeneralSettings) return;
+        if (categoryWrapper.Kind == CategoryWrapperKind.GameCategory) return;
+        if (categoryWrapper.Kind == CategoryWrapperKind.ExternalSource) return;
         if (categoryWrapper.CategoryDefinition is null) return;
 
         if (categoryWrapper.Kind == CategoryWrapperKind.Override
@@ -233,14 +267,11 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     {
         _selectionListRefreshQueued = false;
 
-        _selectionListNode?.Dispose();
         _selectionListNode = null;
-        _configNode?.Dispose();
         _configNode = null;
-        _separatorLine?.Dispose();
         _separatorLine = null;
-        _nothingSelectedTextNode?.Dispose();
         _nothingSelectedTextNode = null;
+
         base.OnFinalize(addon);
     }
 }

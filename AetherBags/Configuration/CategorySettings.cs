@@ -24,6 +24,12 @@ public class CategorySettings
 
     public HashSet<uint> DisabledGameCategoryIds { get; set; } = new();
 
+    public bool ShowBuiltInSourcesInConfig { get; set; } = true;
+    public bool ShowExternalSourcesInConfig { get; set; } = true;
+    public bool ShowGameCategoriesInConfig { get; set; } = true;
+
+    public Dictionary<string, BuiltInSourceOverride> BuiltInSourceOverrides { get; set; } = new();
+
     public List<UserCategoryDefinition> UserCategories { get; set; } = new();
 
     public static List<string> GetDefaultCategorySourceOrder() =>
@@ -133,6 +139,17 @@ public class CategorySettings
     public static List<ItemSortCriterion> GetDefaultItemSortCriteria(bool allowUseGlobal) => allowUseGlobal
         ? [new ItemSortCriterion { Field = ItemSortField.UseGlobal, Direction = SortDirection.Ascending }]
         : [new ItemSortCriterion { Field = ItemSortField.Quantity, Direction = SortDirection.Descending }];
+}
+
+public class BuiltInSourceOverride
+{
+    public bool Enabled { get; set; } = true;
+    public bool? Pinned { get; set; }
+    public Vector4? Color { get; set; }
+    public int? Priority { get; set; }
+    public int? Order { get; set; }
+    public List<ItemSortCriterion> ItemSortCriteria { get; set; } = new();
+    public List<uint> CustomItemOrder { get; set; } = new();
 }
 
 public class UserCategoryDefinition

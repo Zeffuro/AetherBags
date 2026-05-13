@@ -23,6 +23,12 @@ public interface IExternalItemSource
     // Slot hint for first appearance in the user's display order; built-ins use 10/20/30/40/50.
     int DefaultDisplayOrder => 100;
 
+    // Sources that ship with the plugin. Surfaced in the config list but cannot be removed.
+    bool IsBuiltIn => false;
+
+    // Game UI category IDs this source supersedes — matching rows are hidden from the config list.
+    IReadOnlyList<uint> OverriddenGameCategoryIds => Array.Empty<uint>();
+
     IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments();
     IReadOnlyDictionary<uint, ItemDecoration>? GetItemDecorations();
     IReadOnlyList<ContextMenuEntry>? GetContextMenuEntries(uint itemId);

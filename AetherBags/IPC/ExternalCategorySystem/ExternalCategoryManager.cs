@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using AetherBags.Configuration;
 using AetherBags.Inventory.Categories;
 using AetherBags.Inventory.Items;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -261,12 +262,24 @@ public static class ExternalCategoryManager
 
         if (CategoryCache.Count == 0) return;
 
+        var overrides = System.Config?.Categories?.BuiltInSourceOverrides;
+
         foreach (var (itemKey, item) in itemInfoByKey)
         {
             if (claimedKeys.Contains(itemKey)) continue;
 
             if (!CategoryCache.TryGetValue(item.Item.ItemId, out var assignment))
                 continue;
+
+            BuiltInSourceOverride? prefs = null;
+            if (overrides is not null
+                && BucketKeyToSourceName.TryGetValue(assignment.CategoryKey, out var sourceName)
+                && overrides.TryGetValue(sourceName, out var found))
+            {
+                prefs = found;
+            }
+
+            if (prefs is { Enabled: false }) continue;
 
             ref var bucketRef = ref CollectionsMarshal.GetValueRefOrAddDefault(bucketsByKey, assignment.CategoryKey, out bool exists);
 
@@ -279,11 +292,14 @@ public static class ExternalCategoryManager
                     {
                         Name = assignment.CategoryName,
                         Description = assignment.CategoryDescription ?? string.Empty,
-                        Color = assignment.CategoryColor,
-                        IsPinned = assignment.IsPinned,
+                        Color = prefs?.Color ?? assignment.CategoryColor,
+                        IsPinned = prefs?.Pinned ?? assignment.IsPinned,
+                        Order = prefs?.Order ?? assignment.SubPriority,
                     },
                     Items = new List<ItemInfo>(16),
                     FilteredItems = new List<ItemInfo>(16),
+                    ItemSortCriteria = prefs?.ItemSortCriteria.Count > 0 ? prefs.ItemSortCriteria : null,
+                    CustomItemOrder = prefs?.CustomItemOrder.Count > 0 ? prefs.CustomItemOrder : null,
                     Used = true,
                 };
             }
@@ -292,8 +308,11 @@ public static class ExternalCategoryManager
                 bucketRef!.Used = true;
                 bucketRef.Category.Name = assignment.CategoryName;
                 bucketRef.Category.Description = assignment.CategoryDescription ?? string.Empty;
-                bucketRef.Category.Color = assignment.CategoryColor;
-                bucketRef.Category.IsPinned = assignment.IsPinned;
+                bucketRef.Category.Color = prefs?.Color ?? assignment.CategoryColor;
+                bucketRef.Category.IsPinned = prefs?.Pinned ?? assignment.IsPinned;
+                bucketRef.Category.Order = prefs?.Order ?? assignment.SubPriority;
+                bucketRef.ItemSortCriteria = prefs?.ItemSortCriteria.Count > 0 ? prefs.ItemSortCriteria : null;
+                bucketRef.CustomItemOrder = prefs?.CustomItemOrder.Count > 0 ? prefs.CustomItemOrder : null;
             }
 
             bucketRef!.Items.Add(item);

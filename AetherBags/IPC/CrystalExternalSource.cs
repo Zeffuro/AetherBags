@@ -30,6 +30,8 @@ public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInvento
     public bool IsReady => _isEnabled;
     public int Version => _version;
     public int DefaultDisplayOrder => 35;
+    public bool IsBuiltIn => true;
+    public IReadOnlyList<uint> OverriddenGameCategoryIds { get; } = new uint[] { CrystalUiCategoryId };
     public bool LocksDragOut => false;
     public bool LocksDragIn => false;
     public event Action? OnDataChanged;

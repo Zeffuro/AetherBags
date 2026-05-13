@@ -25,6 +25,7 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
     public bool IsReady => _isEnabled;
     public int Version => _version;
     public int DefaultDisplayOrder => 36;
+    public bool IsBuiltIn => true;
     public bool LocksDragOut => false;
     public bool LocksDragIn => false;
     public event Action? OnDataChanged;

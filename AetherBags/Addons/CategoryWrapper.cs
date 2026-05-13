@@ -1,23 +1,30 @@
+using System;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Categories;
+using AetherBags.IPC.ExternalCategorySystem;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Addons;
 
-public enum CategoryWrapperKind { User, Override, GameCategory }
+public enum CategoryWrapperKind { GeneralSettings, User, Override, ExternalSource, GameCategory }
 
 public sealed class CategoryWrapper
 {
     public CategoryWrapperKind Kind { get; }
     public UserCategoryDefinition? CategoryDefinition { get; }
     public uint? GameCategoryId { get; }
+    public IExternalItemSource? Source { get; }
 
-    private CategoryWrapper(CategoryWrapperKind kind, UserCategoryDefinition? def, uint? gameId)
+    private CategoryWrapper(CategoryWrapperKind kind, UserCategoryDefinition? def, uint? gameId, IExternalItemSource? source = null)
     {
         Kind = kind;
         CategoryDefinition = def;
         GameCategoryId = gameId;
+        Source = source;
     }
+
+    public static CategoryWrapper ForGeneralSettings()
+        => new(CategoryWrapperKind.GeneralSettings, null, null);
 
     public static CategoryWrapper ForUserOrOverride(UserCategoryDefinition def)
     {
@@ -28,19 +35,26 @@ public sealed class CategoryWrapper
     public static CategoryWrapper ForGameCategory(uint id)
         => new(CategoryWrapperKind.GameCategory, null, id);
 
+    public static CategoryWrapper ForExternalSource(IExternalItemSource source)
+        => new(CategoryWrapperKind.ExternalSource, null, null, source);
+
     public string GetLabel() => Kind switch
     {
+        CategoryWrapperKind.GeneralSettings => "General Settings",
         CategoryWrapperKind.GameCategory => ResolveGameCategoryName(GameCategoryId!.Value),
+        CategoryWrapperKind.ExternalSource => Source!.DisplayName,
         _ => CategoryDefinition!.Name,
     };
 
     public string GetSubLabel() => Kind switch
     {
+        CategoryWrapperKind.GeneralSettings => "CONFIG",
         CategoryWrapperKind.User => UserCategoryMatcher.IsCatchAll(CategoryDefinition!)
             ? " No valid rules!"
             : (CategoryDefinition!.Enabled ? "✓ User · Enabled" : " User · Disabled"),
-        CategoryWrapperKind.Override => $"⊕ Overrides: {ResolveOverrideSourceName(CategoryDefinition!.OverrideSourceKey!)}",
-        CategoryWrapperKind.GameCategory => "▤ Game Category",
+        CategoryWrapperKind.Override => $"Φ Overrides: {ResolveOverrideSourceName(CategoryDefinition!.OverrideSourceKey!)}",
+        CategoryWrapperKind.ExternalSource => Source!.IsBuiltIn ? "★ Built-in Source" : "✦ External Source",
+        CategoryWrapperKind.GameCategory => "● Game Category",
         _ => string.Empty,
     };
 
@@ -55,7 +69,9 @@ public sealed class CategoryWrapper
 
         return Kind switch
         {
+            CategoryWrapperKind.GeneralSettings => 0,
             CategoryWrapperKind.GameCategory => GameCategoryId!.Value.CompareTo(other.GameCategoryId!.Value),
+            CategoryWrapperKind.ExternalSource => string.Compare(Source!.DisplayName, other.Source!.DisplayName, StringComparison.OrdinalIgnoreCase),
             _ => CategoryDefinition!.Order.CompareTo(other.CategoryDefinition!.Order),
         };
     }

@@ -435,12 +435,12 @@ public static class CategoryBucketManager
         {
             string GetSourceId(uint key)
             {
+                if (IPC.ExternalCategorySystem.ExternalCategoryManager.TryGetSourceForBucketKey(key, out var sourceName))
+                    return sourceName;
                 if (IsUserCategoryKey(key)) return CategorySourceIds.UserCategories;
                 if (IsBisBuddyKey(key)) return CategorySourceIds.BisBuddy;
                 if (IsAllaganFilterKey(key)) return CategorySourceIds.AllaganTools;
                 if (key == 0) return CategorySourceIds.Misc;
-                if (IPC.ExternalCategorySystem.ExternalCategoryManager.TryGetSourceForBucketKey(key, out var sourceName))
-                    return sourceName;
                 return CategorySourceIds.GameCategories;
             }
 
@@ -456,7 +456,10 @@ public static class CategoryBucketManager
             if (leftPrio != rightPrio)
                 return leftPrio.CompareTo(rightPrio);
 
-            if (IsUserCategoryKey(left) && IsUserCategoryKey(right))
+            bool leftExternal = IPC.ExternalCategorySystem.ExternalCategoryManager.TryGetSourceForBucketKey(left, out _);
+            bool rightExternal = IPC.ExternalCategorySystem.ExternalCategoryManager.TryGetSourceForBucketKey(right, out _);
+
+            if ((IsUserCategoryKey(left) && IsUserCategoryKey(right)) || (leftExternal && rightExternal))
             {
                 var leftOrder = bucketsByKey[left].Category.Order;
                 var rightOrder = bucketsByKey[right].Category.Order;
