@@ -43,7 +43,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
         _version++;
         ExternalCategoryManager.RegisterSource(this);
         OnDataChanged?.Invoke();
-        Services.Logger.Information("[TestSource] Enabled");
+        Services.Logger.DebugOnly("[TestSource] Enabled");
     }
 
     public void Disable()
@@ -51,14 +51,14 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
         if (!_isEnabled) return;
         _isEnabled = false;
         ExternalCategoryManager.UnregisterSource(SourceName);
-        Services.Logger.Information("[TestSource] Disabled");
+        Services.Logger.DebugOnly("[TestSource] Disabled");
     }
 
     public void Refresh()
     {
         _version++;
         OnDataChanged?.Invoke();
-        Services.Logger.Information("[TestSource] Refreshed");
+        Services.Logger.DebugOnly("[TestSource] Refreshed");
     }
 
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
@@ -171,7 +171,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
                 IconId: 60026, // Info icon
                 OnClick: ctx =>
                 {
-                    Services.Logger.Information($"[TestSource] Context menu clicked for item {ctx.ItemId} at [{ctx.Container}:{ctx.Slot}]");
+                    Services.Logger.DebugOnly($"[TestSource] Context menu clicked for item {ctx.ItemId} at [{ctx.Container}:{ctx.Slot}]");
                 },
                 Order: 100
             ),
@@ -180,7 +180,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
                 IconId: 60073, // Star icon
                 OnClick: ctx =>
                 {
-                    Services.Logger.Information($"[TestSource] Toggle highlight for item {ctx.ItemId}");
+                    Services.Logger.DebugOnly($"[TestSource] Toggle highlight for item {ctx.ItemId}");
                     Refresh();
                 },
                 Order: 101

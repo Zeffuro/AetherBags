@@ -1,10 +1,8 @@
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiToolKit.ContextMenu;
-using KamiToolKit.Enums;
 
 namespace AetherBags.Addons;
 
@@ -56,6 +54,45 @@ public static class InventoryAddonContextMenu
             parent.ManualRefresh();
         });
 
+        menu.AddItem(CreateVisibilitySubMenu());
+
+        var allaganToolsSubMenu = CreateAllaganToolsFilterSubMenu();
+        if (allaganToolsSubMenu != null)
+        {
+            menu.AddItem(allaganToolsSubMenu);
+        }
+
+        menu.Open();
+    }
+
+    private static ContextMenuSubItem CreateVisibilitySubMenu()
+    {
+        var config = System.Config.Categories;
+        var subMenu = new ContextMenuSubItem
+        {
+            Name = "Visibility",
+            OnClick = () => { }
+        };
+
+        subMenu.AddItem(GetCheckedLabel("Crystals", config.CrystalsEnabled), () =>
+        {
+            config.CrystalsEnabled = !config.CrystalsEnabled;
+            System.IPC.RefreshExternalSources();
+            RefreshInventory();
+        });
+
+        subMenu.AddItem(GetCheckedLabel("Key Items", config.KeyItemsEnabled), () =>
+        {
+            config.KeyItemsEnabled = !config.KeyItemsEnabled;
+            System.IPC.RefreshExternalSources();
+            RefreshInventory();
+        });
+
+        return subMenu;
+    }
+
+    private static ContextMenuSubItem? CreateAllaganToolsFilterSubMenu()
+    {
         if (System.IPC.AllaganTools is { IsReady: true } && System.Config.Categories.AllaganToolsCategoriesEnabled)
         {
             var atFilters = System.IPC.AllaganTools.GetSearchFilters();
@@ -78,12 +115,16 @@ public static class InventoryAddonContextMenu
                     });
                 }
 
-                menu.AddItem(subMenu);
+                return subMenu;
             }
         }
 
-        menu.Open();
+        return null;
     }
+
+    private static string GetCheckedLabel(string label, bool isChecked) => isChecked ? $"✓ {label}" : $" {label}";
+
+    private static void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);
 
     public static unsafe void Close()
     {

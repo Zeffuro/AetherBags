@@ -436,7 +436,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         try
         {
-            Services.Logger.Information($"[OnPayload] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), target={targetItemInfo.Item.Container}@{targetItemInfo.Item.Slot}");
+            Services.Logger.DebugOnly($"[OnPayload] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), target={targetItemInfo.Item.Container}@{targetItemInfo.Item.Slot}");
             var nodePayload = new DragDropPayload
             {
                 Type = ExternalCategoryManager.GetDragDropTypeForContainer(targetItemInfo.Item.Container),
@@ -456,7 +456,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             if (srcExternal || dstExternal)
             {
-                Services.Logger.Information($"[OnPayload] external move detected: src={srcContainer}@{srcSlot} (external={srcExternal}) -> dst={dstContainer}@{targetItemInfo.Item.Slot} (external={dstExternal})");
+                Services.Logger.DebugOnly($"[OnPayload] external move detected: src={srcContainer}@{srcSlot} (external={srcExternal}) -> dst={dstContainer}@{targetItemInfo.Item.Slot} (external={dstExternal})");
                 if (srcContainer == InventoryType.Crystals && dstContainer == InventoryType.RetainerCrystals)
                 {
                     if (RetainerCommands.TryEntrust(srcContainer, srcSlot))
