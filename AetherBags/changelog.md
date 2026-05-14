@@ -2,6 +2,10 @@
 - Added the ability to hide/show game categories in the Category Configuration.
 - Added the ability to hide/show external/built-in categories in the Category Configuration.
 - Fixed a crash that can occur when closing the Changelog window.
+- Added a submenu in the filter context menu to quickly hide/show key items/crystals.
+- Added utility actions to the filter context menu for refreshing, copying visible items, and printing inventory stats.
+- Added visibility toggles for categories, recently looted items, and category item counts in the filter context menu.
+- Added stacking toggles to swap stack mode and combine unstackable items in the filter context menu.
 
 # 1.0.0.4
 - Unified Category System is now the default system.
