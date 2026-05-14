@@ -812,7 +812,6 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     {
         System.AetherBagsAPI?.API.RaiseInventoryClosed();
 
-        ContextMenu?.Dispose();
         HoverSubscribed.Clear();
         SearchDebouncer.Dispose();
         RefreshQueued = false;
