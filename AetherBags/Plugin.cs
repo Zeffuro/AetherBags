@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Addons;
 using AetherBags.Commands;
 using AetherBags.Helpers;
@@ -69,8 +70,8 @@ public class Plugin : IDalamudPlugin
             Size = new Vector2(640, 512),
         };
 
-        Services.PluginInterface.UiBuilder.OpenMainUi += System.AddonInventoryWindow.Toggle;
-        Services.PluginInterface.UiBuilder.OpenConfigUi += System.AddonConfigurationWindow.Toggle;
+        Services.PluginInterface.UiBuilder.OpenMainUi += () => Task.Run(System.AddonConfigurationWindow.ToggleAsync);
+        Services.PluginInterface.UiBuilder.OpenConfigUi += () => Task.Run(System.AddonConfigurationWindow.ToggleAsync);
 
         System.AetherBagsAPI = new AetherBagsIPCProvider();
 

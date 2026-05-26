@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
@@ -24,7 +25,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
-public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
+public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 {
     protected readonly InventoryCategoryHoverCoordinator HoverCoordinator = new();
     protected readonly InventoryCategoryPinCoordinator PinCoordinator = new();
@@ -113,7 +114,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }, delayTicks: 3);
     }
 
-    public void FocusSearch()
+    public unsafe void FocusSearch()
     {
         Services.Framework.RunOnTick(() =>
         {
@@ -124,7 +125,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         }, delayTicks: 2);
     }
 
-    public bool TryFocusSearch()
+    public unsafe bool TryFocusSearch()
     {
         AtkUnitBase* addon = this;
         if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return false;
@@ -353,13 +354,37 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         public float HeaderY { get; init; }
     }
 
-    protected HeaderLayout CalculateHeaderLayout(AtkUnitBase* addon)
+    protected unsafe HeaderLayout CalculateHeaderLayout()
     {
-        var header = addon->WindowHeaderCollisionNode;
-        float headerW = header->Width;
+        var addon = InternalAddon;
+
+        float headerW;
+        float headerY;
+        float headerH;
+
+        if (addon != null && addon->WindowHeaderCollisionNode != null)
+        {
+            var header = addon->WindowHeaderCollisionNode;
+            headerW = header->Width;
+            headerY = header->Y;
+            headerH = header->Height;
+        }
+        else if (WindowNode is { } windowNode)
+        {
+            var headerNode = ((WindowNode)windowNode).HeaderContainerNode;
+            headerW = headerNode.Width > 0 ? headerNode.Width : Size.X;
+            headerY = headerNode.Y;
+            headerH = headerNode.Height > 0 ? headerNode.Height : 38f;
+        }
+        else
+        {
+            headerW = Size.X;
+            headerY = 0f;
+            headerH = 38f;
+        }
 
         const float searchHeight = 28f;
-        float itemY = header->Y + (header->Height - searchHeight) * 0.5f;
+        float itemY = headerY + (headerH - searchHeight) * 0.5f;
 
         // Space for title (e.g. "AetherRetainerbag" is ~150px)
         const float titleReserve = 160f;
@@ -719,10 +744,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected virtual void UpdateHeaderLayout()
     {
-        AtkUnitBase* addon = this;
-        if (addon == null) return;
-
-        var header = CalculateHeaderLayout(addon);
+        var header = CalculateHeaderLayout();
 
         if (SearchInputNode != null)
         {
@@ -760,7 +782,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
 
-    protected override void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
+    protected override unsafe void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData)
     {
         base.OnRequestedUpdate(addon, numberArrayData, stringArrayData);
 
@@ -769,7 +791,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
 
-    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         ContextMenu = new ContextMenu();
 
@@ -780,10 +802,22 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
             ScrollableCategories.ScrollBarNode.OnValueChanged = OnScrollValueChanged;
         }
 
-        base.OnSetup(addon, atkValueSpan);
+        return Task.CompletedTask;
     }
 
-    protected override void OnUpdate(AtkUnitBase* addon)
+    public async Task ToggleAsync()
+    {
+        if (IsOpen)
+        {
+            await CloseAsync();
+        }
+        else
+        {
+            await OpenAsync();
+        }
+    }
+
+    protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
         if (RefreshQueued)
         {
@@ -797,7 +831,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         base.OnUpdate(addon);
     }
 
-    private static bool IsFocusedAddon(AtkUnitBase* addon)
+    private static unsafe bool IsFocusedAddon(AtkUnitBase* addon)
     {
         var focusedAddonCount = RaptureAtkUnitManager.Instance()->FocusedUnitsList.Count;
         if (focusedAddonCount == 0) return false;
@@ -808,7 +842,7 @@ public abstract unsafe class InventoryAddonBase : NativeAddon, IInventoryWindow
         return focusedAddon.Value->Id == addon->Id || focusedAddon.Value->ParentId == addon->Id;
     }
 
-    protected override void OnFinalize(AtkUnitBase* addon)
+    protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         System.AetherBagsAPI?.API.RaiseInventoryClosed();
 

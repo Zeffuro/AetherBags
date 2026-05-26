@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -31,7 +32,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
     private bool _pendingSelectionListRefresh;
     private bool _selectionListRefreshQueued;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         _categoryWrappers = CreateCategoryWrappers();
 
@@ -81,6 +82,8 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         };
 
         _configNode.AttachNode(this);
+
+        return Task.CompletedTask;
     }
 
     private static List<CategoryWrapper> CreateCategoryWrappers()
@@ -261,6 +264,18 @@ public class AddonCategoryConfigurationWindow : NativeAddon
             _selectionListRefreshQueued = false;
             _selectionListNode?.RefreshList();
         });
+    }
+
+    public async Task ToggleAsync()
+    {
+        if (IsOpen)
+        {
+            await CloseAsync();
+        }
+        else
+        {
+            await OpenAsync();
+        }
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)

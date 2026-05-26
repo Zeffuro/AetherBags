@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AetherBags.Addons;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -44,22 +45,22 @@ public class CommandHandler : IDisposable
         {
             case "":
             case "toggle":
-                System.AddonInventoryWindow.Toggle();
+                Task.Run(System.AddonInventoryWindow.ToggleAsync);
                 break;
 
             case "config":
             case "settings":
-                System.AddonConfigurationWindow.Toggle();
+                Task.Run(System.AddonConfigurationWindow.ToggleAsync);
                 break;
 
             case "show":
             case "open":
-                System.AddonInventoryWindow.Open();
+                Task.Run(System.AddonInventoryWindow.OpenAsync);
                 break;
 
             case "hide":
             case "close":
-                System.AddonInventoryWindow.Close();
+                Task.Run(System.AddonInventoryWindow.CloseAsync);
                 break;
 
             case "search":
@@ -138,15 +139,15 @@ public class CommandHandler : IDisposable
                 break;
 
             case "saddle":
-                System.AddonSaddleBagWindow.Toggle();
+                Task.Run(System.AddonSaddleBagWindow.ToggleAsync);
                 break;
 
             case "retainer":
-                System.AddonRetainerWindow.Toggle();
+                Task.Run(System.AddonRetainerWindow.ToggleAsync);
                 break;
 
             case "changelog":
-                System.AddonChangelogWindow.Toggle();
+                Task.Run(System.AddonChangelogWindow.ToggleAsync);
                 break;
 
             case "test":

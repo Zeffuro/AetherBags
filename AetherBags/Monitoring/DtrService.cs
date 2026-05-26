@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
 using AetherBags.Tags;
@@ -84,7 +85,7 @@ public sealed unsafe class DtrService : IDisposable
         switch (interaction.ClickType)
         {
             case MouseClickType.Left:
-                System.AddonInventoryWindow.Toggle();
+                Task.Run(System.AddonInventoryWindow.ToggleAsync);
                 break;
             case MouseClickType.Right:
                 ShowAgent(AgentId.InventoryBuddy);

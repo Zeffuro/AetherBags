@@ -50,6 +50,10 @@ public static class BackupHelper {
                 return;
             }
 
+            if (File.Exists(tempFile)) {
+                File.Delete(tempFile);
+            }
+
             ZipFile.CreateFromDirectory(configDirectory.FullName, tempFile);
             if (latestFile.Exists) {
                 var t = latestFile.LastWriteTime;

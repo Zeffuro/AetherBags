@@ -1,5 +1,6 @@
 using System.IO;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Addons;
 using AetherBags.Helpers.Import;
 using AetherBags.Inventory;
@@ -34,7 +35,10 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
         {
             Size = new Vector2(200, 28),
             String = "Configure Categories",
-            OnClick = () => _categoryConfigurationAddon?.Toggle(),
+            OnClick = () =>
+            {
+                if (_categoryConfigurationAddon != null) Task.Run(_categoryConfigurationAddon.ToggleAsync);
+            },
         });
 
         categoryButtonRow.AddNode(new ImGuiIconButtonNode

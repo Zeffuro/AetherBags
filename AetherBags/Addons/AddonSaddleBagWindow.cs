@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -27,9 +28,11 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     protected override InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.SaddleBag;
     protected override InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.SaddleBagWindowSizing;
 
-    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         InitializeBackgroundDropTarget();
+
+        var addonPtr = InternalAddon;
 
         WindowNode?.AddColor = _tintColor;
 
@@ -48,7 +51,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         CategoriesNode.TopPadding = 4.0f;
         CategoriesNode.BottomPadding = 4.0f;
 
-        var header = CalculateHeaderLayout(addon);
+        var header = CalculateHeaderLayout();
 
         SearchInputNode = new TextInputWithButtonNode
         {
@@ -65,7 +68,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
             Size = new Vector2(28f),
             AddColor = _tintColor,
             Icon = ButtonIcon.GearCog,
-            OnClick = System.AddonConfigurationWindow.Toggle
+            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
         };
         SettingsButtonNode.AttachNode(this);
 
@@ -90,7 +93,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon, atkValueSpan);
+        return base.BuildUiAsync();
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

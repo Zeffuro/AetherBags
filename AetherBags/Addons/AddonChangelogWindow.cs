@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Helpers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
@@ -13,7 +14,7 @@ public sealed class AddonChangelogWindow : NativeAddon
 {
     private ScrollingListNode? _scrollingAreaNode;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         _scrollingAreaNode = new ScrollingListNode
         {
@@ -28,7 +29,7 @@ public sealed class AddonChangelogWindow : NativeAddon
         PopulateChangelog(_scrollingAreaNode);
         _scrollingAreaNode.RecalculateLayout();
 
-        base.OnSetup(addon, atkValueSpan);
+        return Task.CompletedTask;
     }
 
     private static void PopulateChangelog(ScrollingListNode listNode)
@@ -54,6 +55,18 @@ public sealed class AddonChangelogWindow : NativeAddon
             }
 
             listNode.AddNode(new ResNode { Height = 8 });
+        }
+    }
+
+    public async Task ToggleAsync()
+    {
+        if (IsOpen)
+        {
+            await CloseAsync();
+        }
+        else
+        {
+            await OpenAsync();
         }
     }
 

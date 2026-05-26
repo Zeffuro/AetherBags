@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Helpers;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
@@ -24,16 +25,16 @@ public class AddonConfigurationWindow : NativeAddon
 
     private readonly List<NodeBase> _tabContent = new();
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
-        if (WindowNode is not WindowNode windowNode) return;
+        if (WindowNode is not WindowNode windowNode) return Task.CompletedTask;
 
         _changelogButtonNode = new CircleButtonNode
         {
             Position = new Vector2(Size.X - 66f, 6f),
             Size = new Vector2(28f),
             Icon = ButtonIcon.QuestionMark,
-            OnClick = System.AddonChangelogWindow.Toggle,
+            OnClick = () => Task.Run(System.AddonChangelogWindow.ToggleAsync),
         };
         _changelogButtonNode.AttachNode(windowNode.HeaderContainerNode);
 
@@ -92,7 +93,7 @@ public class AddonConfigurationWindow : NativeAddon
         _tabBarNode.AddTab("Currency", () => SwitchTab(2));
         _tabBarNode.AddTab("Keybinds", () => SwitchTab(3));
 
-        base.OnSetup(addon, atkValueSpan);
+        return Task.CompletedTask;
     }
 
     private void AddChangelogButton()
@@ -103,6 +104,18 @@ public class AddonConfigurationWindow : NativeAddon
     {
         for (var i = 0; i < _tabContent.Count; i++)
             _tabContent[i].IsVisible = i == index;
+    }
+
+    public async Task ToggleAsync()
+    {
+        if (IsOpen)
+        {
+            await CloseAsync();
+        }
+        else
+        {
+            await OpenAsync();
+        }
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)

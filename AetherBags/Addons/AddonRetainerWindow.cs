@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
@@ -34,9 +35,11 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
 
-    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         InitializeBackgroundDropTarget();
+
+        var addonPtr = InternalAddon;
 
         WindowNode?.AddColor = _tintColor;
 
@@ -55,7 +58,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         CategoriesNode.TopPadding = 4.0f;
         CategoriesNode.BottomPadding = 4.0f;
 
-        var header = CalculateHeaderLayout(addon);
+        var header = CalculateHeaderLayout();
 
         SearchInputNode = new TextInputWithButtonNode
         {
@@ -71,7 +74,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             Icon = ButtonIcon.GearCog,
-            OnClick = System.AddonConfigurationWindow.Toggle
+            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
         };
         SettingsButtonNode.AttachNode(this);
 
@@ -116,7 +119,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        base.OnSetup(addon, atkValueSpan);
+        return base.BuildUiAsync();
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

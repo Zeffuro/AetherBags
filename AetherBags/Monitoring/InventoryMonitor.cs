@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Scanning;
@@ -234,11 +235,11 @@ public class InventoryMonitor : IDisposable
 
             if (openTitleId == 0)
             {
-                System.AddonInventoryWindow.Toggle();
+                Task.Run(System.AddonInventoryWindow.ToggleAsync);
             }
             else
             {
-                System.AddonInventoryWindow.Open();
+                Task.Run(System.AddonInventoryWindow.OpenAsync);
             }
         }
     }

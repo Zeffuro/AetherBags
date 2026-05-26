@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.State;
@@ -14,7 +15,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
-public unsafe class AddonInventoryWindow : InventoryAddonBase
+public class AddonInventoryWindow : InventoryAddonBase
 {
     private readonly MainBagState _inventoryState = new();
     private InventoryNotificationNode _notificationNode = null!;
@@ -22,7 +23,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
-    protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override async Task BuildUiAsync()
     {
         InitializeBackgroundDropTarget();
 
@@ -41,7 +42,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         CategoriesNode.TopPadding = 4.0f;
         CategoriesNode.BottomPadding = 4.0f;
 
-        var header = CalculateHeaderLayout(addon);
+        var header = CalculateHeaderLayout();
 
         _notificationNode = new InventoryNotificationNode
         {
@@ -64,36 +65,41 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
             Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             Icon = ButtonIcon.GearCog,
-            OnClick = System.AddonConfigurationWindow.Toggle
+            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
         };
         SettingsButtonNode.AttachNode(this);
 
         FooterNode = new InventoryFooterNode
         {
             Size = ContentSize with { Y = FooterHeight },
-            SlotAmountText = _inventoryState.GetEmptySlotsString(),
         };
         FooterNode.AttachNode(this);
 
         LayoutContent();
 
-        addon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
-
-        System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
-
-        IsSetupComplete = true;
-
-        _inventoryState.RefreshFromGame();
-
-        var existingLoot = System.LootedItemsTracker.LootedItems;
-        if (existingLoot.Count > 0)
+        await Services.Framework.Run(() =>
         {
-            UpdateLootedCategory(existingLoot);
-        }
+            unsafe
+            {
+                InternalAddon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
+            }
 
-        RefreshCategoriesCore(autosize: true);
+            System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
+            IsSetupComplete = true;
 
-        base.OnSetup(addon, atkValueSpan);
+            _inventoryState.RefreshFromGame();
+
+            var existingLoot = System.LootedItemsTracker.LootedItems;
+            if (existingLoot.Count > 0)
+            {
+                UpdateLootedCategory(existingLoot);
+            }
+
+            FooterNode.SlotAmountText = _inventoryState.GetEmptySlotsString();
+            RefreshCategoriesCore(autosize: true);
+        });
+
+        await base.BuildUiAsync();
     }
 
     private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
@@ -181,14 +187,14 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         FooterNode.RefreshCurrencies();
     }
 
-    protected override void UpdateHeaderLayout()
+    protected override unsafe void UpdateHeaderLayout()
     {
         base.UpdateHeaderLayout();
 
         AtkUnitBase* addon = this;
         if (addon == null) return;
 
-        var header = CalculateHeaderLayout(addon);
+        var header = CalculateHeaderLayout();
 
         if (_notificationNode != null)
         {
@@ -204,7 +210,7 @@ public unsafe class AddonInventoryWindow : InventoryAddonBase
         }, delayTicks: 3);
     }
 
-    protected override void OnFinalize(AtkUnitBase* addon)
+    protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         IsSetupComplete = false;
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;

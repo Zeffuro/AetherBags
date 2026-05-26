@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using AetherBags.Configuration;
 using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
@@ -48,7 +49,7 @@ public class KeybindConfigAddon : NativeAddon
 
     public static bool IsCapturingKeybind { get; private set; }
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    protected override Task BuildUiAsync()
     {
         SetWindowSize(
             ShowGameConflicts ? ConflictWindowWidth : DefaultWindowWidth,
@@ -144,6 +145,8 @@ public class KeybindConfigAddon : NativeAddon
             OnClick = Close,
         };
         _cancelButtonNode.AttachNode(this);
+
+        return Task.CompletedTask;
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
