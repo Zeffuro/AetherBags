@@ -77,29 +77,26 @@ public class AddonInventoryWindow : InventoryAddonBase
 
         LayoutContent();
 
-        await Services.Framework.Run(() =>
-        {
-            unsafe
-            {
-                InternalAddon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
-            }
-
-            System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
-            IsSetupComplete = true;
-
-            _inventoryState.RefreshFromGame();
-
-            var existingLoot = System.LootedItemsTracker.LootedItems;
-            if (existingLoot.Count > 0)
-            {
-                UpdateLootedCategory(existingLoot);
-            }
-
-            FooterNode.SlotAmountText = _inventoryState.GetEmptySlotsString();
-            RefreshCategoriesCore(autosize: true);
-        });
-
         await base.BuildUiAsync();
+    }
+
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
+    {
+        InternalAddon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
+
+        System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
+        IsSetupComplete = true;
+
+        _inventoryState.RefreshFromGame();
+
+        var existingLoot = System.LootedItemsTracker.LootedItems;
+        if (existingLoot.Count > 0)
+        {
+            UpdateLootedCategory(existingLoot);
+        }
+
+        FooterNode.SlotAmountText = _inventoryState.GetEmptySlotsString();
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void OnLootedItemsChanged(IReadOnlyList<LootedItemInfo> lootedItems)
