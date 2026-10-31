@@ -12,33 +12,31 @@ public static class JsonFileHelper {
         IncludeFields = true,
     };
 
-    public static T LoadFile<T>(string filePath) where T : new() {
-        var fileInfo = new FileInfo(filePath);
-        if (fileInfo is { Exists: true }) {
-            try {
-                var fileText = File.ReadAllText(fileInfo.FullName);
-                var dataObject = JsonSerializer.Deserialize<T>(fileText, SerializerOptions);
-
-                // If deserialize result is null, create a new instance instead and save it.
-                if (dataObject is null) {
-                    dataObject = new T();
-                    SaveFile(dataObject, filePath);
-                }
-
-                return dataObject;
-            }
-            catch (Exception e) {
-                // If there is any kind of error loading the file, generate a new one instead and save it.
-                IPluginLog.Get().Error(e, $"Error trying to load file {filePath}, creating a new one instead.");
-
-                SaveFile(new T(), filePath);
-            }
+    public static T LoadFile<T>(string filePath, Func<string, T?>? deserialize = null) where T : new() {
+        string fileText;
+        try {
+            fileText = File.ReadAllText(filePath);
+        }
+        catch (FileNotFoundException) {
+            var newFile = new T();
+            WriteFile(newFile, filePath);
+            return newFile;
         }
 
-        var newFile = new T();
-        SaveFile(newFile, filePath);
+        try {
+            return (deserialize is null
+                ? JsonSerializer.Deserialize<T>(fileText, SerializerOptions)
+                : deserialize(fileText)) ?? throw new JsonException("The configuration contains null.");
+        }
+        catch (Exception e) {
+            var backupPath = $"{filePath}.invalid-{Guid.NewGuid():N}";
+            File.Copy(filePath, backupPath);
+            IPluginLog.Get().Error(e, $"Error loading {filePath}. Original file preserved at {backupPath}; creating defaults.");
+        }
 
-        return newFile;
+        var replacement = new T();
+        WriteFile(replacement, filePath);
+        return replacement;
     }
 
     public static void SaveFile<T>(T? file, string filePath) {
@@ -48,12 +46,16 @@ public static class JsonFileHelper {
                 return;
             }
 
-            var fileText = JsonSerializer.Serialize(file, file.GetType(), SerializerOptions);
-            FilesystemUtil.WriteAllTextSafe(filePath, fileText);
+            WriteFile(file, filePath);
         }
         catch (Exception e) {
             IPluginLog.Get().Error(e, $"Error trying to save file {filePath}");
         }
+    }
+
+    private static void WriteFile<T>(T file, string filePath) {
+        var fileText = JsonSerializer.Serialize(file, file!.GetType(), SerializerOptions);
+        FilesystemUtil.WriteAllTextSafe(filePath, fileText);
     }
 
     public static FileInfo GetFileInfo(params string[] path) {

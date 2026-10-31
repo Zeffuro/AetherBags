@@ -1,4 +1,3 @@
-using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -102,29 +101,19 @@ public static class Util
     private static SystemConfiguration LoadConfig()
     {
         FileInfo file = JsonFileHelper.GetFileInfo(SystemConfiguration.FileName);
+        bool migrated = false;
+        var config = JsonFileHelper.LoadFile<SystemConfiguration>(file.FullName, fileText =>
+        {
+            var migratedText = ConfigMigrator.Migrate(fileText, out bool wasMigrated);
+            var loaded = JsonSerializer.Deserialize<SystemConfiguration>(migratedText, ConfigJsonOptions)
+                ?? throw new JsonException("The configuration contains null.");
+            loaded.EnsureInitialized();
+            migrated = wasMigrated;
+            return loaded;
+        });
 
-        if (!file.Exists)
-        {
-            var newConfig = new SystemConfiguration();
-            JsonFileHelper.SaveFile(newConfig, file.FullName);
-            return newConfig;
-        }
-
-        SystemConfiguration config;
-        try
-        {
-            var fileText = File.ReadAllText(file.FullName);
-            var migratedText = ConfigMigrator.Migrate(fileText, out bool migrated);
-            config = JsonSerializer.Deserialize<SystemConfiguration>(migratedText, ConfigJsonOptions) ?? new SystemConfiguration();
-            if (migrated)
-                JsonFileHelper.SaveFile(config, file.FullName);
-        }
-        catch (Exception e)
-        {
-            IPluginLog.Get().Error(e, $"Error trying to load file {file.FullName}, creating a new one instead.");
-            config = new SystemConfiguration();
+        if (migrated)
             JsonFileHelper.SaveFile(config, file.FullName);
-        }
 
         config.EnsureInitialized();
         return config;
