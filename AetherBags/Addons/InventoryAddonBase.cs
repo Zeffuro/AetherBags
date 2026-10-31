@@ -28,6 +28,8 @@ namespace AetherBags.Addons;
 
 public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 {
+    internal event Action? Hiding;
+
     protected readonly InventoryCategoryHoverCoordinator HoverCoordinator = new();
     protected readonly InventoryCategoryPinCoordinator PinCoordinator = new();
     protected readonly HashSet<InventoryCategoryNode> HoverSubscribed = new();
@@ -829,6 +831,12 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
         if (focusedAddon.Value == null || focusedAddon.Value->Id == 0) return false;
 
         return focusedAddon.Value->Id == addon->Id || focusedAddon.Value->ParentId == addon->Id;
+    }
+
+    protected override unsafe void OnHide(AtkUnitBase* addon)
+    {
+        Hiding?.Invoke();
+        base.OnHide(addon);
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)

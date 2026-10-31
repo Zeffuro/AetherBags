@@ -250,11 +250,18 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
 
     private void PruneExpiredVanillaInventoryBypassLeases()
     {
+        if (_vanillaInventoryBypassLeases.Count == 0) return;
+
         var now = DateTimeOffset.UtcNow;
-        var expiredTokens = _vanillaInventoryBypassLeases
-            .Where(lease => lease.Value.ExpiresAt <= now)
-            .Select(lease => lease.Key)
-            .ToList();
+        List<string>? expiredTokens = null;
+        foreach (var (token, lease) in _vanillaInventoryBypassLeases)
+        {
+            if (lease.ExpiresAt > now) continue;
+            expiredTokens ??= [];
+            expiredTokens.Add(token);
+        }
+
+        if (expiredTokens == null) return;
 
         foreach (var token in expiredTokens)
             _vanillaInventoryBypassLeases.Remove(token);

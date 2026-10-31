@@ -15,7 +15,6 @@ public unsafe class InventoryIconNode : IconNode
     {
         if (icon.IconImage.Node is not null) return;
 
-        // KTK's managed teardown already released these; native-first teardown still owns them.
         var nativeIcon = (AtkComponentIcon*)component;
         nativeIcon->Texture = null;
         nativeIcon->IconImage = null;

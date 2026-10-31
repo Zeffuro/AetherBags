@@ -213,12 +213,6 @@ public class AddonInventoryWindow : InventoryAddonBase
         System.LootedItemsTracker.UnseenLootItemIds.Clear();
         HighlightState.ClearLabel(HighlightSource.RecentlyLooted);
 
-        ref var blockingAddonId = ref AgentInventoryContext.Instance()->BlockingAddonId;
-        if (blockingAddonId != 0)
-        {
-            RaptureAtkModule.Instance()->CloseAddon(blockingAddonId);
-        }
-
         addon->UnsubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         IsSetupComplete = false;

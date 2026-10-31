@@ -34,8 +34,6 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
     protected override InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.Retainer;
     protected override InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.RetainerWindowSizing;
 
-    private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
-
     protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
@@ -153,23 +151,11 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
             SlotCounterNode.Position = new Vector2(contentSize.X - 80f, footerY);
     }
 
-    private void CloseRetainerWindows()
-    {
-        var manager = RaptureAtkUnitManager.Instance();
-        foreach (var name in _retainerAddonNames)
-        {
-            var addon = manager->GetAddonByName(name);
-            if (addon != null)
-            {
-                addon->IsVisible = true;
-                addon->Hide2();
-            }
-        }
-    }
-
     private bool IsAnyRetainerWindowLoaded()
     {
-        return _retainerAddonNames.Any(name => RaptureAtkUnitManager.Instance()->GetAddonByName(name) != null);
+        var manager = RaptureAtkUnitManager.Instance();
+        return manager != null && (manager->GetAddonByName("InventoryRetainer") != null
+            || manager->GetAddonByName("InventoryRetainerLarge") != null);
     }
 
     protected override void OnShow(AtkUnitBase* addon)
@@ -189,8 +175,6 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
     protected override void OnFinalize(AtkUnitBase* addon)
     {
         IsSetupComplete = false;
-
-        CloseRetainerWindows();
 
         base.OnFinalize(addon);
     }

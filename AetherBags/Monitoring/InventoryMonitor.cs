@@ -30,27 +30,12 @@ public static unsafe class DragDropState
 public class InventoryMonitor : IDisposable
 {
     private bool _isDisposed;
-    private static readonly string[] RetainerAddonNames =
-    [
-        "InventoryRetainer", "InventoryRetainerLarge", "RetainerGrid", "RetainerGrid0",
-        "RetainerGrid1", "RetainerGrid2", "RetainerGrid3", "RetainerGrid4", "RetainerGrid5",
-        "RetainerGridCrystal", "RetainerCrystalGrid"
-    ];
+    private readonly InventoryWindowSync _windowSync = new();
 
     public InventoryMonitor()
     {
-        var bags = new[] { "Inventory", "InventoryLarge", "InventoryExpansion" };
-        var saddle = new[] { "InventoryBuddy" };
+        var bags = new[] { "Inventory", "InventoryLarge", "InventoryExpansion", "InventoryEvent" };
         var retainer = new[] { "InventoryRetainer", "InventoryRetainerLarge" };
-
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, saddle, OnPostSetup);
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, retainer, OnPostSetup);
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostUpdate, saddle, OnPostUpdate);
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostUpdate, retainer, OnPostUpdate);
-
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, bags, OnInventoryPreFinalize);
 
         // PreRefresh Handlers
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
@@ -64,78 +49,6 @@ public class InventoryMonitor : IDisposable
         IGameInventory.Get().InventoryChangedRaw += OnInventoryChangedRaw;
 
         IPluginLog.Get().Verbose("InventoryLifecycles initialized");
-    }
-
-    private void OnPreFinalize(AddonEvent type, AddonArgs args)
-    {
-        if (_isDisposed) return;
-        CloseInventories(args.AddonName);
-    }
-
-    private void OnPostSetup(AddonEvent type, AddonArgs args)
-    {
-        if (_isDisposed) return;
-        OpenInventories(args.AddonName);
-    }
-
-    private void OnPostUpdate(AddonEvent type, AddonArgs args)
-    {
-        if (IsInUnsafeState()) return;
-        HideDefaultInventories(args.AddonName);
-    }
-
-    private void OnInventoryPreFinalize(AddonEvent type, AddonArgs args)
-    {
-        if (_isDisposed) return;
-        System.AddonInventoryWindow.Close();
-    }
-
-    private unsafe void OpenInventories(string name)
-    {
-        GeneralSettings config = System.Config.General;
-        bool vanillaBypassActive = System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false;
-
-        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory && !vanillaBypassActive)
-        {
-            System.AddonRetainerWindow.Open();
-        }
-
-        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory && !vanillaBypassActive)
-        {
-            System.AddonSaddleBagWindow.Open();
-        }
-
-        HideDefaultInventories(name);
-    }
-
-    private unsafe void HideDefaultInventories(string name)
-    {
-        if (System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false) return;
-
-        var manager = RaptureAtkUnitManager.Instance();
-        if (manager == null) return;
-
-        GeneralSettings config = System.Config.General;
-        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory && config.HideGameRetainer)
-        {
-            foreach (var addonName in RetainerAddonNames)
-            {
-                var addon = manager->GetAddonByName(addonName);
-                if (addon != null) addon->IsVisible = false;
-            }
-        }
-
-        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory && config.HideGameSaddleBags)
-        {
-            var addon = manager->GetAddonByName("InventoryBuddy");
-            if (addon != null) addon->IsVisible = false;
-        }
-    }
-
-    private void CloseInventories(string name)
-    {
-        if (name.Contains("Retainer")) System.AddonRetainerWindow.Close();
-        if (name.Contains("InventoryBuddy")) System.AddonSaddleBagWindow.Close();
     }
 
     private bool IsInUnsafeState()
@@ -215,9 +128,6 @@ public class InventoryMonitor : IDisposable
         if (IsInUnsafeState())
             return;
 
-        GeneralSettings config = System.Config.General;
-        bool vanillaBypassActive = System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false;
-
         IPluginLog.Get().DebugOnly("PreRefresh event for Inventory detected");
 
         AtkValuePtr[] atkValues = refreshArgs.AtkValueEnumerable.ToArray();
@@ -235,31 +145,6 @@ public class InventoryMonitor : IDisposable
 
         System.AddonInventoryWindow.SetNotification(new InventoryNotificationInfo(title, upperTitle));
 
-        if (config.HideGameInventory && !vanillaBypassActive)
-        {
-            refreshArgs.AtkValueCount = 0;
-        }
-
-        if (config.OpenWithGameInventory && !vanillaBypassActive)
-        {
-            AtkValue* value1 = (AtkValue*)atkValues[1].Address;
-            int openTitleId = value1->Int;
-
-            if (openTitleId == 0)
-            {
-                IFramework.Get().RunOnTick(() =>
-                {
-                    if (!_isDisposed) System.AddonInventoryWindow.Toggle();
-                });
-            }
-            else
-            {
-                IFramework.Get().RunOnTick(() =>
-                {
-                    if (!_isDisposed) System.AddonInventoryWindow.Open();
-                });
-            }
-        }
     }
 
     private void OnInventoryUpdate(AddonEvent type, AddonArgs args)
@@ -307,7 +192,8 @@ public class InventoryMonitor : IDisposable
     public void Dispose()
     {
         _isDisposed = true;
+        _windowSync.Dispose();
         IGameInventory.Get().InventoryChangedRaw -= OnInventoryChangedRaw;
-        IAddonLifecycle.Get().UnregisterListener(OnPostSetup, OnPostUpdate, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
+        IAddonLifecycle.Get().UnregisterListener(OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, InventoryPreRefreshHandler);
     }
 }

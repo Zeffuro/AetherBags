@@ -111,16 +111,6 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     {
         IsSetupComplete = false;
 
-        if (System.Config.General.HideGameSaddleBags)
-        {
-            var saddleAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryBuddy");
-            if (saddleAddon != null)
-            {
-                saddleAddon->IsVisible = true;
-                saddleAddon->Close(true);
-            }
-        }
-
         base.OnFinalize(addon);
     }
 }
