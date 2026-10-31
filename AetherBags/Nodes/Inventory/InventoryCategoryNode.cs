@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -327,6 +328,16 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     #endregion
 
     #region Items
+
+    internal override void AddNavigationTargets(List<InventoryNavigationTarget> targets)
+    {
+        if (NeedsItemPopulation) return;
+        foreach (var node in _itemGridNode.Nodes)
+        {
+            if (node is InventoryDragDropNode item && item.NodeFlags.HasFlag(NodeFlags.Visible))
+                targets.Add(new(item, Position + _itemGridNode.Position + item.Position));
+        }
+    }
 
     private void UpdateItemGrid()
     {

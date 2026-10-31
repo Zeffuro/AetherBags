@@ -26,7 +26,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
 
-public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
+public abstract partial class InventoryAddonBase : NativeAddon, IInventoryWindow
 {
     internal event Action? Hiding;
 
@@ -259,6 +259,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             _initialPopulationComplete = true;
         }
 
+        InvalidateNavigation();
         System.AetherBagsAPI?.API.RaiseCategoriesRefreshed();
     }
 
@@ -328,6 +329,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             }
         }
 
+        InvalidateNavigation();
         bool hasMore = false;
         foreach (var node in CategoriesNode.Nodes)
         {
@@ -433,6 +435,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             AcceptedType = DragDropType.Everything,
         };
 
+        BackgroundDropTarget.CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         BackgroundDropTarget.DragDropBackgroundNode.IsVisible = false;
         BackgroundDropTarget.IconNode.IsVisible = false;
 
@@ -806,6 +809,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
         }
 
         base.OnSetup(addon, atkValueSpan);
+        InitializeNavigation();
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
@@ -819,6 +823,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             RefreshCategoriesCore(doAutosize);
         }
 
+        UpdateNavigation();
         base.OnUpdate(addon);
     }
 
@@ -841,6 +846,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        DisposeNavigation();
         var contextMenu = ContextMenu;
         ContextMenu = null;
 

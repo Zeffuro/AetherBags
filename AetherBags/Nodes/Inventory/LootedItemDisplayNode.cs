@@ -15,6 +15,7 @@ namespace AetherBags.Nodes.Inventory;
 /// </summary>
 public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
 {
+    internal event Action? NavigationReset;
     private readonly IconNode _iconNode;
     private readonly TextNode _quantityTextNode;
 
@@ -37,6 +38,7 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
         CollisionNode.AddEvent(AtkEventType.MouseClick, OnMouseClick);
         CollisionNode.AddEvent(AtkEventType.MouseOver, OnMouseOver);
         CollisionNode.AddEvent(AtkEventType.MouseOut, OnMouseOut);
+        CollisionNode.AddEvent(AtkEventType.InputReceived, OnControllerInput);
 
         _quantityTextNode = new TextNode
         {
@@ -88,6 +90,14 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
         OnDismiss?.Invoke(this);
     }
 
+    private void OnControllerInput(AtkEventListener* listener, AtkEventType type, int param,
+        AtkEvent* atkEvent, AtkEventData* data)
+    {
+        if (data->InputData.InputId == 1
+            && data->InputData.State == InputState.Down)
+            OnDismiss?.Invoke(this);
+    }
+
     private void OnMouseOver(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {
         OnRollOver?.Invoke(this);
@@ -100,8 +110,15 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
 
     public void ResetForReuse()
     {
+        NavigationReset?.Invoke();
         LootedItem = null;
         _iconNode.IsVisible = false;
         _quantityTextNode.String = string.Empty;
+    }
+
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        NavigationReset?.Invoke();
+        base.Dispose(isNativeDestructor);
     }
 }

@@ -87,7 +87,7 @@ public sealed unsafe class GlobalKeybindHandler : IDisposable
 
     private static void OpenSaddlebagsWithSearchFocus(ref bool isHandled)
     {
-        InventoryAddonBase window = System.AddonInventoryWindow;
+        InventoryAddonBase window = System.AddonSaddleBagWindow;
         if (!window.IsOpen)
         {
             var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.InventoryBuddy);

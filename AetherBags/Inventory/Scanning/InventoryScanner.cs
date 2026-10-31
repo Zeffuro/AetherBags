@@ -2,6 +2,7 @@ using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
+using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.IPC.ExternalCategorySystem;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -111,6 +112,9 @@ public static unsafe class InventoryScanner
                     }
 
                     agg.Total += quantity;
+                    if (InventoryContextState.IsSlotBlocked(agg.First.Container, agg.First.Slot)
+                        && !InventoryContextState.IsSlotBlocked(item.Container, item.Slot))
+                        agg.First = item;
                     aggByKey[key] = agg;
                 }
                 else

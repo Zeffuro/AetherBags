@@ -20,6 +20,7 @@ namespace AetherBags.Nodes.Inventory;
 
 public class InventoryDragDropNode : InventoryDragDropNodeBase
 {
+    internal event global::System.Action? NavigationReset;
     private const int Disable = 0;
     private const int Glow = 1;
     private const int GlowHover = 2;
@@ -37,6 +38,7 @@ public class InventoryDragDropNode : InventoryDragDropNodeBase
 
     public unsafe InventoryDragDropNode()
     {
+        Component->InputMode = DragDropInputMode.None;
         _quantityTextNode = new TextNode {
             Size = new Vector2(40.0f, 12.0f),
             Position = new Vector2(2.0f, 34.0f),
@@ -52,6 +54,16 @@ public class InventoryDragDropNode : InventoryDragDropNodeBase
         CollisionNode.AddEvent(AtkEventType.MouseOver, OnItemHover);
         CollisionNode.AddEvent(AtkEventType.MouseOut, OnItemUnhover);
         OnBegin = _ => InventoryDragPreview.Begin(this, _quantityTextNode.String);
+        AddEvent(AtkEventType.DragDropClick, OnControllerItemClicked);
+    }
+
+    private unsafe void OnControllerItemClicked(AtkEventListener* listener, AtkEventType type, int param,
+        AtkEvent* atkEvent, AtkEventData* data)
+    {
+        if (data == null || data->DragDropData.MouseButtonId is not (3 or 6) || IconNode.IsIconDisabled) return;
+        InventoryItem item = ItemInfo.Item;
+        var context = AgentInventoryContext.Instance();
+        context->OpenForItemSlot(item.Container, item.Slot, 0, context->AddonId);
     }
 
     public required ItemInfo ItemInfo
@@ -365,6 +377,7 @@ public class InventoryDragDropNode : InventoryDragDropNodeBase
 
     public void ResetForReuse()
     {
+        NavigationReset?.Invoke();
         ClearDecoration();
         _currentBorderStyle = BorderStyle.None;
         _isBorderHovered = false;
@@ -374,5 +387,11 @@ public class InventoryDragDropNode : InventoryDragDropNodeBase
         IconNode.IsIconDisabled = false;
         IsDraggable = true;
         IconNode.IsAnts = false;
+    }
+
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        NavigationReset?.Invoke();
+        base.Dispose(isNativeDestructor);
     }
 }

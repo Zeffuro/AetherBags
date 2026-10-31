@@ -1,5 +1,9 @@
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Simplified;
+using System.Collections.Generic;
+using System.Numerics;
+using KamiToolKit.BaseTypes.ComponentNode;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace AetherBags.Nodes.Inventory;
 
@@ -9,6 +13,8 @@ namespace AetherBags.Nodes.Inventory;
 /// </summary>
 public abstract class InventoryCategoryNodeBase : SimpleComponentNode
 {
+    protected InventoryCategoryNodeBase() => CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
+
     /// <summary>
     /// Unique key for this category, used for sync operations.
     /// </summary>
@@ -22,4 +28,8 @@ public abstract class InventoryCategoryNodeBase : SimpleComponentNode
     public abstract float? MaxWidth { get; set; }
 
     public abstract void RecalculateSize();
+
+    internal abstract void AddNavigationTargets(List<InventoryNavigationTarget> targets);
 }
+
+internal readonly record struct InventoryNavigationTarget(ComponentNode Node, Vector2 Position);

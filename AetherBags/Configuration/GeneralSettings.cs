@@ -8,6 +8,7 @@ public class GeneralSettings
     public InventoryStackMode StackMode { get; set; } = InventoryStackMode.AggregateByItemId;
     public bool AggregateUnstackableItems { get; set; } = true;
     public SearchMode SearchMode { get; set; } = SearchMode.Highlight;
+    public bool FocusSearchOnOpen { get; set; } = true;
     public bool DebugEnabled { get; set; } = false;
     public bool CompactPackingEnabled { get; set; } = true;
     public int CompactLookahead { get; set; } = 24;

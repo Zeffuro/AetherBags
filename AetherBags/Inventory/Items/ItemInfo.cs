@@ -108,7 +108,7 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
     public bool IsUntradable => HasRow && _row.IsUntradable;
     public bool IsUnique => HasRow && _row.IsUnique;
     public bool IsMarketable => HasRow && _row.ItemSearchCategory.RowId != 0;
-    public bool IsCollectable => HasRow && _row.IsCollectable;
+    public bool IsCollectable => Item.Flags.HasFlag(InventoryItem.ItemFlags.Collectable);
     public bool IsDyeable => HasRow && _row.DyeCount > 0;
     public bool IsRepairable => HasRow && _row.ItemRepair.RowId != 0;
 

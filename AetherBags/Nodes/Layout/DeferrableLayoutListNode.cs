@@ -13,6 +13,7 @@ namespace AetherBags.Nodes.Layout;
 public abstract partial class DeferrableLayoutListNode : ResNode, ILayoutListNode
 {
     public int NavIndex { get; set; }
+    public event Action? LayoutChanged;
 
     protected readonly List<NodeBase> NodeList = [];
     private bool _suppressRecalculateLayout;
@@ -135,6 +136,7 @@ public abstract partial class DeferrableLayoutListNode : ResNode, ILayoutListNod
             if (NodeList[i] is ILayoutListNode subNode)
                 subNode.RecalculateLayout();
         }
+        LayoutChanged?.Invoke();
     }
 
     protected virtual void AdjustNode(NodeBase node) { }

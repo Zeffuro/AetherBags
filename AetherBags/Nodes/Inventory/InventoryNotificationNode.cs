@@ -16,6 +16,7 @@ public sealed class InventoryNotificationNode : SimpleComponentNode
 
     public InventoryNotificationNode()
     {
+        CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         AddTimeline(ParentLabels);
 
         glowNode = new SimpleNineGridNode {

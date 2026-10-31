@@ -61,6 +61,16 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
 
     public bool HasItems => _lootedItems.Count > 0;
 
+    internal override void AddNavigationTargets(List<InventoryNavigationTarget> targets)
+    {
+        if (_clearButton.NodeFlags.HasFlag(NodeFlags.Visible)) targets.Add(new(_clearButton, Position + _clearButton.Position));
+        foreach (var node in _itemGridNode.Nodes)
+        {
+            if (node is LootedItemDisplayNode item && item.NodeFlags.HasFlag(NodeFlags.Visible))
+                targets.Add(new(item, Position + _itemGridNode.Position + item.Position));
+        }
+    }
+
     public override float? MaxWidth
     {
         get => _maxWidth;

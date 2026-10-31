@@ -17,6 +17,7 @@ public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeB
 
     public unsafe InventoryScrollingAreaNode()
     {
+        CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         ScrollingCollisionNode = new CollisionNode();
         ScrollingCollisionNode.AttachNode(this);
 

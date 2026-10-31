@@ -90,6 +90,9 @@ public class InventoryMonitor : IDisposable
             InventoryType.RetainerPage7,
             InventoryType.RetainerCrystals,
             InventoryType.RetainerEquippedItems,
+            InventoryType.HandIn,
+            InventoryType.MailEdit,
+            InventoryType.BlockedItems,
         };
         return set;
     }

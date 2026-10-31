@@ -185,6 +185,18 @@ internal sealed class FunctionalConfigurationNode : TabbedVerticalListNode
         };
         AddNode(searchModeDropDown);
 
+        AddTab(1);
+        AddNode(new CheckboxNode
+        {
+            Height = 18,
+            String = "Focus search when opening (mouse mode)",
+            IsChecked = config.FocusSearchOnOpen,
+            OnClick = value => config.FocusSearchOnOpen = value,
+        });
+        SubtractTab(1);
+
+        AddNode(new ResNode { Height = 6 });
+
         _stackDropDown = new LabeledEnumDropdownNode<InventoryStackMode>
         {
             Size = new Vector2(500, 20),

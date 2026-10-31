@@ -18,6 +18,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
 
     public InventoryFooterNode()
     {
+        CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         _slotAmountTextNode = new TextNode
         {
             Position = new Vector2(Size.X - 10, 0),

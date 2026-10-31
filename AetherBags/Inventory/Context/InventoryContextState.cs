@@ -123,6 +123,7 @@ public static unsafe class InventoryContextState
         if (inventoryManager == null) return;
 
         ScanBlockedContainer(inventoryManager, InventoryType.BlockedItems);
+        ScanBlockedContainer(inventoryManager, InventoryType.HandIn);
         ScanBlockedContainer(inventoryManager, InventoryType.MailEdit);
     }
 
@@ -136,7 +137,9 @@ public static unsafe class InventoryContextState
             if (!container->IsLoaded) return;
             if (container->Items == null) return;
 
-            for (int i = 0; i < container->GetSize(); i++)
+            int size = container->GetSize();
+            if (type is InventoryType.HandIn or InventoryType.MailEdit) size--;
+            for (int i = 0; i < size; i++)
             {
                 var slot = container->GetInventorySlot(i);
                 if (slot == null) continue;

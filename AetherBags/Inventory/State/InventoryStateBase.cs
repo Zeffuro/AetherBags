@@ -46,6 +46,7 @@ public abstract class InventoryStateBase
         FilteredCategories.Clear();
         ClaimedKeys.Clear();
 
+        InventoryContextState.RefreshBlockedSlots();
         InventoryScanner.ScanInventories(inventoryManager, stackMode, aggregateUnstackable, AggByKey, SourceType);
         CategoryBucketManager.ResetBuckets(BucketsByKey);
         InventoryScanner.BuildItemInfos(AggByKey, ItemInfoByKey);

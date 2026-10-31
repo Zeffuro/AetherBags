@@ -1,5 +1,4 @@
 using KamiToolKit.Enums;
-using KamiToolKit.BaseTypes;
 using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -14,16 +13,21 @@ public class TextInputWithButtonNode : SimpleComponentNode {
     private readonly TextInputNode _textInputNode;
     private readonly CircleButtonNode _contextButton;
 
+    internal TextInputNode InputNode => _textInputNode;
+    internal CircleButtonNode ButtonNode => _contextButton;
+
     public Action? OnButtonClicked {
         get => _contextButton.OnClick;
         set => _contextButton.OnClick = value;
     }
 
     public TextInputWithButtonNode() {
+        CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         _textInputNode = new TextInputNode {
             PlaceholderString = "Search . . .",
         };
         _textInputNode.AttachNode(this);
+        FocusNode = _textInputNode.FocusNode;
 
         _contextButton = new CircleButtonNode {
             Icon = CircleButtonIcon.Filter,
@@ -41,8 +45,6 @@ public class TextInputWithButtonNode : SimpleComponentNode {
         get => _textInputNode.OnInputReceived;
         set => _textInputNode.OnInputReceived = value;
     }
-
-    public new NodeBase FocusNode => _textInputNode.FocusNode;
 
     public void SetInputFocus() => _textInputNode.SetFocus();
 

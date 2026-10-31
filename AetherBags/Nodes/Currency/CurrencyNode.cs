@@ -15,6 +15,7 @@ public class CurrencyNode : SimpleComponentNode
 
     public CurrencyNode()
     {
+        CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
         _iconImageNode = new IconImageNode
         {
             FitTexture = true,

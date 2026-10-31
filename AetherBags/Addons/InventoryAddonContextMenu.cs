@@ -82,6 +82,7 @@ public static class InventoryAddonContextMenu
         subMenu.AddItem("Refresh Inventory", () => InventoryOrchestrator.RefreshAll(updateMaps: true));
         subMenu.AddItem("Refresh External Sources", () =>
         {
+            System.IPC.AllaganTools.RefreshFilters();
             System.IPC.RefreshExternalSources();
             RefreshInventory();
         });

@@ -12,6 +12,5 @@ public class MainBagState :  InventoryStateBase
     protected override void OnPostScan()
     {
         InventoryContextState.RefreshMaps();
-        InventoryContextState.RefreshBlockedSlots();
     }
 }

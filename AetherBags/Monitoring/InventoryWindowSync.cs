@@ -203,11 +203,29 @@ internal sealed unsafe class InventoryWindowSync : IDisposable
             if (state.HideDefault() && state.GameWindowOpen && state.Window.IsOpen)
             {
                 if (!state.DefaultHidden) HideDefault(state);
+                FocusReplacement(state);
             }
             else
                 RestoreDefault(state);
         }
     }
+
+    private static void FocusReplacement(WindowState state)
+    {
+        AtkUnitBase* replacement = state.Window;
+        if (replacement == null || !replacement->IsReady || !replacement->IsVisible) return;
+        var manager = RaptureAtkUnitManager.Instance();
+        var stage = AtkStage.Instance();
+        if (manager == null || stage == null || stage->AtkInputManager == null
+            || !IsHiddenAddon(state, manager->FocusedAddon)) return;
+        var focusedNode = stage->AtkInputManager->FocusedNode;
+        if (focusedNode == null || !IsHiddenAddon(state, manager->GetAddonByNode(focusedNode))) return;
+        replacement->Focus();
+    }
+
+    private static bool IsHiddenAddon(WindowState state, AtkUnitBase* addon)
+        => addon != null && addon->IsReady && state.HiddenAddons.Contains(addon->Id)
+            && (addon->Id == state.GameAddonId || addon->ParentId == state.GameAddonId);
 
     private static bool CanAccessGame()
         => !IFramework.Get().IsFrameworkUnloading && IClientState.Get().IsLoggedIn
