@@ -4,8 +4,7 @@ using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
@@ -243,8 +242,7 @@ internal sealed class WindowSizingRowNode : SimpleComponentNode
 
     private void SetDropDownSelection(InventoryWindowSizingMode mode)
     {
-        _modeDropDownNode.OptionListNode.SelectedOption = mode;
-        _modeDropDownNode.LabelNode.String = mode.Description;
+        _modeDropDownNode.SelectedOption = mode;
     }
 
     private void SyncInputs()

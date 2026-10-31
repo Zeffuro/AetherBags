@@ -3,7 +3,7 @@ using AetherBags.Inventory.Context;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
 
 namespace AetherBags.Nodes.Inventory;

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Categories;
@@ -78,7 +79,7 @@ public sealed class CategoryWrapper
 
     public static string ResolveGameCategoryName(uint id)
     {
-        var sheet = Services.DataManager.GetExcelSheet<ItemUICategory>();
+        var sheet = IDataManager.Get().GetExcelSheet<ItemUICategory>();
         if (sheet.TryGetRow(id, out var row))
         {
             var name = row.Name.ToString();

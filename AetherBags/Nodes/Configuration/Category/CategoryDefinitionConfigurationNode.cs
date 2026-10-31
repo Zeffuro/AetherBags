@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,8 +14,7 @@ using AetherBags.Addons;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -23,8 +23,8 @@ namespace AetherBags.Nodes.Configuration.Category;
 
 public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 {
-    private static ExcelSheet<Item>? ItemSheet => Services.DataManager.GetExcelSheet<Item>();
-    private static ExcelSheet<ItemUICategory>? UICategorySheet => Services.DataManager.GetExcelSheet<ItemUICategory>();
+    private static ExcelSheet<Item>? ItemSheet => IDataManager.Get().GetExcelSheet<Item>();
+    private static ExcelSheet<ItemUICategory>? UICategorySheet => IDataManager.Get().GetExcelSheet<ItemUICategory>();
 
     public Action? OnLayoutChanged { get; init; }
     public Action? OnCategoryPropertyChanged { get; init; }
@@ -34,7 +34,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 
     private readonly HorizontalListNode _headerButtonsList;
     private readonly TextNode _overrideSourceLabel;
-    private readonly ScrollingAreaNode<VerticalListNode> _scrollingArea;
+    private readonly ConfigurationScrollingNode _scrollingArea;
     private readonly List<ConfigurationSection> _sections = new();
 
     public CategoryDefinitionConfigurationNode()
@@ -53,7 +53,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         {
             Width = 28,
             Height = 28,
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
             TextTooltip = "Import Category from Clipboard (Overwrites current)\n(hold shift to confirm)",
             OnClick = HandleImportCategory,
         });
@@ -62,7 +62,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         {
             Width = 28,
             Height = 28,
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
             TextTooltip = "Export Category to Clipboard",
             OnClick = HandleExportCategory,
         });
@@ -80,14 +80,13 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         };
         _overrideSourceLabel.AttachNode(this);
 
-        _scrollingArea = new ScrollingAreaNode<VerticalListNode> {
+        _scrollingArea = new ConfigurationScrollingNode {
             AutoHideScrollBar = true,
-            ContentHeight = 100f
         };
         _scrollingArea.AttachNode(this);
 
-        var list = _scrollingArea.ContentAreaNode;
-        list.FitContents = true;
+        var list = _scrollingArea.ContentNode;
+        list.FitWidth = true;
         list.ItemSpacing = 4.0f;
 
         _sections.Add(new BasicSettingsSection(() => _categoryDefinition) {
@@ -128,11 +127,17 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         _scrollingArea.Position = new Vector2(0, 34);
         _scrollingArea.Size = Size with { Y = Size.Y - 34 };
 
+        HandleLayoutChange();
+    }
+
+    public void ClosePickers()
+    {
         foreach (var section in _sections)
         {
-            section.Width = Width - 16.0f;
+            System.ItemOrderPicker.CloseFor(section);
+            System.ItemFilterPicker.CloseFor(section);
+            System.UICategoryPicker.CloseFor(section);
         }
-        HandleLayoutChange();
     }
 
     public void SetCategory(UserCategoryDefinition newCategory)
@@ -158,8 +163,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 
     private void HandleLayoutChange()
     {
-        _scrollingArea.ContentAreaNode.RecalculateLayout();
-        _scrollingArea.ContentHeight = _scrollingArea.ContentAreaNode.Height;
+        _scrollingArea.RefreshLayout();
         OnLayoutChanged?.Invoke();
     }
 
@@ -172,7 +176,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
 
     private void HandleImportCategory()
     {
-        if (!Services.KeyState[VirtualKey.SHIFT]) return;
+        if (!IKeyState.Get()[VirtualKey.SHIFT]) return;
 
         var imported = CategoryImportExport.ImportCategoryFromClipboard();
         if (imported is null) return;

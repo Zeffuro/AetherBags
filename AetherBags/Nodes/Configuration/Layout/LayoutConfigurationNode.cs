@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 using AetherBags.Nodes.Color;
 
 namespace AetherBags.Nodes.Configuration.Layout;

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using AetherBags.Addons;
 using AetherBags.Inventory.Context;
@@ -9,10 +10,14 @@ public static unsafe class InventoryOrchestrator
 {
     private static readonly InventoryNotificationState NotificationState = new();
     private static bool _isRefreshing;
+    private static bool _isEnabled = true;
+
+    public static void Enable() => _isEnabled = true;
+    public static void Disable() => _isEnabled = false;
 
     public static void RefreshAll(bool updateMaps = true)
     {
-        if (_isRefreshing)
+        if (!_isEnabled || _isRefreshing)
             return;
 
         try
@@ -32,8 +37,9 @@ public static unsafe class InventoryOrchestrator
             var contextId = agent != null ? agent->OpenTitleId : 0;
             var notification = NotificationState.GetNotificationInfo(contextId);
 
-            Services.Framework.RunOnTick(() =>
+            IFramework.Get().RunOnTick(() =>
             {
+                if (!_isEnabled) return;
                 if (notification != null && System.AddonInventoryWindow.IsOpen)
                     System.AddonInventoryWindow.SetNotification(notification);
 
@@ -59,11 +65,12 @@ public static unsafe class InventoryOrchestrator
 
     public static void RefreshHighlights()
     {
-        if (!HasAnyWindowOpen())
+        if (!_isEnabled || !HasAnyWindowOpen())
             return;
 
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
+            if (!_isEnabled) return;
             foreach (var window in GetAllWindows())
             {
                 window.ItemRefresh();

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -10,7 +11,7 @@ public static unsafe class InventoryMoveHelper
 {
     public static void MoveItemDirect(InventoryType sourceContainer, ushort sourceSlot, InventoryType destContainer, ushort destSlot)
     {
-        Services.Logger.DebugOnly($"[MoveItemDirect] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
+        IPluginLog.Get().DebugOnly($"[MoveItemDirect] {sourceContainer}@{sourceSlot} -> {destContainer}@{destSlot}");
         InventoryManager.Instance()->MoveItemSlot(sourceContainer, sourceSlot, destContainer, destSlot, true);
     }
 
@@ -27,7 +28,7 @@ public static unsafe class InventoryMoveHelper
 
         if (srcContainer == 0 || dstContainer == 0) return;
 
-        Services.Logger.DebugOnly($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
+        IPluginLog.Get().DebugOnly($"[MoveItemViaAgent] {srcContainer}:{srcSlot}:{srcRi} -> {dstContainer}:{dstSlot}:{dstRi}");
 
         using var atkValues = new RentedAtkValues(4);
         for (var i = 0; i < 4; i++)

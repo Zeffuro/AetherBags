@@ -44,11 +44,11 @@ public static class AddonLifecycleExtensions {
     private static void Logger(AddonEvent type, AddonArgs args) {
         switch (args) {
             case AddonReceiveEventArgs receiveEventArgs:
-                Services.Logger.DebugOnly($"[{args.AddonName}] {(AtkEventType)receiveEventArgs.AtkEventType}: {receiveEventArgs.EventParam}");
+                IPluginLog.Get().DebugOnly($"[{args.AddonName}] {(AtkEventType)receiveEventArgs.AtkEventType}: {receiveEventArgs.EventParam}");
                 break;
 
             default:
-                Services.Logger.DebugOnly($"{args.AddonName} called {type.ToString().Replace("Post", string.Empty)}");
+                IPluginLog.Get().DebugOnly($"{args.AddonName} called {type.ToString().Replace("Post", string.Empty)}");
                 break;
         }
     }

@@ -3,14 +3,14 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Currency;
 
-public sealed class CurrencyScrollingAreaNode : ScrollingListNode
+public sealed class CurrencyScrollingAreaNode : ConfigurationScrollingNode
 {
     public CurrencyScrollingAreaNode()
     {
-        AddNode(new CurrencyGeneralConfigurationNode
+        ContentNode.AddNode(new CurrencyGeneralConfigurationNode
         {
             Width = 600,
-            OnLayoutChanged = RecalculateLayout
+            OnLayoutChanged = RefreshLayout
         });
     }
 }

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -42,11 +43,11 @@ public class BisBuddyIPC : IDisposable
     {
         try
         {
-            _isInitialized = Services.PluginInterface.GetIpcSubscriber<bool>("BisBuddy.IsInitialized");
-            _initialized = Services.PluginInterface.GetIpcSubscriber<bool, bool>("BisBuddy.Initialized");
-            _getInventoryHighlightItems = Services.PluginInterface.GetIpcSubscriber<List<BisItemEntry>>("BisBuddy.GetInventoryHighlightItems");
-            _inventoryHighlightItemsChanged = Services.PluginInterface.GetIpcSubscriber<List<BisItemEntry>, bool>("BisBuddy.InventoryHighlightItemsChanged");
-            _getBisItemsFiltered = Services.PluginInterface.GetIpcSubscriber<BisItemFilter, List<BisItemEntry>>("BisBuddy.GetBisItemsFiltered");
+            _isInitialized = Plugin.PluginInterface.GetIpcSubscriber<bool>("BisBuddy.IsInitialized");
+            _initialized = Plugin.PluginInterface.GetIpcSubscriber<bool, bool>("BisBuddy.Initialized");
+            _getInventoryHighlightItems = Plugin.PluginInterface.GetIpcSubscriber<List<BisItemEntry>>("BisBuddy.GetInventoryHighlightItems");
+            _inventoryHighlightItemsChanged = Plugin.PluginInterface.GetIpcSubscriber<List<BisItemEntry>, bool>("BisBuddy.InventoryHighlightItemsChanged");
+            _getBisItemsFiltered = Plugin.PluginInterface.GetIpcSubscriber<BisItemFilter, List<BisItemEntry>>("BisBuddy.GetBisItemsFiltered");
 
             _initialized.Subscribe(OnBisBuddyInitialized);
             _inventoryHighlightItemsChanged.Subscribe(OnInventoryHighlightItemsChanged);
@@ -63,7 +64,7 @@ public class BisBuddyIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.DebugOnly($"BisBuddy not available: {ex.Message}");
+            IPluginLog.Get().DebugOnly($"BisBuddy not available: {ex.Message}");
             IsReady = false;
         }
     }
@@ -73,7 +74,7 @@ public class BisBuddyIPC : IDisposable
         IsReady = ready;
         if (ready)
         {
-            Services.Logger.Information("BisBuddy IPC connected");
+            IPluginLog.Get().Information("BisBuddy IPC connected");
             RefreshItems();
         }
         else
@@ -114,7 +115,7 @@ public class BisBuddyIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Warning($"Failed to refresh BisBuddy items: {ex.Message}");
+            IPluginLog.Get().Warning($"Failed to refresh BisBuddy items: {ex.Message}");
             IsReady = false;
         }
     }
@@ -151,7 +152,7 @@ public class BisBuddyIPC : IDisposable
             ItemLookup[item.ItemId] = item;
         }
 
-        Services.Logger.DebugOnly($"Refreshed {CachedBisItems.Count} BisBuddy items");
+        IPluginLog.Get().DebugOnly($"Refreshed {CachedBisItems.Count} BisBuddy items");
 
         ApplyHighlights();
         OnItemsRefreshed?.Invoke();

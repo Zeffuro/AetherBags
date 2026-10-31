@@ -1,3 +1,4 @@
+using KamiToolKit.BaseTypes;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;

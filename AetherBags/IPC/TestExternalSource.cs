@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -43,7 +44,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
         _version++;
         ExternalCategoryManager.RegisterSource(this);
         OnDataChanged?.Invoke();
-        Services.Logger.DebugOnly("[TestSource] Enabled");
+        IPluginLog.Get().DebugOnly("[TestSource] Enabled");
     }
 
     public void Disable()
@@ -51,14 +52,14 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
         if (!_isEnabled) return;
         _isEnabled = false;
         ExternalCategoryManager.UnregisterSource(SourceName);
-        Services.Logger.DebugOnly("[TestSource] Disabled");
+        IPluginLog.Get().DebugOnly("[TestSource] Disabled");
     }
 
     public void Refresh()
     {
         _version++;
         OnDataChanged?.Invoke();
-        Services.Logger.DebugOnly("[TestSource] Refreshed");
+        IPluginLog.Get().DebugOnly("[TestSource] Refreshed");
     }
 
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
@@ -171,7 +172,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
                 IconId: 60026, // Info icon
                 OnClick: ctx =>
                 {
-                    Services.Logger.DebugOnly($"[TestSource] Context menu clicked for item {ctx.ItemId} at [{ctx.Container}:{ctx.Slot}]");
+                    IPluginLog.Get().DebugOnly($"[TestSource] Context menu clicked for item {ctx.ItemId} at [{ctx.Container}:{ctx.Slot}]");
                 },
                 Order: 100
             ),
@@ -180,7 +181,7 @@ public sealed class TestExternalSource : IExternalItemSource, IDisposable
                 IconId: 60073, // Star icon
                 OnClick: ctx =>
                 {
-                    Services.Logger.DebugOnly($"[TestSource] Toggle highlight for item {ctx.ItemId}");
+                    IPluginLog.Get().DebugOnly($"[TestSource] Toggle highlight for item {ctx.ItemId}");
                     Refresh();
                 },
                 Order: 101

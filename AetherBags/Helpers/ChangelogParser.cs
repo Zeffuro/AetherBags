@@ -54,7 +54,7 @@ public static class ChangelogParser
 
     private static string GetChangelogPath()
     {
-        var baseDir = Services.PluginInterface.AssemblyLocation.Directory!.FullName;
+        var baseDir = Plugin.PluginInterface.AssemblyLocation.Directory!.FullName;
         return Path.Combine(baseDir, "changelog.md");
     }
 }

@@ -14,6 +14,11 @@ public static class System
     public static AddonRetainerWindow AddonRetainerWindow { get; set; } = null!;
     public static AddonConfigurationWindow AddonConfigurationWindow { get; set; } = null!;
     public static AddonChangelogWindow AddonChangelogWindow { get; set; } = null!;
+    public static AddonCategoryConfigurationWindow CategoryConfigurationWindow { get; set; } = null!;
+    public static AddonItemPicker ItemFilterPicker { get; set; } = null!;
+    public static AddonItemPicker ItemOrderPicker { get; set; } = null!;
+    public static AddonCurrencyPicker CurrencyPicker { get; set; } = null!;
+    public static AddonUICategoryPicker UICategoryPicker { get; set; } = null!;
     public static IPCService IPC { get; set; } = null!;
     public static AetherBagsIPCProvider? AetherBagsAPI { get; set; }
     public static SystemConfiguration Config { get; set; } = null!;

@@ -1,11 +1,12 @@
+using KamiToolKit.Components.ConfigurationNodes;
+using AetherBags.Nodes.Color;
 using System;
 using AetherBags.Addons;
 using AetherBags.Configuration;
-using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
+public class CategoryConfigurationNode : EntryConfigurationNode<CategoryWrapper>
 {
     private CategoryDefinitionConfigurationNode? _activeNode;
     private ReadOnlyCategoryDisplayNode? _readOnlyNode;
@@ -20,14 +21,11 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
     {
     }
 
-    protected override void OptionChanged(CategoryWrapper? option)
+    protected override void PopulateEntryData(CategoryWrapper option)
     {
-        if (option is null)
-        {
-            HideAll();
-            return;
-        }
-
+        ColorInputRow.CancelActiveSession(this);
+        _activeNode?.ClosePickers();
+        _builtInEditorNode?.ClosePicker();
         if (option.Kind == CategoryWrapperKind.GeneralSettings)
         {
             EnsureGeneralSettingsNode();
@@ -95,7 +93,7 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
             OnCategoryPropertyChanged = OnCategoryChanged,
             OnCategoryImported = OnCategoryChanged,
         };
-        _activeNode.AttachNode(this);
+        _activeNode.AttachNode(ConfigurationContentNode);
     }
 
     private void EnsureReadOnlyNode()
@@ -105,7 +103,7 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
         {
             OnOverrideRequested = id => OnOverrideRequested?.Invoke(id),
         };
-        _readOnlyNode.AttachNode(this);
+        _readOnlyNode.AttachNode(ConfigurationContentNode);
     }
 
     private void EnsureBuiltInEditor()
@@ -115,7 +113,7 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
         {
             OnLayoutChanged = RecalculateLayout,
         };
-        _builtInEditorNode.AttachNode(this);
+        _builtInEditorNode.AttachNode(ConfigurationContentNode);
     }
 
     private void EnsureGeneralSettingsNode()
@@ -125,15 +123,26 @@ public class CategoryConfigurationNode : ConfigNode<CategoryWrapper>
         {
             OnSettingsChanged = () => OnGeneralSettingsChanged?.Invoke(),
         };
-        _generalSettingsNode.AttachNode(this);
+        _generalSettingsNode.AttachNode(ConfigurationContentNode);
     }
+
+    protected override void ClearEntryData() => HideAll();
 
     private void HideAll()
     {
+        ColorInputRow.CancelActiveSession(this);
+        _activeNode?.ClosePickers();
+        _builtInEditorNode?.ClosePicker();
         HideEditor();
         HideReadOnly();
         HideBuiltInEditor();
         HideGeneralSettings();
+    }
+
+    public void ClosePickers()
+    {
+        _activeNode?.ClosePickers();
+        _builtInEditorNode?.ClosePicker();
     }
 
     private void HideGeneralSettings()

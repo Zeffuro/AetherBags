@@ -1,17 +1,16 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using Dalamud.Game.ClientState.Keys;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 using GameKeybind = FFXIVClientStructs.FFXIV.Client.System.Input.Keybind;
 using PluginKeybind = AetherBags.Configuration.Keybind;
 
@@ -33,7 +32,7 @@ public class KeybindConfigAddon : NativeAddon
     private TextNode? _currentComboTextNode;
     private CategoryTextNode? _conflictsLabelNode;
     private HorizontalLineNode? _conflictsLineNode;
-    private ScrollingListNode? _conflictsScrollingAreaNode;
+    private ScrollingNode<VerticalListNode>? _conflictsScrollingAreaNode;
     private HorizontalLineNode? _buttonsLineNode;
     private TextButtonNode? _confirmButtonNode;
     private TextButtonNode? _cancelButtonNode;
@@ -41,15 +40,17 @@ public class KeybindConfigAddon : NativeAddon
     private HashSet<VirtualKey> _combo = [];
     private VirtualKey[] _validKeys = [];
 
-    public required PluginKeybind InitialKeybind { get; init; }
+    public PluginKeybind InitialKeybind { get; set; } = new();
 
-    public required Action<PluginKeybind> OnKeybindChanged { get; init; }
+    public Action<PluginKeybind>? OnKeybindChanged { get; set; }
+
+    public unsafe bool IsAllocated => InternalAddon is not null;
 
     public bool ShowGameConflicts { get; init; } = true;
 
     public static bool IsCapturingKeybind { get; private set; }
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         SetWindowSize(
             ShowGameConflicts ? ConflictWindowWidth : DefaultWindowWidth,
@@ -62,7 +63,7 @@ public class KeybindConfigAddon : NativeAddon
             _combo.Add(InitialKeybind.Key);
         }
 
-        _validKeys = Services.KeyState.GetValidVirtualKeys().Where(key => key.IsBindable()).ToArray();
+        _validKeys = IKeyState.Get().GetValidVirtualKeys().Where(key => key.IsBindable()).ToArray();
 
         _inputComboLabelNode = new CategoryTextNode
         {
@@ -111,11 +112,12 @@ public class KeybindConfigAddon : NativeAddon
             };
             _conflictsLineNode.AttachNode(this);
 
-            _conflictsScrollingAreaNode = new ScrollingListNode
+            _conflictsScrollingAreaNode = new ScrollingNode<VerticalListNode>
             {
                 Position = ContentStartPosition + new Vector2(0.0f, 116.0f),
                 Size = new Vector2(ContentSize.X, 54.0f),
                 AutoHideScrollBar = true,
+                ContentNode = { FitWidth = true, FitContents = true },
             };
             _conflictsScrollingAreaNode.AttachNode(this);
             UpdateConflicts();
@@ -146,14 +148,14 @@ public class KeybindConfigAddon : NativeAddon
         };
         _cancelButtonNode.AttachNode(this);
 
-        return Task.CompletedTask;
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
         if (!IsOpen) return;
 
-        var pressedKeys = _validKeys.Where(key => Services.KeyState[key]).ToHashSet();
+        var pressedKeys = _validKeys.Where(key => IKeyState.Get()[key]).ToHashSet();
         if (pressedKeys.Any(key => key.IsKey()) && !_combo.SetEquals(pressedKeys))
         {
             _combo = pressedKeys;
@@ -173,7 +175,7 @@ public class KeybindConfigAddon : NativeAddon
             Modifiers = _combo.Where(key => key.IsModifier()).ToHashSet(),
         };
 
-        OnKeybindChanged(newKeybind);
+        OnKeybindChanged?.Invoke(newKeybind);
         Close();
     }
 
@@ -194,12 +196,12 @@ public class KeybindConfigAddon : NativeAddon
     {
         if (!ShowGameConflicts || _conflictsScrollingAreaNode == null) return;
 
-        _conflictsScrollingAreaNode.Clear();
+        _conflictsScrollingAreaNode.ContentNode.Clear();
 
         var conflicts = GetGameConflicts().ToList();
         if (conflicts.Count == 0)
         {
-            _conflictsScrollingAreaNode.AddNode(new TextNode
+            _conflictsScrollingAreaNode.ContentNode.AddNode(new TextNode
             {
                 Height = 18,
                 String = "No conflicts found.",
@@ -210,7 +212,7 @@ public class KeybindConfigAddon : NativeAddon
         {
             foreach (var conflict in conflicts)
             {
-                _conflictsScrollingAreaNode.AddNode(new TextNode
+                _conflictsScrollingAreaNode.ContentNode.AddNode(new TextNode
                 {
                     Height = 18,
                     String = conflict.ToString(),
@@ -219,7 +221,7 @@ public class KeybindConfigAddon : NativeAddon
             }
         }
 
-        _conflictsScrollingAreaNode.RecalculateLayout();
+        _conflictsScrollingAreaNode.RecalculateSizes();
     }
 
     private unsafe List<InputId> GetGameConflicts()
@@ -267,6 +269,7 @@ public class KeybindConfigAddon : NativeAddon
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         IsCapturingKeybind = false;
+        OnKeybindChanged = null;
 
         base.OnFinalize(addon);
     }

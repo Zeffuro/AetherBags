@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -219,8 +220,9 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         if (_hoverRefs != 0) return;
 
         _collapsePending = true;
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
+            if (IsDisposed) return;
             if (!_collapsePending) return;
             _collapsePending = false;
 
@@ -436,7 +438,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
     {
         try
         {
-            Services.Logger.DebugOnly($"[OnPayload] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), target={targetItemInfo.Item.Container}@{targetItemInfo.Item.Slot}");
+            IPluginLog.Get().DebugOnly($"[OnPayload] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), target={targetItemInfo.Item.Container}@{targetItemInfo.Item.Slot}");
             var nodePayload = new DragDropPayload
             {
                 Type = ExternalCategoryManager.GetDragDropTypeForContainer(targetItemInfo.Item.Container),
@@ -456,7 +458,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             if (srcExternal || dstExternal)
             {
-                Services.Logger.DebugOnly($"[OnPayload] external move detected: src={srcContainer}@{srcSlot} (external={srcExternal}) -> dst={dstContainer}@{targetItemInfo.Item.Slot} (external={dstExternal})");
+                IPluginLog.Get().DebugOnly($"[OnPayload] external move detected: src={srcContainer}@{srcSlot} (external={srcExternal}) -> dst={dstContainer}@{targetItemInfo.Item.Slot} (external={dstExternal})");
                 if (srcContainer == InventoryType.Crystals && dstContainer == InventoryType.RetainerCrystals)
                 {
                     if (RetainerCommands.TryEntrust(srcContainer, srcSlot))
@@ -497,7 +499,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             InventoryMoveHelper.HandleItemMovePayload(acceptedPayload, nodePayload);
             OnRefreshRequested?.Invoke();
         }
-        catch (Exception ex) { Services.Logger.Error(ex, "[OnPayload] Error handling payload acceptance"); }
+        catch (Exception ex) { IPluginLog.Get().Error(ex, "[OnPayload] Error handling payload acceptance"); }
     }
 
     private static (InventoryType container, ushort slot) ResolveRealSource(DragDropPayload payload)
@@ -554,7 +556,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             if (nodes[i] is not InventoryDragDropNode itemNode) continue;
             if (SharedItemPool is not null && SharedItemPool.TryReturn(itemNode)) continue;
             try { itemNode.Dispose(); }
-            catch (Exception ex) { Services.Logger.Error(ex, "[InventoryCategoryNode] Error disposing item node"); }
+            catch (Exception ex) { IPluginLog.Get().Error(ex, "[InventoryCategoryNode] Error disposing item node"); }
         }
     }
 

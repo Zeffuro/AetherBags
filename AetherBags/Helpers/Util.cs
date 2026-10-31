@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -120,7 +121,7 @@ public static class Util
         }
         catch (Exception e)
         {
-            Services.Logger.Error(e, $"Error trying to load file {file.FullName}, creating a new one instead.");
+            IPluginLog.Get().Error(e, $"Error trying to load file {file.FullName}, creating a new one instead.");
             config = new SystemConfiguration();
             JsonFileHelper.SaveFile(config, file.FullName);
         }

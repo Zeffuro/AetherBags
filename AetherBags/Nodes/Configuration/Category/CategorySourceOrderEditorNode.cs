@@ -1,3 +1,5 @@
+using Dalamud.Plugin.Services;
+using KamiToolKit.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -98,8 +99,9 @@ public sealed class CategorySourceOrderEditorNode : VerticalListNode
         if (target < 0 || target >= _order.Count) return;
 
         (_order[index], _order[target]) = (_order[target], _order[index]);
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
+            if (IsDisposed) return;
             RefreshItems();
             OnChanged?.Invoke();
         }, delayTicks: 2);
@@ -126,7 +128,7 @@ public sealed class CategorySourceOrderItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(buttonSize, buttonSize),
-            Icon = ButtonIcon.UpArrow,
+            Icon = CircleButtonIcon.UpArrow,
             TextTooltip = "Move up",
             IsEnabled = !isFirst,
             OnClick = () => OnMoveUp?.Invoke(),
@@ -135,7 +137,7 @@ public sealed class CategorySourceOrderItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(buttonSize, buttonSize),
-            Icon = ButtonIcon.ArrowDown,
+            Icon = CircleButtonIcon.ArrowDown,
             TextTooltip = "Move down",
             IsEnabled = !isLast,
             OnClick = () => OnMoveDown?.Invoke(),

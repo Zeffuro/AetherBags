@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using Dalamud.Plugin.Ipc;
 
@@ -5,6 +6,7 @@ namespace AetherBags.IPC;
 
 public class WotsItIPC : IDisposable
 {
+    private bool _isDisposed;
     private ICallGateSubscriber<string, string, string, uint, string>? _registerWithSearch;
     private ICallGateSubscriber<string, bool>? _invoke;
     private ICallGateSubscriber<string, bool>? _unregisterAll;
@@ -15,9 +17,9 @@ public class WotsItIPC : IDisposable
     {
         try
         {
-            _registerWithSearch = Services.PluginInterface.GetIpcSubscriber<string, string, string, uint, string>("FA.RegisterWithSearch");
-            _unregisterAll = Services.PluginInterface.GetIpcSubscriber<string, bool>("FA.UnregisterAll");
-            _invoke = Services.PluginInterface.GetIpcSubscriber<string, bool>("FA.Invoke");
+            _registerWithSearch = Plugin.PluginInterface.GetIpcSubscriber<string, string, string, uint, string>("FA.RegisterWithSearch");
+            _unregisterAll = Plugin.PluginInterface.GetIpcSubscriber<string, bool>("FA.UnregisterAll");
+            _invoke = Plugin.PluginInterface.GetIpcSubscriber<string, bool>("FA.Invoke");
 
             _invoke.Subscribe(OnInvoke);
 
@@ -25,7 +27,7 @@ public class WotsItIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.DebugOnly($"WotsIt not available: {ex.Message}");
+            IPluginLog.Get().DebugOnly($"WotsIt not available: {ex.Message}");
         }
     }
 
@@ -36,7 +38,7 @@ public class WotsItIPC : IDisposable
             UnregisterAll();
 
             _searchGuid = _registerWithSearch?.InvokeFunc(
-                Services.PluginInterface.InternalName,
+                Plugin.PluginInterface.InternalName,
                 "AetherBags: Search Inventory",
                 "AetherBags Search",
                 66472 // Icon ID
@@ -44,18 +46,19 @@ public class WotsItIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.DebugOnly($"Failed to register with WotsIt: {ex.Message}");
+            IPluginLog.Get().DebugOnly($"Failed to register with WotsIt: {ex.Message}");
         }
     }
 
     private void OnInvoke(string guid)
     {
-        if (guid == _searchGuid)
+        if (!_isDisposed && guid == _searchGuid)
         {
-            if (! System.AddonInventoryWindow.IsOpen)
+            IFramework.Get().RunOnFrameworkThread(() =>
             {
-                System.AddonInventoryWindow.Open();
-            }
+                if (!_isDisposed && !System.AddonInventoryWindow.IsOpen)
+                    System.AddonInventoryWindow.Open();
+            });
         }
     }
 
@@ -63,7 +66,7 @@ public class WotsItIPC : IDisposable
     {
         try
         {
-            _unregisterAll?.InvokeFunc(Services.PluginInterface.InternalName);
+            _unregisterAll?.InvokeFunc(Plugin.PluginInterface.InternalName);
             return true;
         }
         catch
@@ -74,6 +77,7 @@ public class WotsItIPC : IDisposable
 
     public void Dispose()
     {
+        _isDisposed = true;
         _invoke?.Unsubscribe(OnInvoke);
         UnregisterAll();
     }

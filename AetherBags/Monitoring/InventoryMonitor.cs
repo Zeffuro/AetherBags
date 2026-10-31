@@ -1,7 +1,7 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Scanning;
@@ -29,6 +29,7 @@ public static unsafe class DragDropState
 
 public class InventoryMonitor : IDisposable
 {
+    private bool _isDisposed;
 
     public InventoryMonitor()
     {
@@ -36,39 +37,42 @@ public class InventoryMonitor : IDisposable
         var saddle = new[] { "InventoryBuddy" };
         var retainer = new[] { "InventoryRetainer", "InventoryRetainerLarge" };
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, saddle, OnPostSetup);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, retainer, OnPostSetup);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, saddle, OnPostSetup);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, retainer, OnPostSetup);
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, bags, OnInventoryPreFinalize);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, bags, OnInventoryPreFinalize);
 
         // PreRefresh Handlers
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
 
         // PostRequestedUpdate
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, retainer, OnRetainerInventoryUpdate);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, retainer, OnRetainerInventoryUpdate);
 
         // Dalamud raw event for raw inventory changes (scans once per frame)
-        Services.GameInventory.InventoryChangedRaw += OnInventoryChangedRaw;
+        IGameInventory.Get().InventoryChangedRaw += OnInventoryChangedRaw;
 
-        Services.Logger.Verbose("InventoryLifecycles initialized");
+        IPluginLog.Get().Verbose("InventoryLifecycles initialized");
     }
 
     private void OnPreFinalize(AddonEvent type, AddonArgs args)
     {
+        if (_isDisposed) return;
         CloseInventories(args.AddonName);
     }
 
     private void OnPostSetup(AddonEvent type, AddonArgs args)
     {
+        if (_isDisposed) return;
         OpenInventories(args.AddonName);
     }
 
     private void OnInventoryPreFinalize(AddonEvent type, AddonArgs args)
     {
+        if (_isDisposed) return;
         System.AddonInventoryWindow.Close();
     }
 
@@ -127,12 +131,13 @@ public class InventoryMonitor : IDisposable
         if (name.Contains("InventoryBuddy")) System.AddonSaddleBagWindow.Close();
     }
 
-    private static bool IsInUnsafeState()
+    private bool IsInUnsafeState()
     {
-        if (!Services.ClientState.IsLoggedIn)
+        if (_isDisposed) return true;
+        if (!IClientState.Get().IsLoggedIn)
             return true;
 
-        return Services.Condition.Any(ConditionFlag.BetweenAreas, ConditionFlag.BetweenAreas51);
+        return ICondition.Get().Any(ConditionFlag.BetweenAreas, ConditionFlag.BetweenAreas51);
     }
 
     /*
@@ -183,7 +188,7 @@ public class InventoryMonitor : IDisposable
 
         if (needsRefresh)
         {
-            Services.Framework.RunOnTick(() =>
+            IFramework.Get().RunOnTick(() =>
             {
                 if (IsInUnsafeState() || DragDropState.IsDragging) return;
 
@@ -206,7 +211,7 @@ public class InventoryMonitor : IDisposable
         GeneralSettings config = System.Config.General;
         bool vanillaBypassActive = System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false;
 
-        Services.Logger.DebugOnly("PreRefresh event for Inventory detected");
+        IPluginLog.Get().DebugOnly("PreRefresh event for Inventory detected");
 
         AtkValuePtr[] atkValues = refreshArgs.AtkValueEnumerable.ToArray();
 
@@ -235,11 +240,17 @@ public class InventoryMonitor : IDisposable
 
             if (openTitleId == 0)
             {
-                Task.Run(System.AddonInventoryWindow.ToggleAsync);
+                IFramework.Get().RunOnTick(() =>
+                {
+                    if (!_isDisposed) System.AddonInventoryWindow.Toggle();
+                });
             }
             else
             {
-                Task.Run(System.AddonInventoryWindow.OpenAsync);
+                IFramework.Get().RunOnTick(() =>
+                {
+                    if (!_isDisposed) System.AddonInventoryWindow.Open();
+                });
             }
         }
     }
@@ -282,7 +293,8 @@ public class InventoryMonitor : IDisposable
 
     public void Dispose()
     {
-        Services.GameInventory.InventoryChangedRaw -= OnInventoryChangedRaw;
-        Services.AddonLifecycle.UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
+        _isDisposed = true;
+        IGameInventory.Get().InventoryChangedRaw -= OnInventoryChangedRaw;
+        IAddonLifecycle.Get().UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
     }
 }

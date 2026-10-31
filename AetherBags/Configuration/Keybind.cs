@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Keys;
@@ -14,18 +15,18 @@ public class Keybind
 
     public bool IsPressed(bool exactModifiers = false)
     {
-        if (Key == VirtualKey.NO_KEY || !Services.KeyState.IsVirtualKeyValid(Key) || !Services.KeyState[(int)Key]) return false;
+        if (Key == VirtualKey.NO_KEY || !IKeyState.Get().IsVirtualKeyValid(Key) || !IKeyState.Get()[(int)Key]) return false;
 
         foreach (var modifier in Modifiers)
         {
-            if (!Services.KeyState.IsVirtualKeyValid(modifier) || !Services.KeyState[(int)modifier]) return false;
+            if (!IKeyState.Get().IsVirtualKeyValid(modifier) || !IKeyState.Get()[(int)modifier]) return false;
         }
 
         if (exactModifiers)
         {
             foreach (var modifier in ModifierKeys)
             {
-                if (!Modifiers.Contains(modifier) && Services.KeyState.IsVirtualKeyValid(modifier) && Services.KeyState[(int)modifier]) return false;
+                if (!Modifiers.Contains(modifier) && IKeyState.Get().IsVirtualKeyValid(modifier) && IKeyState.Get()[(int)modifier]) return false;
             }
         }
 
@@ -34,9 +35,9 @@ public class Keybind
 
     public void Reset()
     {
-        if (Key == VirtualKey.NO_KEY || !Services.KeyState.IsVirtualKeyValid(Key)) return;
+        if (Key == VirtualKey.NO_KEY || !IKeyState.Get().IsVirtualKeyValid(Key)) return;
 
-        Services.KeyState[(int)Key] = false;
+        IKeyState.Get()[(int)Key] = false;
     }
 
     public override string ToString()

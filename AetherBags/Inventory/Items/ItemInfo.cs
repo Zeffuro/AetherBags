@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -20,8 +21,8 @@ public sealed class ItemInfo : IEquatable<ItemInfo>
 
     private static ExcelSheet<Item>? s_itemSheet;
     private static ExcelSheet<EventItem>? s_eventItemSheet;
-    internal static ExcelSheet<Item> ItemSheet => s_itemSheet ??= Services.DataManager.GetExcelSheet<Item>();
-    internal static ExcelSheet<EventItem> EventItemSheet => s_eventItemSheet ??= Services.DataManager.GetExcelSheet<EventItem>();
+    internal static ExcelSheet<Item> ItemSheet => s_itemSheet ??= IDataManager.Get().GetExcelSheet<Item>();
+    internal static ExcelSheet<EventItem> EventItemSheet => s_eventItemSheet ??= IDataManager.Get().GetExcelSheet<EventItem>();
 
     public static bool IsAggregatable(uint itemId)
         => ItemSheet.TryGetRow(itemId, out var row) && row.StackSize > 1;

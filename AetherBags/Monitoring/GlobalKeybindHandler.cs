@@ -17,7 +17,7 @@ public sealed unsafe class GlobalKeybindHandler : IDisposable
 
     public GlobalKeybindHandler()
     {
-        Services.Framework.Update += OnFrameworkUpdate;
+        IFramework.Get().Update += OnFrameworkUpdate;
     }
 
     private void OnFrameworkUpdate(IFramework framework)
@@ -57,8 +57,8 @@ public sealed unsafe class GlobalKeybindHandler : IDisposable
 
     private static bool ShouldSuppressKeybinds()
     {
-        if (!Services.ClientState.IsLoggedIn) return true;
-        if (Services.Condition.Any(ConditionFlag.BetweenAreas, ConditionFlag.BetweenAreas51)) return true;
+        if (!IClientState.Get().IsLoggedIn) return true;
+        if (ICondition.Get().Any(ConditionFlag.BetweenAreas, ConditionFlag.BetweenAreas51)) return true;
         if (RaptureAtkModule.Instance()->IsTextInputActive()) return true;
 
         return KeybindConfigAddon.IsCapturingKeybind;
@@ -106,7 +106,7 @@ public sealed unsafe class GlobalKeybindHandler : IDisposable
 
     public void Dispose()
     {
-        Services.Framework.Update -= OnFrameworkUpdate;
+        IFramework.Get().Update -= OnFrameworkUpdate;
     }
 }
 

@@ -5,7 +5,7 @@ using AetherBags.Nodes.Currency;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using Lumina.Text.ReadOnly;
 using static AetherBags.Inventory.State.InventoryStateBase;
 
@@ -50,19 +50,7 @@ public sealed class InventoryFooterNode : SimpleComponentNode
         if (!config.Enabled) return;
 
         IReadOnlyList<CurrencyInfo> currencyInfoList = GetCurrencyInfoList(config.DisplayedCurrencies);
-        _currencyListNode.SyncWithListDataByKey<CurrencyInfo, CurrencyNode, uint>(
-            dataList: currencyInfoList,
-            getKeyFromData: currencyInfo => currencyInfo.ItemId,
-            getKeyFromNode: node => node.Currency.ItemId,
-            updateNode: (node, data) =>
-            {
-                node.Currency = data;
-            },
-            createNodeMethod: data => new CurrencyNode
-            {
-                Size = new Vector2(120, 28),
-                Currency = data
-            });
+        _currencyListNode.SyncCurrencies(currencyInfoList);
     }
 
     public ReadOnlySeString SlotAmountText

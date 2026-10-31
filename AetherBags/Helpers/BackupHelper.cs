@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ public static class BackupHelper {
     private const int MaxBackups = 10;
     private const string Name = "AetherBags";
     public static void DoConfigBackup(IDalamudPluginInterface pluginInterface) {
-        Services.Logger.DebugOnly("Backup configuration start.");
+        IPluginLog.Get().DebugOnly("Backup configuration start.");
         try {
             var configDirectory = pluginInterface.ConfigDirectory;
             if (!configDirectory.Exists) {
@@ -66,7 +67,7 @@ public static class BackupHelper {
                         File.Move(latestFile.FullName, archivePath);
                         moved = true;
                     } catch (IOException ioEx) when (i < 4) {
-                        Services.Logger.DebugOnly($"Move failed, retrying in 100ms: {ioEx.Message}");
+                        IPluginLog.Get().DebugOnly($"Move failed, retrying in 100ms: {ioEx.Message}");
                         global::System.Threading.Thread.Sleep(100);
                     }
                 }
@@ -83,11 +84,11 @@ public static class BackupHelper {
             var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith($"{Name}.2") && f.Name.EndsWith(".zip"))
                 .OrderBy(f => f.LastWriteTime.Ticks).ToList();
             if (allBackups.Count > MaxBackups) {
-                Services.Logger.DebugOnly($"Removing Oldest Backup: {allBackups[0].FullName}");
+                IPluginLog.Get().DebugOnly($"Removing Oldest Backup: {allBackups[0].FullName}");
                 File.Delete(allBackups[0].FullName);
             }
         } catch (Exception exception) {
-            Services.Logger.Warning(exception, "Backup Skipped");
+            IPluginLog.Get().Warning(exception, "Backup Skipped");
         }
     }
 

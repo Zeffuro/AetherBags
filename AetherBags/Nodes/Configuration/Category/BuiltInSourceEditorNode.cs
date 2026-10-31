@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Linq;
 using System.Numerics;
 using AetherBags.Addons;
@@ -10,8 +11,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
@@ -21,7 +21,7 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
 {
     public Action? OnLayoutChanged { get; init; }
 
-    private readonly ScrollingAreaNode<VerticalListNode> _scrollingArea;
+    private readonly ConfigurationScrollingNode _scrollingArea;
     private readonly TextNode _headerLabel;
     private readonly TextNode _subLabel;
     private readonly CheckboxNode _enabledCheckbox;
@@ -31,7 +31,6 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
     private readonly NumericInputNode _orderInput;
     private readonly ItemSortCriteriaEditorNode _sortEditor;
     private readonly UintListEditorNode _customOrderEditor;
-    private AddonItemPicker? _itemPicker;
 
     private IExternalItemSource? _source;
     private BuiltInSourceOverride? _override;
@@ -39,15 +38,13 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
 
     public BuiltInSourceEditorNode()
     {
-        _scrollingArea = new ScrollingAreaNode<VerticalListNode>
+        _scrollingArea = new ConfigurationScrollingNode
         {
             AutoHideScrollBar = true,
-            ContentHeight = 100f,
         };
         _scrollingArea.AttachNode(this);
 
-        var list = _scrollingArea.ContentAreaNode;
-        list.FitContents = true;
+        var list = _scrollingArea.ContentNode;
         list.ItemSpacing = 4.0f;
 
         _headerLabel = new TextNode
@@ -171,13 +168,13 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
         _customOrderEditor = new UintListEditorNode
         {
             Label = "Custom Item Order:",
-            MaxValue = Services.DataManager.GetExcelSheet<Item>().LastOrDefault().RowId,
+            MaxValue = IDataManager.Get().GetExcelSheet<Item>().LastOrDefault().RowId,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveItemName,
             OnSearchButtonClicked = OpenItemPicker,
             OnChanged = () =>
             {
                 if (_isRefreshing || _override is null) return;
-                _override.CustomItemOrder = _customOrderEditor.GetList();
+                _override.CustomItemOrder = _customOrderEditor!.GetList();
                 NotifyChanged();
                 HandleLayoutChange();
             },
@@ -193,8 +190,11 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
         HandleLayoutChange();
     }
 
+    public void ClosePicker() => System.ItemOrderPicker.CloseFor(this);
+
     public void SetSource(IExternalItemSource source, BuiltInSourceOverride preferences)
     {
+        System.ItemOrderPicker.CloseFor(this);
         _source = source;
         _override = preferences;
 
@@ -240,27 +240,16 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
 
     private void HandleLayoutChange()
     {
-        _scrollingArea.ContentAreaNode.RecalculateLayout();
-        _scrollingArea.ContentHeight = _scrollingArea.ContentAreaNode.Height;
+        _scrollingArea.RefreshLayout();
         OnLayoutChanged?.Invoke();
     }
 
     private void OpenItemPicker()
     {
-        _itemPicker ??= new AddonItemPicker
+        System.ItemOrderPicker.OpenFor(this, item =>
         {
-            Title = "Select Items to Order",
-            InternalName = "Aetherbags_OrderItemPicker",
-            SearchOptions = Services.DataManager.GetExcelSheet<Item>()
-                .Where(i => i.RowId > 0 && !i.Name.IsEmpty)
-                .ToList(),
-            SortingOptions = [DefaultSortOptions.Alphabetical, DefaultSortOptions.Id],
-            ItemSpacing = 3.0f,
-        };
-
-        _itemPicker.SelectionResult = item => _customOrderEditor.AddValue(item.RowId);
-        ItemListItemWithAddNode.OnAddClicked = item => _customOrderEditor.AddValue(item.RowId);
-        _itemPicker.Open();
+            if (!IsDisposed) _customOrderEditor?.AddValue(item.RowId);
+        });
     }
 
     private static (Vector4 Color, bool IsPinned, int Order) ResolveSourceDefaults(IExternalItemSource source)
@@ -282,4 +271,10 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
         Util.SaveConfig(System.Config);
         InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        System.ItemOrderPicker?.CloseFor(this);
+        base.Dispose(isNativeDestructor);
+    }
+
 }

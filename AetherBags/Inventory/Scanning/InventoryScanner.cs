@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using System.Linq;
 using AetherBags.Configuration;
@@ -72,12 +73,12 @@ public static unsafe class InventoryScanner
             var container = inventoryManager->GetInventoryContainer(inventoryType);
             if (container == null)
             {
-                Services.Logger.DebugOnly($"Container null:  {inventoryType}");
+                IPluginLog.Get().DebugOnly($"Container null:  {inventoryType}");
                 continue;
             }
 
             int size = container->Size;
-            Services.Logger.DebugOnly($"Scanning {inventoryType} Size={size}");
+            IPluginLog.Get().DebugOnly($"Scanning {inventoryType} Size={size}");
 
             for (int slot = 0; slot < size; slot++)
             {
@@ -98,14 +99,14 @@ public static unsafe class InventoryScanner
                     ? MakeAggregatedItemKey(id, isHq)
                     : MakeNaturalSlotKey(inventoryType, slot);
 
-                Services.Logger.DebugOnly($"Slot {inventoryType}[{slot}] ItemId={id} Qty={quantity} Key=0x{key: X16}");
+                IPluginLog.Get().DebugOnly($"Slot {inventoryType}[{slot}] ItemId={id} Qty={quantity} Key=0x{key: X16}");
 
                 if (aggByKey.TryGetValue(key, out AggregatedItem agg))
                 {
                     if (stackMode == InventoryStackMode.NaturalStacks)
                     {
                         collisions++;
-                        Services.Logger.DebugOnly($"COLLISION Key=0x{key:X16}:  existing ItemId={agg.First.ItemId} new ItemId={id}");
+                        IPluginLog.Get().DebugOnly($"COLLISION Key=0x{key:X16}:  existing ItemId={agg.First.ItemId} new ItemId={id}");
                     }
 
                     agg.Total += quantity;
@@ -118,7 +119,7 @@ public static unsafe class InventoryScanner
             }
         }
 
-        Services.Logger.DebugOnly($"ScannedSlots={scannedSlots} NonEmptySlots={nonEmptySlots} AggByKey.Count={aggByKey.Count} Collisions={collisions}");
+        IPluginLog.Get().DebugOnly($"ScannedSlots={scannedSlots} NonEmptySlots={nonEmptySlots} AggByKey.Count={aggByKey.Count} Collisions={collisions}");
     }
 
     public static void BuildItemInfos(
@@ -147,7 +148,7 @@ public static unsafe class InventoryScanner
             }
         }
 
-        Services.Logger.DebugOnly($"ItemInfoByKey.Count={itemInfoByKey.Count}");
+        IPluginLog.Get().DebugOnly($"ItemInfoByKey.Count={itemInfoByKey.Count}");
     }
 
     public static void PruneStaleItemInfos(

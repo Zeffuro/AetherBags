@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using AetherBags. Inventory.Scanning;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
@@ -38,7 +39,7 @@ public class RetainerState :  InventoryStateBase
     {
         get
         {
-            if (! Services.ClientState.IsLoggedIn) return false;
+            if (!IClientState.Get().IsLoggedIn) return false;
 
             var retainerManager = RetainerManager. Instance();
             if (retainerManager == null) return false;

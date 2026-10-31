@@ -1,7 +1,8 @@
-using System;
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using KamiToolKit;
+using System;
+using KamiToolKit.BaseTypes;
 
 namespace AetherBags.Nodes.Layout;
 
@@ -71,7 +72,7 @@ public sealed class SharedNodePool<T> where T : NodeBase
             }
             catch (Exception ex)
             {
-                Services.Logger.Error(ex, $"[SharedNodePool] Error disposing overflow node {typeof(T).Name}");
+                IPluginLog.Get().Error(ex, $"[SharedNodePool] Error disposing overflow node {typeof(T).Name}");
             }
         }
     }
@@ -86,7 +87,7 @@ public sealed class SharedNodePool<T> where T : NodeBase
             }
             catch (Exception ex)
             {
-                Services.Logger.Error(ex, $"[SharedNodePool] Error disposing pooled node {typeof(T).Name}");
+                IPluginLog.Get().Error(ex, $"[SharedNodePool] Error disposing pooled node {typeof(T).Name}");
             }
         }
     }

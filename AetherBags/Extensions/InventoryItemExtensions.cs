@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -43,7 +44,7 @@ public static unsafe class InventoryItemExtensions {
             var baseItemId = item.GetBaseItemId();
 
             if (ItemUtil.IsNormalItem(baseItemId) &&
-                Services.DataManager.GetExcelSheet<Item>().TryGetRow(baseItemId, out var baseItem)) {
+                IDataManager.Get().GetExcelSheet<Item>().TryGetRow(baseItemId, out var baseItem)) {
                 return baseItem;
             }
 
@@ -54,7 +55,7 @@ public static unsafe class InventoryItemExtensions {
             var baseItemId = item.GetBaseItemId();
 
             if (ItemUtil.IsEventItem(baseItemId) &&
-                Services.DataManager.GetExcelSheet<EventItem>().TryGetRow(baseItemId, out var eventItem)) {
+                IDataManager.Get().GetExcelSheet<EventItem>().TryGetRow(baseItemId, out var eventItem)) {
                 return eventItem;
             }
 

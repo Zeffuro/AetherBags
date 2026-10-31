@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
@@ -279,7 +280,7 @@ public static class InventoryAddonContextMenu
         PrintChat($"{stats.UsedSlots}/{stats.TotalSlots} slots ({stats.UsagePercent:F0}%) | {stats.TotalItems} items | {stats.CategoryCount} categories");
     }
 
-    private static void PrintChat(string message) => Services.ChatGui.Print(message, "AetherBags");
+    private static void PrintChat(string message) => IChatGui.Get().Print(message, "AetherBags");
 
     private static void SaveConfig() => Util.SaveConfig(System.Config);
 

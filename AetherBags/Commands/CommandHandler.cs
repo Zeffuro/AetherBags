@@ -1,6 +1,6 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using AetherBags.Addons;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -20,14 +20,14 @@ public class CommandHandler : IDisposable
 
     public CommandHandler()
     {
-        Services.CommandManager.AddHandler(MainCommand, new CommandInfo(OnCommand)
+        ICommandManager.Get().AddHandler(MainCommand, new CommandInfo(OnCommand)
         {
             DisplayOrder = 1,
             ShowInHelp = true,
             HelpMessage = HelpDescription
         });
 
-        Services.CommandManager.AddHandler(ShortCommand, new CommandInfo(OnCommand)
+        ICommandManager.Get().AddHandler(ShortCommand, new CommandInfo(OnCommand)
         {
             DisplayOrder = 2,
             ShowInHelp = true,
@@ -45,22 +45,22 @@ public class CommandHandler : IDisposable
         {
             case "":
             case "toggle":
-                Task.Run(System.AddonInventoryWindow.ToggleAsync);
+                System.AddonInventoryWindow.Toggle();
                 break;
 
             case "config":
             case "settings":
-                Task.Run(System.AddonConfigurationWindow.ToggleAsync);
+                System.AddonConfigurationWindow.Toggle();
                 break;
 
             case "show":
             case "open":
-                Task.Run(System.AddonInventoryWindow.OpenAsync);
+                System.AddonInventoryWindow.Open();
                 break;
 
             case "hide":
             case "close":
-                Task.Run(System.AddonInventoryWindow.CloseAsync);
+                System.AddonInventoryWindow.Close();
                 break;
 
             case "search":
@@ -139,15 +139,15 @@ public class CommandHandler : IDisposable
                 break;
 
             case "saddle":
-                Task.Run(System.AddonSaddleBagWindow.ToggleAsync);
+                System.AddonSaddleBagWindow.Toggle();
                 break;
 
             case "retainer":
-                Task.Run(System.AddonRetainerWindow.ToggleAsync);
+                System.AddonRetainerWindow.Toggle();
                 break;
 
             case "changelog":
-                Task.Run(System.AddonChangelogWindow.ToggleAsync);
+                System.AddonChangelogWindow.Toggle();
                 break;
 
             case "test":
@@ -515,12 +515,12 @@ public class CommandHandler : IDisposable
 
     private static void PrintChat(string message)
     {
-        Services.ChatGui.Print(message, "AetherBags");
+        IChatGui.Get().Print(message, "AetherBags");
     }
 
     public void Dispose()
     {
-        Services.CommandManager.RemoveHandler(MainCommand);
-        Services.CommandManager.RemoveHandler(ShortCommand);
+        ICommandManager.Get().RemoveHandler(MainCommand);
+        ICommandManager.Get().RemoveHandler(ShortCommand);
     }
 }

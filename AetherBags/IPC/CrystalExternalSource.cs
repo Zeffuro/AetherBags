@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -59,7 +60,7 @@ public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInvento
         _version++;
         ExternalCategoryManager.RegisterSource(this);
         OnDataChanged?.Invoke();
-        Services.Logger.Information("[CrystalSource] Enabled");
+        IPluginLog.Get().Information("[CrystalSource] Enabled");
     }
 
     public void Disable()
@@ -67,7 +68,7 @@ public sealed unsafe class CrystalExternalSource : IExternalItemSource, IInvento
         if (!_isEnabled) return;
         _isEnabled = false;
         ExternalCategoryManager.UnregisterSource(SourceName);
-        Services.Logger.Information("[CrystalSource] Disabled");
+        IPluginLog.Get().Information("[CrystalSource] Disabled");
     }
 
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()

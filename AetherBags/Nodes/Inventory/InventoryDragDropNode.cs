@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Configuration;
@@ -32,7 +33,6 @@ public class InventoryDragDropNode : DragDropNode
     private ImageNode? _borderNode;
     private BorderStyle _currentBorderStyle;
     private bool _isBorderHovered;
-    private ItemDecoration? _currentDecoration;
 
     public unsafe InventoryDragDropNode()
     {
@@ -69,15 +69,13 @@ public class InventoryDragDropNode : DragDropNode
             IsDraggable = !blockUnmarketable;
 
             var decoration = ExternalCategoryManager.GetDecoration(value.Item.ItemId);
-            Services.Logger.DebugOnly($"[ItemInfo.set] Item {value.Item.ItemId}: Decoration={decoration.HasValue}, Badge={decoration?.Badge.HasValue ?? false}");
+            IPluginLog.Get().DebugOnly($"[ItemInfo.set] Item {value.Item.ItemId}: Decoration={decoration.HasValue}, Badge={decoration?.Badge.HasValue ?? false}");
             ApplyDecoration(decoration);
         }
     }
 
     public void ApplyDecoration(ItemDecoration? decoration)
     {
-        _currentDecoration = decoration;
-
         if (!decoration.HasValue)
         {
             ClearDecoration();
@@ -85,11 +83,11 @@ public class InventoryDragDropNode : DragDropNode
         }
 
         var dec = decoration.Value;
-        Services.Logger.DebugOnly($"[ApplyDecoration] Item has decoration: Badge={dec.Badge.HasValue}, Border={dec.Border}, Overlay={dec.OverlayColor}");
+        IPluginLog.Get().DebugOnly($"[ApplyDecoration] Item has decoration: Badge={dec.Badge.HasValue}, Border={dec.Border}, Overlay={dec.OverlayColor}");
 
         if (dec.Badge.HasValue)
         {
-            Services.Logger.DebugOnly($"[ApplyDecoration] Applying badge: IconId={dec.Badge.Value.IconId}, Position={dec.Badge.Value.Position}");
+            IPluginLog.Get().DebugOnly($"[ApplyDecoration] Applying badge: IconId={dec.Badge.Value.IconId}, Position={dec.Badge.Value.Position}");
             ApplyBadge(dec.Badge.Value);
         }
         else
@@ -99,7 +97,7 @@ public class InventoryDragDropNode : DragDropNode
 
         if (dec.Border != BorderStyle.None)
         {
-            Services.Logger.DebugOnly($"[ApplyDecoration] Applying border: {dec.Border}");
+            IPluginLog.Get().DebugOnly($"[ApplyDecoration] Applying border: {dec.Border}");
             ApplyBorder(dec.Border);
         }
         else
@@ -123,7 +121,7 @@ public class InventoryDragDropNode : DragDropNode
             _badgeNode.AttachNode(IconNode);
         }
 
-        Services.Logger.DebugOnly($"[ApplyBadge] Badge node was {(wasNull ? "created" : "reused")}, setting IconId={badge.IconId}");
+        IPluginLog.Get().DebugOnly($"[ApplyBadge] Badge node was {(wasNull ? "created" : "reused")}, setting IconId={badge.IconId}");
 
         _badgeNode.IconId = badge.IconId;
         _badgeNode.IsVisible = true;
@@ -155,7 +153,7 @@ public class InventoryDragDropNode : DragDropNode
         }
     }
 
-private void ApplyBorder(BorderStyle style)
+    private void ApplyBorder(BorderStyle style)
     {
         if (_borderContainerNode == null)
         {
@@ -287,7 +285,7 @@ private void ApplyBorder(BorderStyle style)
     private unsafe void OnItemMouseDown(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         if (IconNode.IsIconDisabled) return;
         InventoryItem item = ItemInfo.Item;
-        if (Services.KeyState[VirtualKey.SHIFT] && atkEventData->IsLeftClick && System.Config.General.LinkItemEnabled)
+        if (IKeyState.Get()[VirtualKey.SHIFT] && atkEventData->IsLeftClick && System.Config.General.LinkItemEnabled)
         {
             AgentChatLog.Instance()->LinkItem(item.ItemId);
             return;
@@ -295,7 +293,7 @@ private void ApplyBorder(BorderStyle style)
 
         if (!atkEventData->IsRightClick) return;
 
-        if (Services.KeyState[VirtualKey.CONTROL] && ItemContextMenuHandler.TryShowExternalMenu(ItemInfo))
+        if (IKeyState.Get()[VirtualKey.CONTROL] && ItemContextMenuHandler.TryShowExternalMenu(ItemInfo))
         {
             return;
         }
@@ -307,7 +305,7 @@ private void ApplyBorder(BorderStyle style)
     private unsafe void OnItemClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {
         if (IconNode.IsIconDisabled) return;
-        if (Services.KeyState[VirtualKey.SHIFT] && System.Config.General.LinkItemEnabled) return;
+        if (IKeyState.Get()[VirtualKey.SHIFT] && System.Config.General.LinkItemEnabled) return;
         InventoryItem item = ItemInfo.Item;
         if (!atkEventData->IsLeftClick) return;
 
@@ -366,7 +364,6 @@ private void ApplyBorder(BorderStyle style)
     public void ResetForReuse()
     {
         ClearDecoration();
-        _currentDecoration = null; // Reset so next ApplyDecoration runs fully
         _currentBorderStyle = BorderStyle.None;
         _isBorderHovered = false;
         _quantityTextNode.String = string.Empty;
@@ -374,6 +371,6 @@ private void ApplyBorder(BorderStyle style)
         IconNode.AddColor = Vector3.Zero;
         IconNode.IsIconDisabled = false;
         IsDraggable = true;
-        IconNode.IconExtras.AntsNode.IsVisible = false;
+        IconNode.IsAnts = false;
     }
 }

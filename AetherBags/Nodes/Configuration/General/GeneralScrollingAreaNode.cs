@@ -5,7 +5,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;
 
-public sealed class GeneralScrollingAreaNode : ScrollingListNode
+public sealed class GeneralScrollingAreaNode : ConfigurationScrollingNode
 {
     public GeneralScrollingAreaNode()
     {
@@ -13,15 +13,15 @@ public sealed class GeneralScrollingAreaNode : ScrollingListNode
 
         new ImportExportResetNode().AttachNode(this);
 
-        ItemSpacing = 10;
+        ContentNode.ItemSpacing = 10;
 
-        AddNode(new FunctionalConfigurationNode());
+        ContentNode.AddNode(new FunctionalConfigurationNode());
 
-        AddNode(new LayoutConfigurationNode(RecalculateLayout));
+        ContentNode.AddNode(new LayoutConfigurationNode(RefreshLayout));
 
-        AddNode(new DtrConfigurationNode());
+        ContentNode.AddNode(new DtrConfigurationNode());
 
-        AddNode(new CheckboxNode
+        ContentNode.AddNode(new CheckboxNode
         {
             Size = new Vector2(300, 20),
             IsVisible = true,

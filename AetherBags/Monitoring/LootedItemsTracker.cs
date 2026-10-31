@@ -46,8 +46,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         _batchStartTick = 0;
         _hasPendingRemoval = false;
         _nextIndex = 0;
-        Services.GameInventory.InventoryChangedRaw += OnInventoryChangedRaw;
-        Services.Framework.Update += OnFrameworkUpdate;
+        IGameInventory.Get().InventoryChangedRaw += OnInventoryChangedRaw;
+        IFramework.Get().Update += OnFrameworkUpdate;
     }
 
     public void Disable()
@@ -55,8 +55,8 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         if (!_isEnabled) return;
 
         _isEnabled = false;
-        Services.GameInventory.InventoryChangedRaw -= OnInventoryChangedRaw;
-        Services.Framework.Update -= OnFrameworkUpdate;
+        IGameInventory.Get().InventoryChangedRaw -= OnInventoryChangedRaw;
+        IFramework.Get().Update -= OnFrameworkUpdate;
         _lootedItems.Clear();
         _pendingChanges.Clear();
         UnseenLootItemIds.Clear();
@@ -163,7 +163,7 @@ public sealed unsafe class LootedItemsTracker : IDisposable
 
     private void OnInventoryChangedRaw(IReadOnlyCollection<InventoryEventArgs> events)
     {
-        if (!_isEnabled || !Services.ClientState.IsLoggedIn) return;
+        if (!_isEnabled || !IClientState.Get().IsLoggedIn) return;
 
         bool anyChanged = false;
 
@@ -239,13 +239,13 @@ public sealed unsafe class LootedItemsTracker : IDisposable
         if (_filteredCategoryItems == null)
         {
             _filteredCategoryItems = new HashSet<uint>();
-            var sheet = Services.DataManager.GetExcelSheet<Item>();
+            var sheet = IDataManager.Get().GetExcelSheet<Item>();
             foreach (var row in sheet)
             {
                 if (row.ItemUICategory.RowId == 62)
                     _filteredCategoryItems.Add(row.RowId);
             }
-            Services.Logger.DebugOnly($"[LootedItemsTracker] Built filter cache with {_filteredCategoryItems.Count} items");
+            IPluginLog.Get().DebugOnly($"[LootedItemsTracker] Built filter cache with {_filteredCategoryItems.Count} items");
         }
 
         return _filteredCategoryItems.Contains(itemId);

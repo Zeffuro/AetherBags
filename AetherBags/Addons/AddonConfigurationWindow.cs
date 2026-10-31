@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Helpers;
+using AetherBags.Nodes.Color;
 using AetherBags.Nodes.Configuration.Category;
 using AetherBags.Nodes.Configuration.Currency;
 using AetherBags.Nodes.Configuration.General;
 using AetherBags.Nodes.Configuration.Keybind;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -25,16 +26,16 @@ public class AddonConfigurationWindow : NativeAddon
 
     private readonly List<NodeBase> _tabContent = new();
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
-        if (WindowNode is not WindowNode windowNode) return Task.CompletedTask;
+        if (WindowNode is not WindowNode windowNode) return;
 
         _changelogButtonNode = new CircleButtonNode
         {
             Position = new Vector2(Size.X - 66f, 6f),
             Size = new Vector2(28f),
-            Icon = ButtonIcon.QuestionMark,
-            OnClick = () => Task.Run(System.AddonChangelogWindow.ToggleAsync),
+            Icon = CircleButtonIcon.QuestionMark,
+            OnClick = () => { if (!Plugin.IsUnloading) System.AddonChangelogWindow.Toggle(); },
         };
         _changelogButtonNode.AttachNode(windowNode.HeaderContainerNode);
 
@@ -93,11 +94,7 @@ public class AddonConfigurationWindow : NativeAddon
         _tabBarNode.AddTab("Currency", () => SwitchTab(2));
         _tabBarNode.AddTab("Keybinds", () => SwitchTab(3));
 
-        return Task.CompletedTask;
-    }
-
-    private void AddChangelogButton()
-    {
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void SwitchTab(int index)
@@ -106,33 +103,23 @@ public class AddonConfigurationWindow : NativeAddon
             _tabContent[i].IsVisible = i == index;
     }
 
-    public async Task ToggleAsync()
+    protected override unsafe void OnHide(AtkUnitBase* addon)
     {
-        if (IsOpen)
-        {
-            await CloseAsync();
-        }
-        else
-        {
-            await OpenAsync();
-        }
+        ColorInputRow.CancelActiveSession(addon);
+        System.CategoryConfigurationWindow?.Close();
+        base.OnHide(addon);
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         Util.SaveConfig(System.Config);
 
-        _tabBarNode?.Dispose();
+        _tabContent.Clear();
         _tabBarNode = null;
-        _generalScrollingAreaNode?.Dispose();
         _generalScrollingAreaNode = null;
-        _categoryScrollingAreaNode?.Dispose();
         _categoryScrollingAreaNode = null;
-        _currencyScrollingAreaNode?.Dispose();
         _currencyScrollingAreaNode = null;
-        _keybindScrollingAreaNode?.Dispose();
         _keybindScrollingAreaNode = null;
-        _changelogButtonNode?.Dispose();
         _changelogButtonNode = null;
 
         base.OnFinalize(addon);

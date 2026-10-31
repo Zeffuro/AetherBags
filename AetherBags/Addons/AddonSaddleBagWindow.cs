@@ -1,6 +1,6 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.State;
 using AetherBags.Nodes.Input;
@@ -9,6 +9,7 @@ using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -28,7 +29,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
     protected override InventoryWindowSizingLimits WindowSizingLimits => InventoryWindowSizingLimits.SaddleBag;
     protected override InventoryWindowSizingSettings WindowSizingSettings => System.Config.General.SaddleBagWindowSizing;
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -57,7 +58,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => SearchDebouncer.Run(() => Services.Framework.RunOnTick(ItemRefresh)),
+            OnInputReceived = _ => SearchDebouncer.Run(() => IFramework.Get().RunOnTick(ItemRefresh)),
             OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);
@@ -67,8 +68,8 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
             Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
             AddColor = _tintColor,
-            Icon = ButtonIcon.GearCog,
-            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
+            Icon = CircleButtonIcon.GearCog,
+            OnClick = () => { if (!Plugin.IsUnloading) System.AddonConfigurationWindow.Toggle(); }
         };
         SettingsButtonNode.AttachNode(this);
 
@@ -93,7 +94,7 @@ public unsafe class AddonSaddleBagWindow :  InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        return base.BuildUiAsync();
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -504,7 +505,7 @@ public static class CategoryBucketManager
         for (int i = 0; i < allCategories.Count; i++)
             displayed += allCategories[i].Items.Count;
 
-        Services.Logger.DebugOnly($"AllCategories={allCategories.Count} DisplayedItemsTotal={displayed}");
+        IPluginLog.Get().DebugOnly($"AllCategories={allCategories.Count} DisplayedItemsTotal={displayed}");
     }
 
     private static CategoryInfo GetCategoryInfoCached(uint key, ItemInfo sample)

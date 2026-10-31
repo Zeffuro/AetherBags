@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory.Items;
 using AetherBags.Tags;
@@ -21,7 +20,7 @@ public sealed unsafe class DtrService : IDisposable
 
     public DtrService()
     {
-        Services.Framework.Update += OnFrameworkUpdate;
+        IFramework.Get().Update += OnFrameworkUpdate;
     }
 
     private void OnFrameworkUpdate(IFramework framework)
@@ -43,7 +42,7 @@ public sealed unsafe class DtrService : IDisposable
         EnsureEntry();
         if (_dtrEntry == null) return;
 
-        if (!Services.ClientState.IsLoggedIn)
+        if (!IClientState.Get().IsLoggedIn)
         {
             _dtrEntry.Shown = false;
             return;
@@ -60,7 +59,7 @@ public sealed unsafe class DtrService : IDisposable
     {
         if (_dtrEntry != null) return;
 
-        _dtrEntry = Services.DtrBar.Get(EntryTitle, new SeStringBuilder().AddText(EntryTitle).Build());
+        _dtrEntry = IDtrBar.Get().Get(EntryTitle, new SeStringBuilder().AddText(EntryTitle).Build());
         _dtrEntry.Shown = true;
         _dtrEntry.OnClick += OnDtrClick;
     }
@@ -85,7 +84,7 @@ public sealed unsafe class DtrService : IDisposable
         switch (interaction.ClickType)
         {
             case MouseClickType.Left:
-                Task.Run(System.AddonInventoryWindow.ToggleAsync);
+                System.AddonInventoryWindow.Toggle();
                 break;
             case MouseClickType.Right:
                 ShowAgent(AgentId.InventoryBuddy);
@@ -110,7 +109,7 @@ public sealed unsafe class DtrService : IDisposable
 
     public void Dispose()
     {
-        Services.Framework.Update -= OnFrameworkUpdate;
+        IFramework.Get().Update -= OnFrameworkUpdate;
         RemoveEntry();
     }
 }

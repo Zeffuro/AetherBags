@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
 using System;
@@ -82,7 +83,7 @@ public static unsafe class CurrencyState
 
     public static (uint Limited, uint NonLimited) GetCurrentTomestoneIds()
     {
-        var tomestonesItemSheet = Services.DataManager.GetExcelSheet<TomestonesItem>();
+        var tomestonesItemSheet = IDataManager.Get().GetExcelSheet<TomestonesItem>();
         uint limitedId = 0;
         uint nonLimitedId = 0;
 
@@ -138,7 +139,7 @@ public static unsafe class CurrencyState
         if (CurrencyStaticByItemIdCache.TryGetValue(itemId, out CurrencyStaticInfo cached))
             return cached;
 
-        var item = Services.DataManager.GetExcelSheet<Item>().GetRow(itemId);
+        var item = IDataManager.Get().GetExcelSheet<Item>().GetRow(itemId);
 
         var info = new CurrencyStaticInfo
         {

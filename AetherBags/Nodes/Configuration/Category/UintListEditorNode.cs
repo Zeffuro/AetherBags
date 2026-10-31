@@ -1,3 +1,5 @@
+using Dalamud.Plugin.Services;
+using KamiToolKit.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -71,7 +72,7 @@ public sealed class UintListEditorNode : VerticalListNode
         var searchButton = new CircleButtonNode
         {
             Size = new Vector2(28),
-            Icon = ButtonIcon.MagnifyingGlass,
+            Icon = CircleButtonIcon.MagnifyingGlass,
             OnClick = () => OnSearchButtonClicked?.Invoke(),
             TextTooltip = "Search the game database..."
         };
@@ -160,7 +161,8 @@ public sealed class UintListEditorNode : VerticalListNode
     {
         _list.Remove(value);
         // Defer past the tick that handled the click so its hover/event state is fully unwound before disposal.
-        Services.Framework.RunOnTick(() => {
+        IFramework.Get().RunOnTick(() => {
+            if (IsDisposed) return;
             RefreshItems();
             OnChanged?.Invoke();
         }, delayTicks: 2);
@@ -174,7 +176,8 @@ public sealed class UintListEditorNode : VerticalListNode
         if (target < 0 || target >= _list.Count) return;
 
         (_list[index], _list[target]) = (_list[target], _list[index]);
-        Services.Framework.RunOnTick(() => {
+        IFramework.Get().RunOnTick(() => {
+            if (IsDisposed) return;
             RefreshItems();
             OnChanged?.Invoke();
         }, delayTicks: 2);
@@ -215,7 +218,7 @@ public sealed class UintListItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.UpArrow,
+            Icon = CircleButtonIcon.UpArrow,
             TextTooltip = "Move up",
             IsEnabled = !isFirst,
             OnClick = () => OnMoveUp?.Invoke(),
@@ -224,7 +227,7 @@ public sealed class UintListItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.ArrowDown,
+            Icon = CircleButtonIcon.ArrowDown,
             TextTooltip = "Move down",
             IsEnabled = !isLast,
             OnClick = () => OnMoveDown?.Invoke(),
@@ -233,7 +236,7 @@ public sealed class UintListItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.Cross,
+            Icon = CircleButtonIcon.Cross,
             TextTooltip = "Remove",
             OnClick = () => OnRemove?.Invoke(),
         });

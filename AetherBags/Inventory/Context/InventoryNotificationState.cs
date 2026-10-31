@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
@@ -10,7 +11,7 @@ public class InventoryNotificationState
 
     public InventoryNotificationState()
     {
-        var addonSheet = Services.DataManager.GetExcelSheet<Addon>();
+        var addonSheet = IDataManager.Get().GetExcelSheet<Addon>();
         notificationCache = new Dictionary<InventoryNotificationType, InventoryNotificationInfo>
         {
             { InventoryNotificationType.Sell, new InventoryNotificationInfo(addonSheet.GetRow(530).Text, addonSheet.GetRow(3576).Text) },

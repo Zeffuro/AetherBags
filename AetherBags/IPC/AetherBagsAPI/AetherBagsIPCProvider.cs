@@ -40,30 +40,30 @@ public class AetherBagsIPCProvider : IDisposable
     {
         _api = new AetherBagsAPIImpl();
 
-        _isInventoryOpen = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}IsInventoryOpen");
-        _getVisibleItemIds = Services.PluginInterface.GetIpcProvider<List<uint>>($"{IpcPrefix}GetVisibleItemIds");
-        _getItemsInCategory = Services.PluginInterface.GetIpcProvider<uint, List<uint>>($"{IpcPrefix}GetItemsInCategory");
-        _isItemVisible = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}IsItemVisible");
-        _getSearchFilter = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetSearchFilter");
-        _getRegisteredSources = Services.PluginInterface.GetIpcProvider<List<string>>($"{IpcPrefix}GetRegisteredSources");
-        _getConfigurationJson = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetConfigurationJson");
-        _setConfigurationJson = Services.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}SetConfigurationJson");
-        _getConfigProperty = Services.PluginInterface.GetIpcProvider<string, string>($"{IpcPrefix}GetConfigProperty");
-        _setConfigProperty = Services.PluginInterface.GetIpcProvider<string, string, bool>($"{IpcPrefix}SetConfigProperty");
+        _isInventoryOpen = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}IsInventoryOpen");
+        _getVisibleItemIds = Plugin.PluginInterface.GetIpcProvider<List<uint>>($"{IpcPrefix}GetVisibleItemIds");
+        _getItemsInCategory = Plugin.PluginInterface.GetIpcProvider<uint, List<uint>>($"{IpcPrefix}GetItemsInCategory");
+        _isItemVisible = Plugin.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}IsItemVisible");
+        _getSearchFilter = Plugin.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetSearchFilter");
+        _getRegisteredSources = Plugin.PluginInterface.GetIpcProvider<List<string>>($"{IpcPrefix}GetRegisteredSources");
+        _getConfigurationJson = Plugin.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetConfigurationJson");
+        _setConfigurationJson = Plugin.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}SetConfigurationJson");
+        _getConfigProperty = Plugin.PluginInterface.GetIpcProvider<string, string>($"{IpcPrefix}GetConfigProperty");
+        _setConfigProperty = Plugin.PluginInterface.GetIpcProvider<string, string, bool>($"{IpcPrefix}SetConfigProperty");
 
-        _acquireVanillaInventoryBypass = Services.PluginInterface.GetIpcProvider<string, int, string>($"{IpcPrefix}AcquireVanillaInventoryBypass");
-        _releaseVanillaInventoryBypass = Services.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}ReleaseVanillaInventoryBypass");
-        _isVanillaInventoryBypassActive = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}IsVanillaInventoryBypassActive");
-        _getVanillaInventoryBypassStatus = Services.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetVanillaInventoryBypassStatus");
+        _acquireVanillaInventoryBypass = Plugin.PluginInterface.GetIpcProvider<string, int, string>($"{IpcPrefix}AcquireVanillaInventoryBypass");
+        _releaseVanillaInventoryBypass = Plugin.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}ReleaseVanillaInventoryBypass");
+        _isVanillaInventoryBypassActive = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}IsVanillaInventoryBypassActive");
+        _getVanillaInventoryBypassStatus = Plugin.PluginInterface.GetIpcProvider<string>($"{IpcPrefix}GetVanillaInventoryBypassStatus");
 
-        _onItemHovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemHovered");
-        _onItemUnhovered = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemUnhovered");
-        _onItemClicked = Services.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemClicked");
-        _onSearchChanged = Services.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}OnSearchChanged");
-        _onInventoryOpened = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryOpened");
-        _onInventoryClosed = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryClosed");
-        _onCategoriesRefreshed = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnCategoriesRefreshed");
-        _onConfigurationChanged = Services.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnConfigurationChanged");
+        _onItemHovered = Plugin.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemHovered");
+        _onItemUnhovered = Plugin.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemUnhovered");
+        _onItemClicked = Plugin.PluginInterface.GetIpcProvider<uint, bool>($"{IpcPrefix}OnItemClicked");
+        _onSearchChanged = Plugin.PluginInterface.GetIpcProvider<string, bool>($"{IpcPrefix}OnSearchChanged");
+        _onInventoryOpened = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryOpened");
+        _onInventoryClosed = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnInventoryClosed");
+        _onCategoriesRefreshed = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnCategoriesRefreshed");
+        _onConfigurationChanged = Plugin.PluginInterface.GetIpcProvider<bool>($"{IpcPrefix}OnConfigurationChanged");
 
         RegisterFunctions();
         SubscribeEvents();
@@ -89,18 +89,36 @@ public class AetherBagsIPCProvider : IDisposable
 
     private void SubscribeEvents()
     {
-        _api.OnItemHovered += itemId => _onItemHovered.SendMessage(itemId);
-        _api.OnItemUnhovered += itemId => _onItemUnhovered.SendMessage(itemId);
-        _api.OnItemClicked += itemId => _onItemClicked.SendMessage(itemId);
-        _api.OnSearchChanged += search => _onSearchChanged.SendMessage(search);
-        _api.OnInventoryOpened += () => _onInventoryOpened.SendMessage();
-        _api.OnInventoryClosed += () => _onInventoryClosed.SendMessage();
-        _api.OnCategoriesRefreshed += () => _onCategoriesRefreshed.SendMessage();
-        _api.OnConfigurationChanged += () => _onConfigurationChanged.SendMessage();
+        _api.OnItemHovered += OnItemHovered;
+        _api.OnItemUnhovered += OnItemUnhovered;
+        _api.OnItemClicked += OnItemClicked;
+        _api.OnSearchChanged += OnSearchChanged;
+        _api.OnInventoryOpened += OnInventoryOpened;
+        _api.OnInventoryClosed += OnInventoryClosed;
+        _api.OnCategoriesRefreshed += OnCategoriesRefreshed;
+        _api.OnConfigurationChanged += OnConfigurationChanged;
     }
+
+    private void OnItemHovered(uint itemId) => _onItemHovered.SendMessage(itemId);
+    private void OnItemUnhovered(uint itemId) => _onItemUnhovered.SendMessage(itemId);
+    private void OnItemClicked(uint itemId) => _onItemClicked.SendMessage(itemId);
+    private void OnSearchChanged(string search) => _onSearchChanged.SendMessage(search);
+    private void OnInventoryOpened() => _onInventoryOpened.SendMessage();
+    private void OnInventoryClosed() => _onInventoryClosed.SendMessage();
+    private void OnCategoriesRefreshed() => _onCategoriesRefreshed.SendMessage();
+    private void OnConfigurationChanged() => _onConfigurationChanged.SendMessage();
 
     public void Dispose()
     {
+        _api.OnItemHovered -= OnItemHovered;
+        _api.OnItemUnhovered -= OnItemUnhovered;
+        _api.OnItemClicked -= OnItemClicked;
+        _api.OnSearchChanged -= OnSearchChanged;
+        _api.OnInventoryOpened -= OnInventoryOpened;
+        _api.OnInventoryClosed -= OnInventoryClosed;
+        _api.OnCategoriesRefreshed -= OnCategoriesRefreshed;
+        _api.OnConfigurationChanged -= OnConfigurationChanged;
+
         _isInventoryOpen.UnregisterFunc();
         _getVisibleItemIds.UnregisterFunc();
         _getItemsInCategory.UnregisterFunc();

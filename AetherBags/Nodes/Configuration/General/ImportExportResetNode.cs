@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.IO;
 using AetherBags.Helpers;
 using AetherBags.Inventory;
@@ -25,7 +26,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Width = 30,
             IsVisible = true,
             TextTooltip = " Import Configuration\n(hold shift to confirm)",
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
             OnClick = ImportConfig
         });
 
@@ -35,7 +36,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Width = 30,
             IsVisible = true,
             TextTooltip = "Export Configuration",
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
             OnClick = ExportConfig
         });
 
@@ -61,7 +62,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
 
     private static void ImportConfig()
     {
-        if (!Services.KeyState[VirtualKey.SHIFT]) return;
+        if (!IKeyState.Get()[VirtualKey.SHIFT]) return;
 
         InventoryOrchestrator.CloseAll();
         ImportExportResetHelper.TryImportConfigFromClipboard();

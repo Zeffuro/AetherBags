@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherBags", "AetherBags\Ae
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KamiToolKit", "KamiToolKit\KamiToolKit.csproj", "{0907374F-93F8-427F-AD0A-49DB4B0A3DD4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KamiToolKit.Components", "KamiToolKit.Components\KamiToolKit.Components.csproj", "{E6A9FE0A-106D-4C03-A423-05851B73BA7F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -18,5 +20,9 @@ Global
 		{0907374F-93F8-427F-AD0A-49DB4B0A3DD4}.Debug|x64.Build.0 = Debug|x64
 		{0907374F-93F8-427F-AD0A-49DB4B0A3DD4}.Release|x64.ActiveCfg = Release|x64
 		{0907374F-93F8-427F-AD0A-49DB4B0A3DD4}.Release|x64.Build.0 = Release|x64
+		{E6A9FE0A-106D-4C03-A423-05851B73BA7F}.Debug|x64.ActiveCfg = Debug|x64
+		{E6A9FE0A-106D-4C03-A423-05851B73BA7F}.Debug|x64.Build.0 = Debug|x64
+		{E6A9FE0A-106D-4C03-A423-05851B73BA7F}.Release|x64.ActiveCfg = Release|x64
+		{E6A9FE0A-106D-4C03-A423-05851B73BA7F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

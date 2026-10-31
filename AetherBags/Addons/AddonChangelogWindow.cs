@@ -1,38 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Helpers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Addons;
 
 public sealed class AddonChangelogWindow : NativeAddon
 {
-    private ScrollingListNode? _scrollingAreaNode;
+    private ScrollingNode<VerticalListNode>? _scrollingAreaNode;
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
-        _scrollingAreaNode = new ScrollingListNode
+        _scrollingAreaNode = new ScrollingNode<VerticalListNode>
         {
             Position = ContentStartPosition,
             Size = ContentSize,
-            ItemSpacing = 4,
-            FitWidth = true,
+            ContentNode = { ItemSpacing = 4, FitWidth = true, FitContents = true },
             IsVisible = true,
         };
         _scrollingAreaNode.AttachNode(this);
 
-        PopulateChangelog(_scrollingAreaNode);
-        _scrollingAreaNode.RecalculateLayout();
+        PopulateChangelog(_scrollingAreaNode.ContentNode);
+        _scrollingAreaNode.RecalculateSizes();
 
-        return Task.CompletedTask;
+        base.OnSetup(addon, atkValueSpan);
     }
 
-    private static void PopulateChangelog(ScrollingListNode listNode)
+    private static void PopulateChangelog(VerticalListNode listNode)
     {
         foreach (var version in ChangelogParser.Load())
         {
@@ -55,18 +52,6 @@ public sealed class AddonChangelogWindow : NativeAddon
             }
 
             listNode.AddNode(new ResNode { Height = 8 });
-        }
-    }
-
-    public async Task ToggleAsync()
-    {
-        if (IsOpen)
-        {
-            await CloseAsync();
-        }
-        else
-        {
-            await OpenAsync();
         }
     }
 

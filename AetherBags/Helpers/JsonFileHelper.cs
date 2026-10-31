@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -28,7 +29,7 @@ public static class JsonFileHelper {
             }
             catch (Exception e) {
                 // If there is any kind of error loading the file, generate a new one instead and save it.
-                Services.Logger.Error(e, $"Error trying to load file {filePath}, creating a new one instead.");
+                IPluginLog.Get().Error(e, $"Error trying to load file {filePath}, creating a new one instead.");
 
                 SaveFile(new T(), filePath);
             }
@@ -43,7 +44,7 @@ public static class JsonFileHelper {
     public static void SaveFile<T>(T? file, string filePath) {
         try {
             if (file is null) {
-                Services.Logger.Error("Null file provided.");
+                IPluginLog.Get().Error("Null file provided.");
                 return;
             }
 
@@ -51,12 +52,12 @@ public static class JsonFileHelper {
             FilesystemUtil.WriteAllTextSafe(filePath, fileText);
         }
         catch (Exception e) {
-            Services.Logger.Error(e, $"Error trying to save file {filePath}");
+            IPluginLog.Get().Error(e, $"Error trying to save file {filePath}");
         }
     }
 
     public static FileInfo GetFileInfo(params string[] path) {
-        var directory = Services.PluginInterface.ConfigDirectory;
+        var directory = Plugin.PluginInterface.ConfigDirectory;
 
         for (var index = 0; index < path.Length - 1; index++) {
             directory = new DirectoryInfo(Path.Combine(directory.FullName, path[index]));

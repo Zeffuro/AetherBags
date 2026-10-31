@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using AetherBags.Inventory.Scanning;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -18,7 +19,7 @@ public class SaddleBagState : InventoryStateBase
     {
         get
         {
-            if (!Services.ClientState.IsLoggedIn) return false;
+            if (!IClientState.Get().IsLoggedIn) return false;
 
             var playerState = PlayerState.Instance();
             return playerState != null && playerState->HasPremiumSaddlebag;

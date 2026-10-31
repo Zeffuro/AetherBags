@@ -1,3 +1,5 @@
+using Dalamud.Plugin.Services;
+using KamiToolKit.Enums;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -89,7 +91,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         _clearButton = new CircleButtonNode
         {
             Size = new Vector2(ClearButtonSize),
-            Icon = ButtonIcon.CrossSmall,
+            Icon = CircleButtonIcon.CrossSmall,
             OnClick = () => OnClearAll?.Invoke(),
         };
         _clearButton.AttachNode(this);
@@ -132,10 +134,10 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         }
     }
 
-    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    protected override void Dispose(bool isNativeDestructor)
     {
         _isDisposed = true;
-        base.Dispose(disposing, isNativeDestructor);
+        base.Dispose(isNativeDestructor);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -187,7 +189,7 @@ public class LootedItemsCategoryNode : InventoryCategoryNodeBase
         if (_hoverRefs != 0) return;
 
         _collapsePending = true;
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
             if (!_collapsePending) return;
             _collapsePending = false;

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
@@ -46,7 +47,7 @@ public static unsafe class RetainerCommands
 
         var sendCommand = (delegate* unmanaged<void*, uint, InventoryType, ulong, RetainerContextEvent, void>)vtable[0];
 
-        Services.Logger.DebugOnly($"Dispatching {container}@{slot} via ({command})");
+        IPluginLog.Get().DebugOnly($"Dispatching {container}@{slot} via ({command})");
         sendCommand(contextEventPtr, slot, container, 0, command);
 
         return true;

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -44,7 +45,7 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
         _version++;
         ExternalCategoryManager.RegisterSource(this);
         OnDataChanged?.Invoke();
-        Services.Logger.Information("[KeyItemSource] Enabled");
+        IPluginLog.Get().Information("[KeyItemSource] Enabled");
     }
 
     public void Disable()
@@ -52,7 +53,7 @@ public sealed unsafe class KeyItemExternalSource : IExternalItemSource, IInvento
         if (!_isEnabled) return;
         _isEnabled = false;
         ExternalCategoryManager.UnregisterSource(SourceName);
-        Services.Logger.Information("[KeyItemSource] Disabled");
+        IPluginLog.Get().Information("[KeyItemSource] Disabled");
     }
 
     public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()

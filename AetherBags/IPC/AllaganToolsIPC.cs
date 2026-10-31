@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -43,12 +44,12 @@ public class AllaganToolsIPC : IDisposable
     {
         try
         {
-            _isInitialized = Services.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
-            _initialized = Services.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
-            _getFilterItems = Services.PluginInterface.GetIpcSubscriber<string, Dictionary<uint, uint>>("AllaganTools.GetFilterItems");
-            _getSearchFilters = Services.PluginInterface.GetIpcSubscriber<Dictionary<string, string>>("AllaganTools.GetSearchFilters");
-            _enableUiFilter = Services.PluginInterface.GetIpcSubscriber<string, bool>("AllaganTools.EnableUiFilter");
-            _toggleUiFilter = Services.PluginInterface.GetIpcSubscriber<string, bool>("AllaganTools.ToggleUiFilter");
+            _isInitialized = Plugin.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
+            _initialized = Plugin.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
+            _getFilterItems = Plugin.PluginInterface.GetIpcSubscriber<string, Dictionary<uint, uint>>("AllaganTools.GetFilterItems");
+            _getSearchFilters = Plugin.PluginInterface.GetIpcSubscriber<Dictionary<string, string>>("AllaganTools.GetSearchFilters");
+            _enableUiFilter = Plugin.PluginInterface.GetIpcSubscriber<string, bool>("AllaganTools.EnableUiFilter");
+            _toggleUiFilter = Plugin.PluginInterface.GetIpcSubscriber<string, bool>("AllaganTools.ToggleUiFilter");
 
             _initialized.Subscribe(OnAllaganInitialized);
 
@@ -67,7 +68,7 @@ public class AllaganToolsIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.DebugOnly($"Allagan Tools not available: {ex.Message}");
+            IPluginLog.Get().DebugOnly($"Allagan Tools not available: {ex.Message}");
             IsReady = false;
         }
     }
@@ -77,7 +78,7 @@ public class AllaganToolsIPC : IDisposable
         IsReady = initialized;
         if (initialized)
         {
-            Services.Logger.Information("Allagan Tools IPC connected");
+            IPluginLog.Get().Information("Allagan Tools IPC connected");
             RefreshFilters();
             OnInitialized?.Invoke();
         }
@@ -122,12 +123,12 @@ public class AllaganToolsIPC : IDisposable
                 }
             }
 
-            Services.Logger.DebugOnly($"Refreshed {CachedSearchFilters.Count} Allagan Tools filters, {ItemToFilters.Count} unique items");
+            IPluginLog.Get().DebugOnly($"Refreshed {CachedSearchFilters.Count} Allagan Tools filters, {ItemToFilters.Count} unique items");
             OnFiltersRefreshed?.Invoke();
         }
         catch (Exception ex)
         {
-            Services.Logger.Warning($"Failed to refresh Allagan Tools filters: {ex.Message}");
+            IPluginLog.Get().Warning($"Failed to refresh Allagan Tools filters: {ex.Message}");
         }
     }
 
@@ -160,7 +161,7 @@ public class AllaganToolsIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Warning($"GetFilterItems failed:  {ex.Message}");
+            IPluginLog.Get().Warning($"GetFilterItems failed:  {ex.Message}");
             return null;
         }
     }
@@ -181,7 +182,7 @@ public class AllaganToolsIPC : IDisposable
         }
         catch (Exception ex)
         {
-            Services.Logger.Warning($"GetSearchFilters failed: {ex.Message}");
+            IPluginLog.Get().Warning($"GetSearchFilters failed: {ex.Message}");
             return null;
         }
     }

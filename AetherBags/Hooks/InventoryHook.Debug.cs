@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 #if DEBUG
 using System;
 using Dalamud.Hooking;
@@ -30,56 +31,56 @@ public sealed unsafe partial class InventoryHooks
     {
         try
         {
-            _moveItemSlotHook = Services.GameInteropProvider.HookFromSignature<MoveItemSlotDelegate>(
+            _moveItemSlotHook = IGameInteropProvider.Get().HookFromSignature<MoveItemSlotDelegate>(
                 "E8 ?? ?? ?? ?? 48 8B 03 66 FF C5",
                 MoveItemSlotDetour);
             _moveItemSlotHook.Enable();
 
-            Services.Logger.DebugOnly("MoveItemSlot hooked successfully.");
+            IPluginLog.Get().DebugOnly("MoveItemSlot hooked successfully.");
         }
         catch (Exception e)
         {
-            Services.Logger.Error(e, "Failed to hook MoveItemSlot");
+            IPluginLog.Get().Error(e, "Failed to hook MoveItemSlot");
         }
         /*
         try
         {
-            _openInventoryHook = Services.GameInteropProvider.HookFromAddress<UIModule.Delegates.OpenInventory>(
+            _openInventoryHook = IGameInteropProvider.Get().HookFromAddress<UIModule.Delegates.OpenInventory>(
                 UIModule.Instance()->VirtualTable->OpenInventory,
                 OpenInventoryDetour);
             _openInventoryHook.Enable();
 
-            Services.Logger.DebugOnly("OpenInventory hooked successfully.");
+            IPluginLog.Get().DebugOnly("OpenInventory hooked successfully.");
         }
         catch (Exception e)
         {
-            Services.Logger.Error(e, "Failed to hook OpenInventory");
+            IPluginLog.Get().Error(e, "Failed to hook OpenInventory");
         }
         try
         {
-            _handleInventoryEventHook = Services.GameInteropProvider.HookFromSignature<HandleInventoryEventDelegate>(
+            _handleInventoryEventHook = IGameInteropProvider.Get().HookFromSignature<HandleInventoryEventDelegate>(
                 "E8 ?? ?? ?? ?? 48 8B 74 24 ?? 33 C0 ?? ?? 89 43",
                 HandleInventoryEventDetour);
             _handleInventoryEventHook.Enable();
 
-            Services.Logger.DebugOnly("HandleInventoryEvent hooked successfully.");
+            IPluginLog.Get().DebugOnly("HandleInventoryEvent hooked successfully.");
         }
         catch (Exception e)
         {
-            Services.Logger.Error(e, "Failed to hook HandleInventoryEvent");
+            IPluginLog.Get().Error(e, "Failed to hook HandleInventoryEvent");
         }
         try
         {
-            _openAddonHook = Services.GameInteropProvider.HookFromAddress<RaptureAtkModule.Delegates.OpenAddon>(
+            _openAddonHook = IGameInteropProvider.Get().HookFromAddress<RaptureAtkModule.Delegates.OpenAddon>(
                 RaptureAtkModule.MemberFunctionPointers.OpenAddon,
                 OpenAddonDetour);
             _openAddonHook.Enable();
 
-            Services.Logger.DebugOnly("OpenAddon hooked successfully.");
+            IPluginLog.Get().DebugOnly("OpenAddon hooked successfully.");
         }
         catch (Exception e)
         {
-            Services.Logger.Error(e, "Failed to hook MoveItemSlot");
+            IPluginLog.Get().Error(e, "Failed to hook MoveItemSlot");
         }
         */
     }
@@ -94,8 +95,8 @@ public sealed unsafe partial class InventoryHooks
         //InventoryItem* sourceItem = InventoryManager.Instance()->GetInventorySlot(srcType, srcSlot);
         //InventoryItem* destItem = InventoryManager.Instance()->GetInventorySlot(dstType, dstSlot);
 
-        Services.Logger.DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} -> {dstType}@{dstSlot} I Unk: {unk}");
-        //Services.Logger.DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk: {unk}");
+        IPluginLog.Get().DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} -> {dstType}@{dstSlot} I Unk: {unk}");
+        //IPluginLog.Get().DebugOnly($"[MoveItemSlot Hook] Moving {srcType}@{srcSlot} ID:{sourceItem->ItemId} -> {dstType}@{dstSlot} ID:{destItem->ItemId} Unk: {unk}");
 
         return _moveItemSlotHook!.Original(manager, srcType, srcSlot, dstType, dstSlot, unk);
     }
@@ -103,7 +104,7 @@ public sealed unsafe partial class InventoryHooks
     /*
     private void OpenInventoryDetour(UIModule* uiModule, byte type)
     {
-        Services.Logger.DebugOnly($"[OpenInventory Hook] Opening inventory of type {type}");
+        IPluginLog.Get().DebugOnly($"[OpenInventory Hook] Opening inventory of type {type}");
         _openInventoryHook?.Original(uiModule, type);
     }
 
@@ -111,7 +112,7 @@ public sealed unsafe partial class InventoryHooks
     {
         for(int i = 0; i < valueCount; i++)
         {
-            Services.Logger.DebugOnly($"[HandleInventoryEvent Hook] AtkValue[{i}]: Type={atkValue[i].Type}, ToString: {atkValue[i].ToString()} ");
+            IPluginLog.Get().DebugOnly($"[HandleInventoryEvent Hook] AtkValue[{i}]: Type={atkValue[i].Type}, ToString: {atkValue[i].ToString()} ");
         }
         _handleInventoryEventHook?.Original(eventInterface, atkValue, valueCount);
     }
@@ -120,7 +121,7 @@ public sealed unsafe partial class InventoryHooks
     {
         for(int i = 0; i < valueCount; i++)
         {
-            Services.Logger.DebugOnly($"[OpenAddon Hook] AtkValue[{i}]: ToString: {values[i].ToString()} ");
+            IPluginLog.Get().DebugOnly($"[OpenAddon Hook] AtkValue[{i}]: ToString: {values[i].ToString()} ");
         }
         return _openAddonHook!.Original(thisPtr, addonNameId, valueCount, values, eventInterface, eventKind, parentAddonId, depthLayer);
     }

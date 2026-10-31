@@ -1,7 +1,7 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
 using AetherBags.Inventory.State;
@@ -12,6 +12,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -35,7 +36,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
     private readonly string[] _retainerAddonNames = { "InventoryRetainer", "InventoryRetainerLarge" };
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -64,7 +65,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => SearchDebouncer.Run(() => Services.Framework.RunOnTick(ItemRefresh)),
+            OnInputReceived = _ => SearchDebouncer.Run(() => IFramework.Get().RunOnTick(ItemRefresh)),
             OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);
@@ -73,8 +74,8 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
         {
             Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
-            Icon = ButtonIcon.GearCog,
-            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
+            Icon = CircleButtonIcon.GearCog,
+            OnClick = () => { if (!Plugin.IsUnloading) System.AddonConfigurationWindow.Toggle(); }
         };
         SettingsButtonNode.AttachNode(this);
 
@@ -119,7 +120,7 @@ public unsafe class AddonRetainerWindow : InventoryAddonBase
 
         RefreshCategoriesCore(autosize: true);
 
-        return base.BuildUiAsync();
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override void RefreshCategoriesCore(bool autosize)

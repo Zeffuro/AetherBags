@@ -1,26 +1,22 @@
 using System.Drawing;
-using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 
 namespace AetherBags.Nodes.Color;
 
 public class ColorPreviewNode : ResNode
 {
-    private readonly BackgroundImageNode _colorBackground;
-    private readonly ImGuiImageNode _alphaLayer;
-    private readonly BackgroundImageNode _colorForeground;
-
-    private bool _isDisposed;
+    private readonly ColorImageNode _colorBackground;
+    private readonly AlphaImageNode _alphaLayer;
+    private readonly ColorImageNode _colorForeground;
 
     public ColorPreviewNode()
     {
         base.Size = new Vector2(64, 64);
 
-        _colorBackground = new BackgroundImageNode
+        _colorBackground = new ColorImageNode
         {
             IsVisible = true,
             Color = KnownColor.Black.Vector(),
@@ -28,15 +24,14 @@ public class ColorPreviewNode : ResNode
         };
         _colorBackground.AttachNode(this);
 
-        _alphaLayer = new ImGuiImageNode
+        _alphaLayer = new AlphaImageNode
         {
             IsVisible = true,
-            TexturePath = GetAlphaTexturePath(),
             WrapMode = WrapMode.Stretch,
         };
         _alphaLayer.AttachNode(this);
 
-        _colorForeground = new BackgroundImageNode
+        _colorForeground = new ColorImageNode
         {
             IsVisible = true,
             Color = KnownColor.White.Vector(),
@@ -63,8 +58,8 @@ public class ColorPreviewNode : ResNode
         }
     }
 
-    public BackgroundImageNode BackgroundNode => _colorBackground;
-    public BackgroundImageNode ForegroundNode => _colorForeground;
+    public ColorImageNode BackgroundNode => _colorBackground;
+    public ColorImageNode ForegroundNode => _colorForeground;
 
     private void UpdateLayout()
     {
@@ -86,28 +81,4 @@ public class ColorPreviewNode : ResNode
         _colorForeground.Position = new Vector2(foregroundPadding, foregroundPadding);
     }
 
-    private static string GetAlphaTexturePath()
-    {
-        var baseDir = Services.PluginInterface.AssemblyLocation.Directory!.FullName;
-        return Path.Combine(baseDir, "Assets", "alpha_background.png");
-    }
-
-    protected override void Dispose(bool disposing, bool isNativeDestructor)
-    {
-        if (_isDisposed)
-        {
-            base.Dispose(disposing, isNativeDestructor);
-            return;
-        }
-
-        _isDisposed = true;
-        if (disposing)
-        {
-            _colorBackground.Dispose();
-            _alphaLayer.Dispose();
-            _colorForeground.Dispose();
-        }
-
-        base.Dispose(disposing, isNativeDestructor);
-    }
 }

@@ -1,9 +1,11 @@
+using KamiToolKit.Enums;
+using KamiToolKit.BaseTypes;
 using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Input;
@@ -24,7 +26,7 @@ public class TextInputWithButtonNode : SimpleComponentNode {
         _textInputNode.AttachNode(this);
 
         _contextButton = new CircleButtonNode {
-            Icon = ButtonIcon.Filter,
+            Icon = CircleButtonIcon.Filter,
             Size = new Vector2(28f),
         };
         _contextButton.AttachNode(this);

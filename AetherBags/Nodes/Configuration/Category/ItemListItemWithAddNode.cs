@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.ListItem;
+using KamiToolKit.Components.ListItemNodes;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -11,7 +11,7 @@ public class ItemListItemWithAddNode : ItemListItemNode
 {
     private readonly TextButtonNode _addButton;
 
-    public static Action<Item>? OnAddClicked { get; set; }
+    public Action<Item>? OnAddClicked { get; set; }
 
     public ItemListItemWithAddNode()
     {
@@ -32,9 +32,9 @@ public class ItemListItemWithAddNode : ItemListItemNode
     {
         base.SetNodeData(itemData);
 
-        bool hasSubLabel = !SubLabelTextNode.String.IsEmpty;
-        SubLabelTextNode.IsVisible = hasSubLabel;
-        LabelTextNode.AlignmentType = hasSubLabel ? AlignmentType.BottomLeft : AlignmentType.Left;
+        bool hasSubLabel = !ItemCategoryTextNode.String.IsEmpty;
+        ItemCategoryTextNode.IsVisible = hasSubLabel;
+        ItemNameTextNode.AlignmentType = hasSubLabel ? AlignmentType.BottomLeft : AlignmentType.Left;
         ApplyLabelLayout();
     }
 
@@ -49,12 +49,13 @@ public class ItemListItemWithAddNode : ItemListItemNode
     {
         if (Width <= 0 || Height <= 0) return;
 
-        float labelWidth = Width - Height - 2.0f - 65.0f;
-        float labelHeight = SubLabelTextNode.IsVisible ? Height / 2.0f : Height;
-        LabelTextNode.Size = new Vector2(labelWidth, labelHeight);
+        float labelWidth = MathF.Max(0, Width - ItemIconImageNode.Bounds.Right - 65.0f - ItemIdTextNode.Width);
+        ItemIdTextNode.X = Width - 55 - ItemIdTextNode.Width;
+        float labelHeight = ItemCategoryTextNode.IsVisible ? Height / 2.0f : Height;
+        ItemNameTextNode.Size = new Vector2(labelWidth, labelHeight);
 
-        if (SubLabelTextNode.IsVisible)
-            SubLabelTextNode.Size = new Vector2(labelWidth - 10.0f, Height / 2.0f);
+        if (ItemCategoryTextNode.IsVisible)
+            ItemCategoryTextNode.Size = new Vector2(labelWidth - 10.0f, Height / 2.0f);
     }
 }
 

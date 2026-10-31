@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -7,7 +8,6 @@ using AetherBags.Nodes.Color;
 using AetherBags.Nodes.Configuration.Category;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 using Lumina.Excel.Sheets;
 
 namespace AetherBags.Nodes.Configuration.Currency;
@@ -22,7 +22,7 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         CurrencySettings config = System.Config.Currency;
 
         Width = 600;
-        ItemVerticalSpacing = 2;
+        ItemSpacing = 2;
 
         LabelTextNode titleNode = new LabelTextNode
         {
@@ -139,14 +139,14 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         {
             Label = "Displayed Currencies:",
             LabelWidth = 360f,
-            MaxValue = Services.DataManager.GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
+            MaxValue = IDataManager.Get().GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = id =>
             {
                 return id switch
                 {
                     CurrencySettings.LimitedTomestoneId => "Current Limited Tomestone",
                     CurrencySettings.NonLimitedTomestoneId => "Current Non-Limited Tomestone",
-                    _ => Services.DataManager.GetExcelSheet<Item>().GetRow(id).Name.ToString()
+                    _ => IDataManager.Get().GetExcelSheet<Item>().GetRow(id).Name.ToString()
                 };
             },
             OnSearchButtonClicked = OpenCurrencyPicker,
@@ -201,17 +201,17 @@ public sealed class CurrencyGeneralConfigurationNode : TabbedVerticalListNode
         }
     }
 
-    private void OpenCurrencyPicker() {
-        var picker = new AddonCurrencyPicker
+    private void OpenCurrencyPicker()
+    {
+        System.CurrencyPicker.OpenFor(this, item =>
         {
-            Title = "Select Currency to Add",
-            InternalName = "AetherBags_CurrencyPicker",
-        };
-        picker.SelectionResult = item =>
-        {
-            AddCurrencyToList(item.RowId);
-        };
-        ItemListItemWithAddNode.OnAddClicked = item => AddCurrencyToList(item.RowId);
-        picker.Open();
+            if (!IsDisposed) AddCurrencyToList(item.RowId);
+        });
+    }
+
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        System.CurrencyPicker?.CloseFor(this);
+        base.Dispose(isNativeDestructor);
     }
 }

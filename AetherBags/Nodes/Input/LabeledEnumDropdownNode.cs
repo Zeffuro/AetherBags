@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes.Simplified;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Input;
@@ -53,15 +53,8 @@ public class LabeledEnumDropdownNode<T> : SimpleComponentNode where T : Enum {
 
     public T? SelectedOption
     {
-        get => _dropDownNode.OptionListNode.SelectedOption;
-        set
-        {
-            _dropDownNode.OptionListNode.SelectedOption = value;
-            if (value != null)
-            {
-                _dropDownNode.LabelNode.String = value.Description;
-            }
-        }
+        get => _dropDownNode.SelectedOption;
+        set => _dropDownNode.SelectedOption = value;
     }
 
     public int MaxListOptions

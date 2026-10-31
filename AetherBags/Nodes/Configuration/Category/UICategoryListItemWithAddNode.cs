@@ -9,7 +9,7 @@ public class UICategoryListItemWithAddNode : UICategoryListItemNode
 {
     private readonly TextButtonNode _addButton;
 
-    public static Action<ItemUICategory>? OnAddClicked { get; set; }
+    public Action<ItemUICategory>? OnAddClicked { get; set; }
 
     public UICategoryListItemWithAddNode()
     {

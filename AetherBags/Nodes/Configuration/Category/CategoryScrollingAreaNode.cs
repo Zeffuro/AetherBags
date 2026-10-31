@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -10,20 +11,17 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
-public sealed class CategoryScrollingAreaNode : ScrollingListNode
+public sealed class CategoryScrollingAreaNode : ConfigurationScrollingNode
 {
-    private AddonCategoryConfigurationWindow? _categoryConfigurationAddon;
 
     public CategoryScrollingAreaNode()
     {
-        InitializeCategoryAddon();
-
-        AddNode(new CategoryGeneralConfigurationNode
+        ContentNode.AddNode(new CategoryGeneralConfigurationNode
         {
             OnLayoutChanged = RefreshLayoutAfterChildChange,
         });
 
-        AddNode(new ResNode{ Height = 10 });
+        ContentNode.AddNode(new ResNode{ Height = 10 });
 
         var categoryButtonRow = new HorizontalListNode
         {
@@ -37,7 +35,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
             String = "Configure Categories",
             OnClick = () =>
             {
-                if (_categoryConfigurationAddon != null) Task.Run(_categoryConfigurationAddon.ToggleAsync);
+                if (!Plugin.IsUnloading) System.CategoryConfigurationWindow.Toggle();
             },
         });
 
@@ -45,7 +43,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
         {
             Width = 28,
             Height = 28,
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\upload.png"),
             TextTooltip = "Export All Categories to Clipboard",
             OnClick = () => CategoryImportExport.ExportAllCategoriesToClipboard(System.Config.Categories.UserCategories),
         });
@@ -54,7 +52,7 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
         {
             Width = 28,
             Height = 28,
-            TexturePath = Path.Combine(Services.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
+            TexturePath = Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Assets\Icons\download.png"),
             TextTooltip = "Import All Categories from Clipboard\n(hold shift to confirm)",
             OnClick = HandleBulkImport,
         });
@@ -80,53 +78,29 @@ public sealed class CategoryScrollingAreaNode : ScrollingListNode
 
         categoryButtonRow.AddNode(resetButton);
 
-        AddNode(categoryButtonRow);
+        ContentNode.AddNode(categoryButtonRow);
     }
 
     private void RefreshLayoutAfterChildChange()
     {
-        RecalculateLayout();
-        Services.Framework.RunOnTick(RecalculateLayout, delayTicks: 2);
+        RefreshLayout();
+        IFramework.Get().RunOnTick(() => { if (!IsDisposed) RefreshLayout(); }, delayTicks: 2);
     }
 
     private void HandleBulkImport()
     {
         CheckAndCloseCategoryAddon();
 
-        if (!Services.KeyState[VirtualKey.SHIFT]) return;
+        if (!IKeyState.Get()[VirtualKey.SHIFT]) return;
         CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, true);
         InventoryOrchestrator.RefreshAll(updateMaps: true);
     }
 
-    private void InitializeCategoryAddon() {
-        if (_categoryConfigurationAddon is not null) return;
+    private static void CheckAndCloseCategoryAddon() => System.CategoryConfigurationWindow.Close();
 
-        _categoryConfigurationAddon = new AddonCategoryConfigurationWindow {
-            Size = new Vector2(700.0f, 500.0f),
-            InternalName = "AetherBags_CategoryConfig",
-            Title = "Category Configuration Window",
-        };
-    }
-
-    private void CheckAndCloseCategoryAddon()
+    protected override void Dispose(bool isNativeDestructor)
     {
-        if (_categoryConfigurationAddon != null)
-        {
-            _categoryConfigurationAddon.Close();
-        }
-    }
-
-    protected override void Dispose(bool disposing, bool isNativeDestructor)
-    {
-        if (disposing)
-        {
-            if (_categoryConfigurationAddon != null)
-            {
-                _categoryConfigurationAddon.Dispose();
-                _categoryConfigurationAddon = null;
-            }
-        }
-
-        base.Dispose(disposing, isNativeDestructor);
+        System.CategoryConfigurationWindow?.Close();
+        base.Dispose(isNativeDestructor);
     }
 }

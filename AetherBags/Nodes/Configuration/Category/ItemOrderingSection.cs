@@ -1,8 +1,10 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Linq;
 using AetherBags.Addons;
 using AetherBags.Configuration;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Enums;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
@@ -15,8 +17,10 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
 
     private ItemSortCriteriaEditorNode? _sortCriteriaEditor;
     private UintListEditorNode? _customOrderEditor;
-    private AddonItemPicker? _itemPicker;
     private bool _initialized;
+
+    protected override bool IsContentRowVisible(NodeBase node) =>
+        node != _customOrderEditor || CategoryDefinition.ItemSortCriteria.Any(criterion => criterion.Field == ItemSortField.CustomOrder);
 
     private void EnsureInitialized()
     {
@@ -37,7 +41,7 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
         _customOrderEditor = new UintListEditorNode
         {
             Label = "Custom Item Order:",
-            MaxValue = Services.DataManager.GetExcelSheet<Item>().LastOrDefault().RowId,
+            MaxValue = IDataManager.Get().GetExcelSheet<Item>().LastOrDefault().RowId,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveItemName,
             OnSearchButtonClicked = OpenItemPicker,
             OnChanged = () =>
@@ -55,20 +59,10 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
 
     private void OpenItemPicker()
     {
-        _itemPicker ??= new AddonItemPicker
+        System.ItemOrderPicker.OpenFor(this, item =>
         {
-            Title = "Select Items to Order",
-            InternalName = "Aetherbags_OrderItemPicker",
-            SearchOptions = Services.DataManager.GetExcelSheet<Item>()
-                .Where(i => i.RowId > 0 && !i.Name.IsEmpty)
-                .ToList(),
-            SortingOptions = [DefaultSortOptions.Alphabetical, DefaultSortOptions.Id],
-            ItemSpacing = 3.0f,
-        };
-
-        _itemPicker.SelectionResult = item => _customOrderEditor?.AddValue(item.RowId);
-        ItemListItemWithAddNode.OnAddClicked = item => _customOrderEditor?.AddValue(item.RowId);
-        _itemPicker.Open();
+            if (!IsDisposed) _customOrderEditor?.AddValue(item.RowId);
+        });
     }
 
     private void RefreshCustomOrderVisibility()
@@ -89,16 +83,24 @@ public sealed class ItemOrderingSection(Func<UserCategoryDefinition> getCategory
 
     private unsafe void RefreshAddonCollisionList()
     {
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
+            if (IsDisposed) return;
             var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
             if (addon is not null)
                 addon->UpdateCollisionNodeList(false);
         });
     }
 
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        System.ItemOrderPicker?.CloseFor(this);
+        base.Dispose(isNativeDestructor);
+    }
+
     public override void Refresh()
     {
+        System.ItemOrderPicker.CloseFor(this);
         EnsureInitialized();
 
         _sortCriteriaEditor!.SetCriteria(CategoryDefinition.ItemSortCriteria);

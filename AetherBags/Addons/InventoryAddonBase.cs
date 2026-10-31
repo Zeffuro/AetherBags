@@ -1,7 +1,7 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
@@ -17,8 +17,9 @@ using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using AgentContext = FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentContext;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
 using KamiToolKit.ContextMenu;
 using KamiToolKit.Nodes;
@@ -107,7 +108,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     public virtual void SetSearchText(string searchText)
     {
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
             if (IsOpen) SearchInputNode.SearchString = searchText;
             RefreshCategoriesCore(autosize: true);
@@ -116,7 +117,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     public unsafe void FocusSearch()
     {
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
             AtkUnitBase* addon = this;
             if (!IsOpen || SearchInputNode == null || SearchInputNode.FocusNode == null || addon == null) return;
@@ -262,7 +263,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
     private void StartDeferredItemPopulation()
     {
         _deferredPopulationInProgress = true;
-        Services.Framework.RunOnTick(PopulateCategoryBatch, delayTicks: 1);
+        IFramework.Get().RunOnTick(PopulateCategoryBatch, delayTicks: 1);
     }
 
     private void PopulateCategoryBatch()
@@ -337,7 +338,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         if (hasMore)
         {
-            Services.Framework.RunOnTick(PopulateCategoryBatch);
+            IFramework.Get().RunOnTick(PopulateCategoryBatch);
         }
         else
         {
@@ -465,7 +466,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
     {
         if (!acceptedPayload.IsValidInventoryPayload) return;
 
-        Services.Logger.Information($"[BackgroundDrop] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), windowSource={InventoryState.SourceType}");
+        IPluginLog.Get().Information($"[BackgroundDrop] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), windowSource={InventoryState.SourceType}");
 
         var mapped = InventoryType.GetInventoryTypeFromContainerId(acceptedPayload.Int1);
         InventoryType srcContainer = mapped != 0 ? mapped : (InventoryType)acceptedPayload.Int1;
@@ -497,7 +498,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         if (!emptyLocation.IsValid)
         {
-            Services.Logger.Error("No empty slots available to receive drop.");
+            IPluginLog.Get().Error("No empty slots available to receive drop.");
             return;
         }
 
@@ -514,7 +515,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             ReferenceIndex = (short)absoluteIndex
         };
 
-        Services.Logger.DebugOnly($"[BackgroundDrop] Target: {emptyLocation} -> Visual: {visualLocation} (Ref: {absoluteIndex})");
+        IPluginLog.Get().DebugOnly($"[BackgroundDrop] Target: {emptyLocation} -> Visual: {visualLocation} (Ref: {absoluteIndex})");
 
         InventoryMoveHelper.HandleItemMovePayload(acceptedPayload, targetPayload);
 
@@ -774,7 +775,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
         long now = Environment.TickCount64;
         if (now - _lastLogTick > 1000) // Log every second
         {
-            Services.Logger.DebugOnly($"[Perf] Last 1s: OnRequestedUpdate={_requestedUpdateCount}, RefreshFromLifecycle={_refreshFromLifecycleCount}");
+            IPluginLog.Get().DebugOnly($"[Perf] Last 1s: OnRequestedUpdate={_requestedUpdateCount}, RefreshFromLifecycle={_refreshFromLifecycleCount}");
             _requestedUpdateCount = 0;
             _refreshFromLifecycleCount = 0;
             _lastLogTick = now;
@@ -791,7 +792,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
 
-    protected override Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         ContextMenu = new ContextMenu();
 
@@ -802,19 +803,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
             ScrollableCategories.ScrollBarNode.OnValueChanged = OnScrollValueChanged;
         }
 
-        return Task.CompletedTask;
-    }
-
-    public async Task ToggleAsync()
-    {
-        if (IsOpen)
-        {
-            await CloseAsync();
-        }
-        else
-        {
-            await OpenAsync();
-        }
+        base.OnSetup(addon, atkValueSpan);
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
@@ -848,6 +837,10 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         HoverSubscribed.Clear();
         SearchDebouncer.Dispose();
+        var contextAgent = AgentContext.Instance();
+        if (contextAgent is not null && contextAgent->OwnerAddon == addon->Id)
+            ContextMenu?.Close();
+        ContextMenu?.Dispose();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
         _deferredPopulationInProgress = false;

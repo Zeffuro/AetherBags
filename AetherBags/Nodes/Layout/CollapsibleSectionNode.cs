@@ -1,26 +1,28 @@
-using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
+using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Interfaces;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Layout;
 
-public class CollapsibleSectionNode : VerticalListNode
+public class CollapsibleSectionNode : VerticalListNode, ILayoutListNode
 {
     protected readonly NineGridNode BackgroundNode;
     protected readonly ImageNode ArrowNode;
     protected readonly TextNode LabelNode;
-    protected new readonly CollisionNode CollisionNode;
+    protected readonly CollisionNode CollisionNode;
     protected readonly TabbedVerticalListNode ContentNode;
     protected readonly SimpleComponentNode HeaderNode;
 
     private bool isCollapsed = true;
     private float headerHeight = 28.0f;
+    private float? layoutWidth;
 
     public Action? OnToggle;
 
@@ -130,7 +132,7 @@ public class CollapsibleSectionNode : VerticalListNode
         ContentNode = new TabbedVerticalListNode {
             IsVisible = false,
             X = 18.0f,
-            ItemVerticalSpacing = 4.0f,
+            ItemSpacing = 4.0f,
             TabSize = 18.0f,
             FitWidth = true,
         };
@@ -141,21 +143,57 @@ public class CollapsibleSectionNode : VerticalListNode
 
     public void RefreshLayout()
     {
-        ContentNode.RecalculateLayout();
         RecalculateLayout();
         OnToggle?.Invoke();
+    }
+
+    public new void RecalculateLayout()
+    {
+        OnRecalculateLayout();
+        if (NavIndex != 0) OnRecalculateNavigation();
+    }
+
+    void ILayoutListNode.RecalculateLayout() => RecalculateLayout();
+
+    protected virtual bool IsContentRowVisible(NodeBase node) => true;
+
+    protected override void OnRecalculateLayout()
+    {
+        if (ContentNode is null) return;
+
+        using var visibility = new LayoutVisibilityScope(this);
+
+        HeaderNode.Position = Vector2.Zero;
+        ContentNode.IsVisible = !isCollapsed;
+        SetContentRowsVisible(ContentNode, !isCollapsed);
+        if (isCollapsed)
+        {
+            Height = headerHeight;
+            return;
+        }
+
+        var contentWidth = Math.Max(0, Width - ContentNode.X);
+        if (ContentNode.Width != contentWidth) ContentNode.Width = contentWidth;
+        ContentNode.RecalculateLayout();
+        ContentNode.Y = headerHeight + FirstItemSpacing;
+        Height = ContentNode.Y + ContentNode.Height;
+    }
+
+    private void SetContentRowsVisible(ILayoutListNode layout, bool isVisible)
+    {
+        foreach (var node in layout.Nodes)
+        {
+            var rowVisible = isVisible && IsContentRowVisible(node);
+            node.IsVisible = rowVisible;
+            if (node is ILayoutListNode childLayout)
+                SetContentRowsVisible(childLayout, rowVisible);
+        }
     }
 
     private void UpdateState()
     {
         ContentNode.IsVisible = !isCollapsed;
         ArrowNode.PartId = isCollapsed ? 0u : 1u;
-
-        if (!isCollapsed)
-        {
-            ContentNode.Width = Math.Max(0, Width - ContentNode.X);
-            ContentNode.RecalculateLayout();
-        }
 
         RecalculateLayout();
         OnToggle?.Invoke();
@@ -165,7 +203,7 @@ public class CollapsibleSectionNode : VerticalListNode
 
     public void SubtractTab(int tabAmount = 1) => ContentNode.SubtractTab(tabAmount);
 
-    public new void AddNode(NodeBase node) => ContentNode.AddNode(node);
+    public new void AddNode(NodeBase? node) => ContentNode.AddNode(node);
 
     public new void AddNode(IEnumerable<NodeBase> nodes) => ContentNode.AddNode(nodes);
 
@@ -180,13 +218,15 @@ public class CollapsibleSectionNode : VerticalListNode
     protected override void OnSizeChanged()
     {
         base.OnSizeChanged();
-        if (BackgroundNode == null || LabelNode == null || CollisionNode == null) return;
+        if (ContentNode is null || layoutWidth == Width) return;
+        layoutWidth = Width;
 
         HeaderNode.Width = Width;
         BackgroundNode.Width = Width;
         LabelNode.Width = Math.Max(0, Width - LabelNode.X);
         CollisionNode.Width = Width;
         ContentNode.Width = Math.Max(0, Width - ContentNode.X);
+        RecalculateLayout();
     }
 
     public ReadOnlySeString String { get => LabelNode.String; set => LabelNode.String = value; }

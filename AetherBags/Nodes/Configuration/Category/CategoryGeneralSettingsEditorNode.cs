@@ -4,7 +4,7 @@ using AetherBags.Helpers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 
 namespace AetherBags.Nodes.Configuration.Category;
 
@@ -12,7 +12,7 @@ public sealed class CategoryGeneralSettingsEditorNode : SimpleComponentNode
 {
     public Action? OnSettingsChanged { get; set; }
 
-    private readonly ScrollingAreaNode<VerticalListNode> _scrollingArea;
+    private readonly ConfigurationScrollingNode _scrollingArea;
     private readonly TextNode _headerLabel;
     private readonly CheckboxNode _showBuiltInCheckbox;
     private readonly CheckboxNode _showExternalCheckbox;
@@ -22,15 +22,13 @@ public sealed class CategoryGeneralSettingsEditorNode : SimpleComponentNode
 
     public CategoryGeneralSettingsEditorNode()
     {
-        _scrollingArea = new ScrollingAreaNode<VerticalListNode>
+        _scrollingArea = new ConfigurationScrollingNode
         {
             AutoHideScrollBar = true,
-            ContentHeight = 100f,
         };
         _scrollingArea.AttachNode(this);
 
-        var list = _scrollingArea.ContentAreaNode;
-        list.FitContents = true;
+        var list = _scrollingArea.ContentNode;
         list.ItemSpacing = 6.0f;
 
         _headerLabel = new TextNode
@@ -106,8 +104,7 @@ public sealed class CategoryGeneralSettingsEditorNode : SimpleComponentNode
             _isRefreshing = false;
         }
 
-        _scrollingArea.ContentAreaNode.RecalculateLayout();
-        _scrollingArea.ContentHeight = _scrollingArea.ContentAreaNode.Height;
+        _scrollingArea.RefreshLayout();
     }
 
     protected override void OnSizeChanged()
@@ -115,7 +112,6 @@ public sealed class CategoryGeneralSettingsEditorNode : SimpleComponentNode
         base.OnSizeChanged();
         _scrollingArea.Position = Vector2.Zero;
         _scrollingArea.Size = Size;
-        _scrollingArea.ContentAreaNode.RecalculateLayout();
-        _scrollingArea.ContentHeight = _scrollingArea.ContentAreaNode.Height;
+        _scrollingArea.RefreshLayout();
     }
 }

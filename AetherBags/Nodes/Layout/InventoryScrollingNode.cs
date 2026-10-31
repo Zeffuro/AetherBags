@@ -1,113 +1,71 @@
-using System.Linq;
+using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 
 namespace AetherBags.Nodes.Layout;
 
-/// <summary>
-/// A copy of KamiToolKit's ScrollingAreaNode with ContentAreaClipNode changed from
-/// SimpleComponentNode to ResNode, to prevent the native AtkDragDropManager from
-/// treating the clip boundary as a component node (which blocks drag-to-hotbar).
-/// According to Kami it is possible that this may or may not leak.
-/// We will eventually change this later.
-/// </summary>
-public unsafe class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeBase, new() {
+public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeBase, new()
+{
+    public CollisionNode ScrollingCollisionNode { get; }
+    public ResNode ClippingContentNode { get; }
+    public T ContentNode { get; }
+    public ScrollBarNode ScrollBarNode { get; }
 
-    public readonly ResNode ContentAreaClipNode;
-    public readonly T ContentAreaNode;
-    public readonly ScrollBarNode ScrollBarNode;
-    public readonly CollisionNode ScrollingCollisionNode;
-
-    public InventoryScrollingAreaNode() {
+    public unsafe InventoryScrollingAreaNode()
+    {
         ScrollingCollisionNode = new CollisionNode();
         ScrollingCollisionNode.AttachNode(this);
 
-        ContentAreaClipNode = new ResNode {
+        ClippingContentNode = new ResNode
+        {
             NodeFlags = NodeFlags.Clip | NodeFlags.EmitsEvents | NodeFlags.Visible,
         };
-        ContentAreaClipNode.AttachNode(this);
+        ClippingContentNode.AttachNode(this);
 
-        ContentAreaNode = new T();
-        ContentAreaNode.AttachNode(ContentAreaClipNode);
+        ContentNode = new T();
+        ContentNode.AttachNode(ClippingContentNode);
 
-        ScrollBarNode = new ScrollBarNode {
-            ContentNode = ContentAreaNode,
-            ContentCollisionNode = ScrollingCollisionNode,
-            HideWhenDisabled = true,
-        };
+        ScrollBarNode = new ScrollBarNode { HideWhenDisabled = true };
         ScrollBarNode.AttachNode(this);
+        ScrollBarNode.SetContentNodes(ContentNode, ScrollingCollisionNode);
 
-        AtkResNode* clipNode = ContentAreaClipNode;
-        AtkResNode* contentNode = ContentAreaNode;
-
-        clipNode->AtkEventManager.RegisterEvent(
-            AtkEventType.MouseWheel,
-            5,
-            null,
-            ScrollingCollisionNode,
-            ScrollBarNode,
-            false);
-
-        ScrollingCollisionNode.Node->AtkEventManager.RegisterEvent(
-            AtkEventType.MouseWheel,
-            5,
-            null,
-            ScrollingCollisionNode,
-            ScrollBarNode,
-            false);
-
-        contentNode->AtkEventManager.RegisterEvent(
-            AtkEventType.MouseWheel,
-            5,
-            null,
-            ScrollingCollisionNode,
-            ScrollBarNode,
-            false);
+        AtkResNode* clipNode = ClippingContentNode;
+        AtkResNode* collisionNode = ScrollingCollisionNode;
+        AtkResNode* contentNode = ContentNode;
+        clipNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
+        collisionNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
+        contentNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
     }
 
-    public virtual T ContentNode => ContentAreaNode;
-
-    public int ScrollPosition {
-        get => ScrollBarNode.ScrollPosition;
-        set => ScrollBarNode.ScrollPosition = value;
-    }
-
-    public int ScrollSpeed {
-        get => ScrollBarNode.ScrollSpeed;
-        set => ScrollBarNode.ScrollSpeed = value;
-    }
-
-    public required float ContentHeight {
-        get => ContentAreaNode.Height;
-        set {
-            ContentAreaNode.Height = value;
-            ScrollBarNode.UpdateScrollParams();
-        }
-    }
-
-    public bool AutoHideScrollBar {
+    public bool AutoHideScrollBar
+    {
         get => ScrollBarNode.HideWhenDisabled;
         set => ScrollBarNode.HideWhenDisabled = value;
     }
 
-    protected override void OnSizeChanged() {
-        base.OnSizeChanged();
-
-        ContentAreaNode.Width = Width - 16.0f;
-        ScrollingCollisionNode.Size = new Vector2(Width - 16.0f, Height);
-        ContentAreaClipNode.Size = new Vector2(Width - 16.0f, Height);
-        ScrollBarNode.Size = new Vector2(8.0f, Height);
-        ScrollBarNode.UpdateScrollParams();
-
-        ScrollBarNode.X = Width - 8.0f;
+    public required float ContentHeight
+    {
+        get => ContentNode.Height;
+        set
+        {
+            ContentNode.Height = value;
+            ScrollBarNode.UpdateScrollParams();
+        }
     }
 
-    public void FitToContentHeight() {
-        if (ContentNode is LayoutListNode layoutNode) {
-            ContentHeight = layoutNode.Nodes.Sum(node => node.IsVisible ? node.Height + layoutNode.ItemSpacing : 0.0f) + layoutNode.FirstItemSpacing;
-        }
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        float contentWidth = Math.Max(0.0f, Width - 16.0f);
+        ContentNode.Width = contentWidth;
+        ScrollingCollisionNode.Size = new Vector2(contentWidth, Height);
+        ClippingContentNode.Size = new Vector2(contentWidth, Height);
+        ScrollBarNode.Size = new Vector2(8.0f, Height);
+        ScrollBarNode.X = Width - 8.0f;
+        ScrollBarNode.UpdateScrollParams();
     }
 }

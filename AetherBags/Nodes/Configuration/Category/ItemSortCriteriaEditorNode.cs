@@ -1,3 +1,5 @@
+using Dalamud.Plugin.Services;
+using KamiToolKit.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +9,6 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
 using Lumina.Text.ReadOnly;
 
 namespace AetherBags.Nodes.Configuration.Category;
@@ -231,8 +232,9 @@ public sealed class ItemSortCriteriaEditorNode : VerticalListNode
 
     private void RefreshItemsDeferred()
     {
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
+            if (IsDisposed) return;
             RefreshItems();
             OnChanged?.Invoke();
         }, delayTicks: 2);
@@ -302,7 +304,7 @@ public sealed class ItemSortCriterionItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.UpArrow,
+            Icon = CircleButtonIcon.UpArrow,
             TextTooltip = "Move up",
             IsEnabled = !isFirst,
             OnClick = () => OnMoveUp?.Invoke(),
@@ -311,7 +313,7 @@ public sealed class ItemSortCriterionItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.ArrowDown,
+            Icon = CircleButtonIcon.ArrowDown,
             TextTooltip = "Move down",
             IsEnabled = !isLast,
             OnClick = () => OnMoveDown?.Invoke(),
@@ -320,7 +322,7 @@ public sealed class ItemSortCriterionItemNode : HorizontalListNode
         AddNode(new CircleButtonNode
         {
             Size = new Vector2(28, 28),
-            Icon = ButtonIcon.Cross,
+            Icon = CircleButtonIcon.Cross,
             TextTooltip = "Remove",
             OnClick = () => OnRemove?.Invoke(),
         });

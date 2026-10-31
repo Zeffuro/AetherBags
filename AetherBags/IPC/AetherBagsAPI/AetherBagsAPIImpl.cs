@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,7 +131,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
         }
         catch (Exception ex)
         {
-            Services.Logger.Error($"Failed to set configuration from JSON: {ex}");
+            IPluginLog.Get().Error($"Failed to set configuration from JSON: {ex}");
         }
     }
 
@@ -153,7 +154,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
         }
         catch (Exception ex)
         {
-            Services.Logger.Error($"Failed to get config property '{propertyPath}': {ex}");
+            IPluginLog.Get().Error($"Failed to get config property '{propertyPath}': {ex}");
             return "null";
         }
     }
@@ -193,7 +194,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
         }
         catch (Exception ex)
         {
-            Services.Logger.Error($"Failed to set config property '{propertyPath}': {ex}");
+            IPluginLog.Get().Error($"Failed to set config property '{propertyPath}': {ex}");
         }
     }
 
@@ -215,7 +216,7 @@ public class AetherBagsAPIImpl : IAetherBagsAPI
             _vanillaInventoryBypassLeases[token] = lease;
         }
 
-        Services.Logger.Debug($"Vanilla inventory bypass acquired by {lease.Owner} for {clampedTimeoutMs}ms. Token: {token}");
+        IPluginLog.Get().Debug($"Vanilla inventory bypass acquired by {lease.Owner} for {clampedTimeoutMs}ms. Token: {token}");
         return token;
     }
 

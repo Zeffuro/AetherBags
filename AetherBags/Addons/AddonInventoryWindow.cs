@@ -1,7 +1,7 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
 using AetherBags.Inventory.State;
@@ -11,6 +11,7 @@ using AetherBags.Nodes.Layout;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Addons;
@@ -23,7 +24,7 @@ public class AddonInventoryWindow : InventoryAddonBase
 
     protected override InventoryStateBase InventoryState => _inventoryState;
 
-    protected override async Task BuildUiAsync()
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
     {
         InitializeBackgroundDropTarget();
 
@@ -55,7 +56,7 @@ public class AddonInventoryWindow : InventoryAddonBase
         {
             Position = header.SearchPosition,
             Size = header.SearchSize,
-            OnInputReceived = _ => SearchDebouncer.Run(() => Services.Framework.RunOnTick(ItemRefresh)),
+            OnInputReceived = _ => SearchDebouncer.Run(() => IFramework.Get().RunOnTick(ItemRefresh)),
             OnButtonClicked = () => InventoryAddonContextMenu.OpenMain(this)
         };
         SearchInputNode.AttachNode(this);
@@ -64,8 +65,8 @@ public class AddonInventoryWindow : InventoryAddonBase
         {
             Position = new Vector2(header.HeaderWidth - SettingsButtonOffset, header.HeaderY),
             Size = new Vector2(28f),
-            Icon = ButtonIcon.GearCog,
-            OnClick = () => Task.Run(System.AddonConfigurationWindow.ToggleAsync)
+            Icon = CircleButtonIcon.GearCog,
+            OnClick = () => { if (!Plugin.IsUnloading) System.AddonConfigurationWindow.Toggle(); }
         };
         SettingsButtonNode.AttachNode(this);
 
@@ -77,11 +78,6 @@ public class AddonInventoryWindow : InventoryAddonBase
 
         LayoutContent();
 
-        await base.BuildUiAsync();
-    }
-
-    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
-    {
         InternalAddon->SubscribeAtkArrayData(1, (int)NumberArrayType.Inventory);
 
         System.LootedItemsTracker.OnLootedItemsChanged += OnLootedItemsChanged;
@@ -169,18 +165,18 @@ public class AddonInventoryWindow : InventoryAddonBase
         System.LootedItemsTracker.RemoveByIndex(index);
         // Defer flush: removing the last item disposes _lootedCategoryNode, which would tear
         // down the AtkUldManager while we're still inside this child's click handler.
-        Services.Framework.RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
+        IFramework.Get().RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
     }
 
     private void OnClearAllLootedItems()
     {
         System.LootedItemsTracker.Clear();
-        Services.Framework.RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
+        IFramework.Get().RunOnTick(() => System.LootedItemsTracker.FlushPendingChanges());
     }
 
     public void ManualCurrencyRefresh()
     {
-        if (!Services.ClientState.IsLoggedIn) return;
+        if (!IClientState.Get().IsLoggedIn || !IsSetupComplete) return;
         FooterNode.RefreshCurrencies();
     }
 
@@ -201,15 +197,17 @@ public class AddonInventoryWindow : InventoryAddonBase
 
     public void SetNotification(InventoryNotificationInfo info)
     {
-        Services.Framework.RunOnTick(() =>
+        IFramework.Get().RunOnTick(() =>
         {
-            if (IsOpen) _notificationNode.NotificationInfo = info;
+            if (IsOpen && IsSetupComplete) _notificationNode.NotificationInfo = info;
         }, delayTicks: 3);
     }
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
         IsSetupComplete = false;
+        _lootedCategoryNode = null;
+        _notificationNode = null!;
         System.LootedItemsTracker.OnLootedItemsChanged -= OnLootedItemsChanged;
 
         System.LootedItemsTracker.UnseenLootItemIds.Clear();

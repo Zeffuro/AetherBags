@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using System;
 using System.Linq;
 using AetherBags.Addons;
@@ -19,8 +20,6 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
 
     private bool _initialized;
 
-    private AddonItemPicker? _itemPicker;
-    private AddonUICategoryPicker? _categoryPicker;
 
     private void EnsureInitialized()
     {
@@ -30,7 +29,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
         _itemIdsEditor = new UintListEditorNode
         {
             Label = "Allowed Item IDs:",
-            MaxValue = Services.DataManager.GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
+            MaxValue = IDataManager.Get().GetExcelSheet<Item>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveItemName,
             OnSearchButtonClicked = OpenItemPicker,
             OnChanged = () =>
@@ -55,7 +54,7 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
         _uiCategoriesEditor = new UintListEditorNode
         {
             Label = "UI Categories:",
-            MaxValue = Services.DataManager.GetExcelSheet<ItemUICategory>()?.LastOrDefault().RowId ?? uint.MaxValue,
+            MaxValue = IDataManager.Get().GetExcelSheet<ItemUICategory>()?.LastOrDefault().RowId ?? uint.MaxValue,
             LabelResolver = CategoryDefinitionConfigurationNode.ResolveUiCategoryName,
             OnSearchButtonClicked = OpenCategoryPicker,
             OnChanged = () =>
@@ -75,38 +74,33 @@ public sealed class ListFiltersSection(Func<UserCategoryDefinition> getCategoryD
         RecalculateLayout();
     }
 
-    private void OpenItemPicker() {
-        _itemPicker ??= new AddonItemPicker
+    private void OpenItemPicker()
+    {
+        System.ItemFilterPicker.OpenFor(this, item =>
         {
-            Title = "Select Items to Add",
-            InternalName = "Aetherbags_ItemPicker",
-            SearchOptions = Services.DataManager.GetExcelSheet<Item>()
-                .Where(i => i.RowId > 0 && !i.Name.IsEmpty)
-                .ToList(),
-
-            SortingOptions = [DefaultSortOptions.Alphabetical, DefaultSortOptions.Id],
-            ItemSpacing = 3.0f,
-        };
-        _itemPicker.SelectionResult = item => _itemIdsEditor?.AddValue(item.RowId);
-        ItemListItemWithAddNode.OnAddClicked = item => _itemIdsEditor?.AddValue(item.RowId);
-        _itemPicker.Open();
+            if (!IsDisposed) _itemIdsEditor?.AddValue(item.RowId);
+        });
     }
 
-    private void OpenCategoryPicker() {
-        _categoryPicker ??= new AddonUICategoryPicker {
-            Title = "Select Categories to Add",
-            InternalName = "Aetherbags_CategoryPicker",
-            SearchOptions = Services.DataManager.GetExcelSheet<ItemUICategory>()
-                .Where(i => i.RowId > 0)
-                .ToList()
-        };
-        _categoryPicker.SelectionResult = cat => _uiCategoriesEditor?.AddValue(cat.RowId);
-        UICategoryListItemWithAddNode.OnAddClicked = cat => _uiCategoriesEditor?.AddValue(cat.RowId);
-        _categoryPicker.Open();
+    private void OpenCategoryPicker()
+    {
+        System.UICategoryPicker.OpenFor(this, category =>
+        {
+            if (!IsDisposed) _uiCategoriesEditor?.AddValue(category.RowId);
+        });
+    }
+
+    protected override void Dispose(bool isNativeDestructor)
+    {
+        System.ItemFilterPicker?.CloseFor(this);
+        System.UICategoryPicker?.CloseFor(this);
+        base.Dispose(isNativeDestructor);
     }
 
     public override void Refresh()
     {
+        System.ItemFilterPicker.CloseFor(this);
+        System.UICategoryPicker.CloseFor(this);
         EnsureInitialized();
 
         _itemIdsEditor!.SetList(CategoryDefinition.Rules.AllowedItemIds);
