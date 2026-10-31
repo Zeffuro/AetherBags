@@ -542,7 +542,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
     }
 
     protected int CalculateOptimalItemsPerLine(float availableWidth)
-        => Math.Clamp((int)MathF.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)), 1, 15);
+        => Math.Max(1, (int)MathF.Floor((availableWidth + ItemPadding) / (ItemSize + ItemPadding)));
 
     private readonly struct EffectiveWindowSizing
     {
