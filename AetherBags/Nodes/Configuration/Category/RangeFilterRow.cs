@@ -12,6 +12,7 @@ public sealed class RangeFilterRow : VerticalListNode
     private readonly CheckboxNode _enabledCheckbox;
     private readonly NumericInputNode _minNode;
     private readonly NumericInputNode _maxNode;
+    private bool _isRefreshing;
 
     public Action<bool, int, int>? OnFilterChanged { get; set; }
 
@@ -51,7 +52,7 @@ public sealed class RangeFilterRow : VerticalListNode
             Size = new Vector2(200, 20),
             OnClick = isChecked =>
             {
-                if (_minNode == null || _maxNode == null) return;
+                if (_isRefreshing || _minNode == null || _maxNode == null) return;
                 _minNode.IsEnabled = isChecked;
                 _maxNode.IsEnabled = isChecked;
                 OnFilterChanged?.Invoke(isChecked, _minNode.Value, _maxNode.Value);
@@ -73,7 +74,7 @@ public sealed class RangeFilterRow : VerticalListNode
             Size = new Vector2(100, 28),
             OnValueUpdate = val =>
             {
-                if (_maxNode != null) OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, val, _maxNode.Value);
+                if (!_isRefreshing && _maxNode != null) OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, val, _maxNode.Value);
             },
         };
         rangeRow.AddNode(_minNode);
@@ -88,7 +89,7 @@ public sealed class RangeFilterRow : VerticalListNode
         _maxNode = new NumericInputNode
         {
             Size = new Vector2(100, 28),
-            OnValueUpdate = val => OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, _minNode.Value, val),
+            OnValueUpdate = val => { if (!_isRefreshing) OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, _minNode.Value, val); },
         };
         rangeRow.AddNode(_maxNode);
 
@@ -97,11 +98,16 @@ public sealed class RangeFilterRow : VerticalListNode
 
     public void SetFilter(RangeFilter<int> filter)
     {
-        _enabledCheckbox.IsChecked = filter.Enabled;
-        _minNode.Value = filter.Min;
-        _maxNode.Value = filter.Max;
-        _minNode.IsEnabled = filter.Enabled;
-        _maxNode.IsEnabled = filter.Enabled;
+        _isRefreshing = true;
+        try
+        {
+            _enabledCheckbox.IsChecked = filter.Enabled;
+            _minNode.Value = filter.Min;
+            _maxNode.Value = filter.Max;
+            _minNode.IsEnabled = filter.Enabled;
+            _maxNode.IsEnabled = filter.Enabled;
+        }
+        finally { _isRefreshing = false; }
     }
 }
 
@@ -111,6 +117,7 @@ public sealed class RangeFilterRowUint : VerticalListNode
     private readonly NumericInputNode _minNode;
     private readonly NumericInputNode _maxNode;
     private int _maxBound = int.MaxValue;
+    private bool _isRefreshing;
 
     public Action<bool, uint, uint>? OnFilterChanged { get; set; }
 
@@ -151,7 +158,7 @@ public sealed class RangeFilterRowUint : VerticalListNode
             Size = new Vector2(200, 20),
             OnClick = isChecked =>
             {
-                if (_minNode == null || _maxNode == null) return;
+                if (_isRefreshing || _minNode == null || _maxNode == null) return;
                 _minNode.IsEnabled = isChecked;
                 _maxNode.IsEnabled = isChecked;
                 OnFilterChanged?.Invoke(isChecked, (uint)_minNode.Value, (uint)_maxNode.Value);
@@ -173,7 +180,7 @@ public sealed class RangeFilterRowUint : VerticalListNode
             Size = new Vector2(100, 28),
             OnValueUpdate = val =>
             {
-                if (_maxNode != null)
+                if (!_isRefreshing && _maxNode != null)
                     OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, (uint)val, (uint)_maxNode.Value);
             },
         };
@@ -189,7 +196,7 @@ public sealed class RangeFilterRowUint : VerticalListNode
         _maxNode = new NumericInputNode
         {
             Size = new Vector2(100, 28),
-            OnValueUpdate = val => OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, (uint)_minNode.Value, (uint)val),
+            OnValueUpdate = val => { if (!_isRefreshing) OnFilterChanged?.Invoke(_enabledCheckbox.IsChecked, (uint)_minNode.Value, (uint)val); },
         };
         rangeRow.AddNode(_maxNode);
 
@@ -198,10 +205,15 @@ public sealed class RangeFilterRowUint : VerticalListNode
 
     public void SetFilter(RangeFilter<uint> filter)
     {
-        _enabledCheckbox.IsChecked = filter.Enabled;
-        _minNode.Value = (int)filter.Min;
-        _maxNode.Value = (int)Math.Min(filter.Max, _maxBound);
-        _minNode.IsEnabled = filter.Enabled;
-        _maxNode.IsEnabled = filter.Enabled;
+        _isRefreshing = true;
+        try
+        {
+            _enabledCheckbox.IsChecked = filter.Enabled;
+            _minNode.Value = (int)filter.Min;
+            _maxNode.Value = (int)Math.Min(filter.Max, _maxBound);
+            _minNode.IsEnabled = filter.Enabled;
+            _maxNode.IsEnabled = filter.Enabled;
+        }
+        finally { _isRefreshing = false; }
     }
 }
