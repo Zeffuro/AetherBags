@@ -30,7 +30,8 @@ public static class DragDropPayloadExtensions
         {
             get
             {
-                if (!payload.IsValidInventoryPayload) return default;
+                if (!payload.IsValidInventoryPayload || payload.Int1 < 0 || payload.Int2 < 0 || payload.Int2 > ushort.MaxValue)
+                    return InventoryLocation.Invalid;
 
                 if (payload.Type == DragDropType.Inventory_Item)
                 {
@@ -42,30 +43,9 @@ public static class DragDropPayloadExtensions
 
                 InventoryType sourceContainer = InventoryType.GetInventoryTypeFromContainerId(containerId);
 
-                if (sourceContainer == 0)
-                    return new InventoryLocation(0, 0);
+                if (sourceContainer == InventoryType.Invalid)
+                    return new InventoryLocation((InventoryType)containerId, (ushort)uiSlot);
 
-                // Retainers have special handling: UI has 5 tabs × 35 slots, data has 7 pages × 25 slots
-                if (sourceContainer.IsRetainer)
-                {
-                    // Container IDs 52-56 = UI tabs 0-4
-                    int uiTabIndex = containerId - 52;
-
-                    // Convert to global data index
-                    int globalDataIndex = (uiTabIndex * 35) + uiSlot;
-
-                    // Calculate data page and slot
-                    int dataPage = globalDataIndex / 25;
-                    int dataSlot = globalDataIndex % 25;
-
-                    InventoryType dataContainer = InventoryType.RetainerPage1 + (uint)dataPage;
-
-                    // Now resolve through sorter for the actual storage location
-                    var (realContainer, realSlot) = dataContainer.GetRealItemLocation(dataSlot);
-                    return new InventoryLocation(realContainer, realSlot);
-                }
-
-                // For non-retainers, use the standard resolution
                 var (container, slot) = sourceContainer.GetRealItemLocation(uiSlot);
                 return new InventoryLocation(container, slot);
             }

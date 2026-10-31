@@ -51,6 +51,7 @@ public class InventoryDragDropNode : InventoryDragDropNodeBase
         CollisionNode.AddEvent(AtkEventType.MouseClick, OnItemClicked);
         CollisionNode.AddEvent(AtkEventType.MouseOver, OnItemHover);
         CollisionNode.AddEvent(AtkEventType.MouseOut, OnItemUnhover);
+        OnBegin = _ => InventoryDragPreview.Begin(this, _quantityTextNode.String);
     }
 
     public required ItemInfo ItemInfo

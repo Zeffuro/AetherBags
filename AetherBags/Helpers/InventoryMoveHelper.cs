@@ -17,6 +17,15 @@ public static unsafe class InventoryMoveHelper
 
     public static void HandleItemMovePayload(DragDropPayload source, DragDropPayload target)
     {
+        if (source.Type == DragDropType.Inventory_Item || target.Type == DragDropType.Inventory_Item)
+        {
+            var sourceLocation = source.InventoryLocation;
+            var targetLocation = target.InventoryLocation;
+            if (!sourceLocation.IsValid || !targetLocation.IsValid || sourceLocation == targetLocation) return;
+            MoveItemDirect(sourceLocation.Container, sourceLocation.Slot, targetLocation.Container, targetLocation.Slot);
+            return;
+        }
+
         uint srcContainer = (uint)source.Int1;
         uint dstContainer = (uint)target.Int1;
 

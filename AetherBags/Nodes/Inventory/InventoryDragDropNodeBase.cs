@@ -19,6 +19,7 @@ public unsafe class InventoryDragDropNodeBase : DragDropNode
 
     private void OnIconDeinitialize(AtkComponentBase* component)
     {
+        InventoryDragPreview.ReleaseSource(this);
         component->VirtualTable->Deinitialize = originalIconDeinitialize;
         InventoryIconNode.ClearDisposedImageReferences(IconNode, component);
         originalIconDeinitialize(component);

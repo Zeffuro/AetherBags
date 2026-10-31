@@ -64,4 +64,11 @@ internal static unsafe class Experimental
         return array == null || array->Size < size ? null : array->StringArray;
     }
 
+    //TODO: Use AtkDragDropInterface.CreateDragDropPreview when available in mainline.
+    public static AtkComponentDragDrop* CreateDragDropPreview(AtkDragDropInterface* dragDropInterface)
+    {
+        var virtualTable = *(nint**)dragDropInterface;
+        var createPreview = (delegate* unmanaged<AtkDragDropInterface*, AtkComponentDragDrop*>)virtualTable[15];
+        return createPreview(dragDropInterface);
+    }
 }

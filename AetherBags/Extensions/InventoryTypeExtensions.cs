@@ -73,7 +73,7 @@ public static unsafe class InventoryTypeExtensions
                 70 => InventoryType.SaddleBag2,
                 71 => InventoryType.PremiumSaddleBag1,
                 72 => InventoryType.PremiumSaddleBag2,
-                _ => (InventoryType)0
+                _ => InventoryType.Invalid
             };
 
         public ItemOrderModuleSorter* GetInventorySorter => inventoryType switch {
@@ -185,19 +185,22 @@ public static unsafe class InventoryTypeExtensions
         /// </summary>
         public InventoryLocation GetRealItemLocation(int visualSlot)
         {
-            var sorter = inventoryType.GetInventorySorter;
-            if (sorter == null)
-                return new InventoryLocation(inventoryType, (ushort)visualSlot);
-
             int startIndex = inventoryType.GetInventoryStartIndex;
             int sorterIndex = startIndex + visualSlot;
+            var fallback = inventoryType.IsRetainer
+                ? new InventoryLocation(InventoryType.RetainerPage1 + (uint)(sorterIndex / 25), (ushort)(sorterIndex % 25))
+                : new InventoryLocation(inventoryType, (ushort)visualSlot);
+
+            var sorter = inventoryType.GetInventorySorter;
+            if (sorter == null)
+                return fallback;
 
             if (sorterIndex < 0 || sorterIndex >= sorter->Items.LongCount)
-                return new InventoryLocation(inventoryType, (ushort)visualSlot);
+                return fallback;
 
             var entry = sorter->Items[sorterIndex].Value;
             if (entry == null)
-                return new InventoryLocation(inventoryType, (ushort)visualSlot);
+                return fallback;
 
             InventoryType baseType = inventoryType switch
             {

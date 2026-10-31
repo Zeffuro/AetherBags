@@ -14,6 +14,7 @@ using AetherBags.IPC;
 using AetherBags.IPC.AetherBagsAPI;
 using AetherBags.Monitoring;
 using AetherBags.Nodes.Color;
+using AetherBags.Nodes.Inventory;
 using AetherBags.Nodes.Configuration.Keybind;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -68,6 +69,7 @@ public class Plugin : IAsyncDalamudPlugin
 
     private void Initialize()
     {
+        InventoryDragPreview.Initialize();
         InventoryOrchestrator.Enable();
         System.IPC = new IPCService();
         System.IPC.RefreshExternalSources();
@@ -199,6 +201,7 @@ public class Plugin : IAsyncDalamudPlugin
 
         await IFramework.Get().RunOnFrameworkThread(() =>
         {
+            InventoryDragPreview.Dispose();
             System.LootedItemsTracker?.Dispose();
             HighlightState.ClearAll();
             RegexCache.Clear();

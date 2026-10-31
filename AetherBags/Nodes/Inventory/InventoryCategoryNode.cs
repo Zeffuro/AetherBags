@@ -3,6 +3,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using AetherBags.Configuration;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
@@ -453,8 +454,21 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
             var dstContainer = targetItemInfo.Item.Container;
             bool dstExternal = ExternalCategoryManager.IsContainerClaimedByExternalSource(dstContainer);
-            var (srcContainer, srcSlot) = ResolveRealSource(acceptedPayload);
+            var sourceLocation = acceptedPayload.InventoryLocation;
+            if (sourceLocation == InventoryLocation.Invalid || sourceLocation.Container == InventoryType.Invalid) return;
+            var (srcContainer, srcSlot) = sourceLocation;
             bool srcExternal = ExternalCategoryManager.IsContainerClaimedByExternalSource(srcContainer);
+
+            bool sameContainerGroup = srcContainer.IsSameContainerGroup(dstContainer);
+            bool sameSlot = srcContainer == dstContainer && srcSlot == targetItemInfo.Item.Slot;
+            if (sameSlot || (!srcExternal && !dstExternal && sameContainerGroup
+                && System.Config.General.StackMode != InventoryStackMode.NaturalStacks))
+            {
+                InventoryItem targetItem = targetItemInfo.Item;
+                node.IconId = targetItem.IconId;
+                node.Payload = nodePayload;
+                return;
+            }
 
             if (srcExternal || dstExternal)
             {
@@ -489,10 +503,10 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
                 return;
             }
 
-            if (acceptedPayload.IsSameBaseContainer(nodePayload))
+            if (sameContainerGroup)
             {
-                node.IconId = targetItemInfo.IconId;
-                node.Payload = nodePayload;
+                InventoryMoveHelper.MoveItemDirect(srcContainer, srcSlot, dstContainer, (ushort)targetItemInfo.Item.Slot);
+                OnRefreshRequested?.Invoke();
                 return;
             }
 
@@ -500,21 +514,6 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             OnRefreshRequested?.Invoke();
         }
         catch (Exception ex) { IPluginLog.Get().Error(ex, "[OnPayload] Error handling payload acceptance"); }
-    }
-
-    private static (InventoryType container, ushort slot) ResolveRealSource(DragDropPayload payload)
-    {
-        int int1 = payload.Int1;
-        ushort int2 = (ushort)payload.Int2;
-
-        var mapped = InventoryType.GetInventoryTypeFromContainerId(int1);
-        if (mapped != 0)
-        {
-            var real = mapped.GetRealItemLocation(int2);
-            return (real.Container, real.Slot);
-        }
-
-        return ((InventoryType)int1, int2);
     }
 
     #endregion

@@ -7,6 +7,7 @@ using KamiToolKit.Nodes.Simplified;
 
 namespace AetherBags.Nodes.Layout;
 
+// Changing this hierarchy breaks dragging items to hotbars.
 public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeBase, new()
 {
     public CollisionNode ScrollingCollisionNode { get; }

@@ -468,9 +468,9 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
         IPluginLog.Get().Information($"[BackgroundDrop] enter: payloadType={acceptedPayload.Type}, payload=({acceptedPayload.Int1}@{acceptedPayload.Int2}), windowSource={InventoryState.SourceType}");
 
-        var mapped = InventoryType.GetInventoryTypeFromContainerId(acceptedPayload.Int1);
-        InventoryType srcContainer = mapped != 0 ? mapped : (InventoryType)acceptedPayload.Int1;
-        ushort srcSlot = (ushort)acceptedPayload.Int2;
+        var sourceLocation = acceptedPayload.InventoryLocation;
+        if (sourceLocation == InventoryLocation.Invalid || sourceLocation.Container == InventoryType.Invalid) return;
+        var (srcContainer, srcSlot) = sourceLocation;
 
         if (acceptedPayload.Type == DragDropType.Crystal)
         {
@@ -836,6 +836,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
         var contextMenu = ContextMenu;
         ContextMenu = null;
 
+        InventoryDragPreview.CancelForAddon(addon);
         System.AetherBagsAPI?.API.RaiseInventoryClosed();
 
         HoverSubscribed.Clear();
