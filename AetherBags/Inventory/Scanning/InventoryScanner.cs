@@ -52,6 +52,7 @@ public static unsafe class InventoryScanner
         InventorySourceType source)
     {
         aggByKey.Clear();
+        if (inventoryManager == null) return;
 
         InventoryType[] inventories = InventorySourceDefinitions.GetInventories(source);
 
@@ -71,9 +72,9 @@ public static unsafe class InventoryScanner
         {
             var inventoryType = inventories[inventoryIndex];
             var container = inventoryManager->GetInventoryContainer(inventoryType);
-            if (container == null)
+            if (!IsContainerReady(container))
             {
-                IPluginLog.Get().DebugOnly($"Container null:  {inventoryType}");
+                IPluginLog.Get().DebugOnly($"Container unavailable: {inventoryType}");
                 continue;
             }
 
@@ -173,17 +174,21 @@ public static unsafe class InventoryScanner
     }
 
     public static InventoryContainer* GetInventoryContainer(InventoryType inventoryType)
-        => InventoryManager.Instance()->GetInventoryContainer(inventoryType);
+    {
+        var manager = InventoryManager.Instance();
+        return manager == null ? null : manager->GetInventoryContainer(inventoryType);
+    }
 
     public static InventoryLocation GetFirstEmptySlot(InventorySourceType source)
     {
         var manager = InventoryManager.Instance();
+        if (manager == null) return InventoryLocation.Invalid;
         var containers = InventorySourceDefinitions.GetContainersForSource(source);
 
         foreach (var type in containers)
         {
             var container = manager->GetInventoryContainer(type);
-            if (container == null || container->Size == 0) continue;
+            if (!IsContainerReady(container)) continue;
 
             for (int i = 0; i < container->Size; i++)
             {
@@ -195,40 +200,40 @@ public static unsafe class InventoryScanner
         return InventoryLocation.Invalid;
     }
 
-    public static int GetEmptySlots(InventorySourceType source) => (int)(source switch
-    {
-        InventorySourceType.MainBags => InventoryManager.Instance()->GetEmptySlotsInBag(),
-        InventorySourceType.SaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.SaddleBag),
-        InventorySourceType.PremiumSaddleBag => GetEmptySlotsInContainer(InventorySourceDefinitions.PremiumSaddleBag),
-        InventorySourceType.AllSaddleBags => GetEmptySlotsInContainer(InventorySourceDefinitions.AllSaddleBags),
-        InventorySourceType.Retainer => GetEmptySlotsInContainer(InventorySourceDefinitions.Retainer),
-        _ => 0u,
-    });
-
     public static string GetEmptySlotsString(InventorySourceType source)
     {
-        int total = InventorySourceDefinitions.GetTotalSlots(source);
-        int empty = GetEmptySlots(source);
-        int used = total - empty;
-        return $"{used}/{total}";
+        return InventorySlotCounts.TryGet(source, out var total, out var empty)
+            ? $"{total - empty}/{total}"
+            : $"—/{InventorySourceDefinitions.GetTotalSlots(source)}";
     }
 
-    private static uint GetEmptySlotsInContainer(InventoryType[] inventories)
+    public static bool TryGetSlotCounts(InventorySourceType source, out int total, out int empty)
     {
-        uint empty = 0;
+        total = 0;
+        empty = 0;
         var inventoryManager = InventoryManager.Instance();
-        foreach (var inv in inventories)
+        if (inventoryManager == null) return false;
+
+        foreach (var inv in InventorySourceDefinitions.GetContainersForSource(source))
         {
             var container = inventoryManager->GetInventoryContainer(inv);
-            var containerSize = container->Size;
-
-            if (container == null) continue;
-            for (int i = 0; i < containerSize; i++)
+            if (!IsContainerReady(container))
             {
-                if (container->Items[i]. ItemId == 0)
+                total = 0;
+                empty = 0;
+                return false;
+            }
+
+            total += container->Size;
+            for (int i = 0; i < container->Size; i++)
+            {
+                if (container->Items[i].ItemId == 0)
                     empty++;
             }
         }
-        return empty;
+        return true;
     }
+
+    private static bool IsContainerReady(InventoryContainer* container)
+        => container != null && container->IsLoaded && container->Items != null && container->Size > 0;
 }

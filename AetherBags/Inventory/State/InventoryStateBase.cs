@@ -166,8 +166,7 @@ public abstract class InventoryStateBase
             totalQuantity += kvp.Value.ItemCount;
         }
 
-        int totalSlots = InventorySourceDefinitions.GetTotalSlots(SourceType);
-        int emptySlots = InventoryScanner.GetEmptySlots(SourceType);
+        InventorySlotCounts.TryGet(SourceType, out int totalSlots, out int emptySlots);
 
         var categories = GetCategories(string.Empty);
         int categoryCount = categories.Count;

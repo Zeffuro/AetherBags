@@ -5,8 +5,9 @@ namespace AetherBags.Tags;
 
 public static class NumericTagFormatter
 {
-    public static string Format(object value, string format, int? precision)
+    public static string Format(object? value, string format, int? precision)
     {
+        if (value is null) return "—";
         var number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
         if (format.Equals("k", StringComparison.OrdinalIgnoreCase))

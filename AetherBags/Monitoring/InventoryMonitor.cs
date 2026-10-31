@@ -48,7 +48,7 @@ public class InventoryMonitor : IDisposable
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PreRefresh, bags, InventoryPreRefreshHandler);
 
         // PostRequestedUpdate
-        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, "Inventory", OnInventoryUpdate);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, bags, OnInventoryUpdate);
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, "InventoryBuddy", OnSaddleBagUpdate);
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, retainer, OnRetainerInventoryUpdate);
 
@@ -260,6 +260,8 @@ public class InventoryMonitor : IDisposable
         if (IsInUnsafeState())
             return;
 
+        if (!args.Addon.IsNull && args.Addon.IsReady)
+            InventorySlotCounts.CaptureRequestedUpdate(InventorySourceType.MainBags);
         if (DragDropState.IsDragging)
             return;
 
@@ -272,6 +274,8 @@ public class InventoryMonitor : IDisposable
         if (IsInUnsafeState())
             return;
 
+        if (!args.Addon.IsNull && args.Addon.IsReady)
+            InventorySlotCounts.CaptureSaddleBagUpdate();
         if (DragDropState.IsDragging)
             return;
 
@@ -284,6 +288,8 @@ public class InventoryMonitor : IDisposable
         if (IsInUnsafeState())
             return;
 
+        if (!args.Addon.IsNull && args.Addon.IsReady)
+            InventorySlotCounts.CaptureRequestedUpdate(InventorySourceType.Retainer);
         if (DragDropState.IsDragging)
             return;
 

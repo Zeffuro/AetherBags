@@ -8,6 +8,7 @@ using AetherBags.Commands;
 using AetherBags.Helpers;
 using AetherBags.Hooks;
 using AetherBags.Inventory;
+using AetherBags.Inventory.Scanning;
 using AetherBags.Inventory.Context;
 using AetherBags.IPC;
 using AetherBags.IPC.AetherBagsAPI;
@@ -239,6 +240,7 @@ public class Plugin : IAsyncDalamudPlugin
     {
         if (_isDisposed) return;
 
+        InventorySlotCounts.Clear();
         System.Config = Util.LoadConfigOrDefault();
         System.IPC.RefreshExternalSources();
         System.LootedItemsTracker.Enable();
@@ -251,6 +253,7 @@ public class Plugin : IAsyncDalamudPlugin
     {
         if (_isDisposed) return;
 
+        InventorySlotCounts.Clear();
         Util.SaveConfig(System.Config);
         System.LootedItemsTracker.Disable();
         System.AddonInventoryWindow.Close();

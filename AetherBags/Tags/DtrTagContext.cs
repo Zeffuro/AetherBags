@@ -12,7 +12,7 @@ public readonly record struct DtrTagContext(InventoryStats Main, InventoryStats 
         return new DtrTagContext(main, saddle, main);
     }
 
-    public bool TryGetValue(string key, string subKey, out object value)
+    public bool TryGetValue(string key, string subKey, out object? value)
     {
         var metric = key;
         var source = Total;
@@ -45,9 +45,17 @@ public readonly record struct DtrTagContext(InventoryStats Main, InventoryStats 
         || value.Equals("total", StringComparison.OrdinalIgnoreCase)
         || value.Equals("all", StringComparison.OrdinalIgnoreCase);
 
-    private static bool TryResolveMetric(InventoryStats stats, string metric, out object value)
+    private static bool TryResolveMetric(InventoryStats stats, string metric, out object? value)
     {
-        switch (metric.ToLowerInvariant())
+        metric = metric.ToLowerInvariant();
+        if (stats.TotalSlots == 0 && metric is "used" or "usedslots" or "total" or "totalslots" or "slots"
+            or "free" or "empty" or "emptyslots" or "percent" or "usage" or "usagepercent")
+        {
+            value = null;
+            return true;
+        }
+
+        switch (metric)
         {
             case "used" or "usedslots":
                 value = stats.UsedSlots;

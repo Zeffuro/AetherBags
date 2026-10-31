@@ -76,6 +76,12 @@ public sealed unsafe class DtrService : IDisposable
 
     private static void AppendStats(SeStringBuilder builder, string label, InventoryStats stats)
     {
+        if (stats.TotalSlots == 0)
+        {
+            builder.AddText($"\n{label}: unavailable");
+            return;
+        }
+
         builder.AddText($"\n{label}: {stats.UsedSlots:N0}/{stats.TotalSlots:N0} slots ({stats.UsagePercent:N0}%)");
     }
 
