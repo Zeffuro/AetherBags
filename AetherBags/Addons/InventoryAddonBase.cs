@@ -40,7 +40,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
     protected TextNode? SlotCounterNode { get; set; }
     protected CircleButtonNode SettingsButtonNode = null!;
 
-    internal ContextMenu ContextMenu = null!;
+    internal ContextMenu? ContextMenu;
 
     protected readonly SharedNodePool<InventoryDragDropNode> SharedItemNodePool = new(
         maxSize: 256,
@@ -833,14 +833,17 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected override unsafe void OnFinalize(AtkUnitBase* addon)
     {
+        var contextMenu = ContextMenu;
+        ContextMenu = null;
+
         System.AetherBagsAPI?.API.RaiseInventoryClosed();
 
         HoverSubscribed.Clear();
         SearchDebouncer.Dispose();
         var contextAgent = AgentContext.Instance();
         if (contextAgent is not null && contextAgent->OwnerAddon == addon->Id)
-            ContextMenu?.Close();
-        ContextMenu?.Dispose();
+            contextMenu?.Close();
+        contextMenu?.Dispose();
         RefreshQueued = false;
         RefreshAutosizeQueued = false;
         _deferredPopulationInProgress = false;
