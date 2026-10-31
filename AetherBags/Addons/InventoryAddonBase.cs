@@ -418,7 +418,7 @@ public abstract class InventoryAddonBase : NativeAddon, IInventoryWindow
 
     protected void InitializeBackgroundDropTarget()
     {
-        BackgroundDropTarget = new DragDropNode
+        BackgroundDropTarget = new InventoryDragDropNodeBase
         {
             Position = ContentStartPosition,
             Size = ContentSize,

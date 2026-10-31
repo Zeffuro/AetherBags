@@ -18,7 +18,7 @@ using KamiToolKit.Timelines;
 
 namespace AetherBags.Nodes.Inventory;
 
-public class InventoryDragDropNode : DragDropNode
+public class InventoryDragDropNode : InventoryDragDropNodeBase
 {
     private const int Disable = 0;
     private const int Glow = 1;

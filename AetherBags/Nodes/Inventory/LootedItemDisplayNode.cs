@@ -26,7 +26,7 @@ public sealed unsafe class LootedItemDisplayNode : SimpleComponentNode
     {
         Size = new Vector2(44, 48);
 
-        _iconNode = new IconNode
+        _iconNode = new InventoryIconNode
         {
             Position = new Vector2(0, 0),
             Size = new Vector2(44, 48),
