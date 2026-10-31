@@ -30,6 +30,12 @@ public static unsafe class DragDropState
 public class InventoryMonitor : IDisposable
 {
     private bool _isDisposed;
+    private static readonly string[] RetainerAddonNames =
+    [
+        "InventoryRetainer", "InventoryRetainerLarge", "RetainerGrid", "RetainerGrid0",
+        "RetainerGrid1", "RetainerGrid2", "RetainerGrid3", "RetainerGrid4", "RetainerGrid5",
+        "RetainerGridCrystal", "RetainerCrystalGrid"
+    ];
 
     public InventoryMonitor()
     {
@@ -39,6 +45,8 @@ public class InventoryMonitor : IDisposable
 
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, saddle, OnPostSetup);
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, retainer, OnPostSetup);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostUpdate, saddle, OnPostUpdate);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostUpdate, retainer, OnPostUpdate);
 
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, saddle, OnPreFinalize);
         IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, retainer, OnPreFinalize);
@@ -70,6 +78,12 @@ public class InventoryMonitor : IDisposable
         OpenInventories(args.AddonName);
     }
 
+    private void OnPostUpdate(AddonEvent type, AddonArgs args)
+    {
+        if (IsInUnsafeState()) return;
+        HideDefaultInventories(args.AddonName);
+    }
+
     private void OnInventoryPreFinalize(AddonEvent type, AddonArgs args)
     {
         if (_isDisposed) return;
@@ -84,44 +98,37 @@ public class InventoryMonitor : IDisposable
         if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory && !vanillaBypassActive)
         {
             System.AddonRetainerWindow.Open();
-            if (config.HideGameRetainer)
-            {
-                string[] retainerAddons = [
-                    "InventoryRetainer",
-                    "InventoryRetainerLarge",
-                    "RetainerGrid",
-                    "RetainerGrid0",
-                    "RetainerGrid1",
-                    "RetainerGrid2",
-                    "RetainerGrid3",
-                    "RetainerGrid4",
-                    "RetainerGrid5",
-                    "RetainerGridCrystal",
-                    "RetainerCrystalGrid"
-                ];
-
-                foreach (var addonName in retainerAddons)
-                {
-                    var addon = RaptureAtkUnitManager.Instance()->GetAddonByName(addonName);
-                    if (addon != null)
-                    {
-                        addon->IsVisible = false;
-                    }
-                }
-            }
         }
 
         if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory && !vanillaBypassActive)
         {
             System.AddonSaddleBagWindow.Open();
-            if (config.HideGameSaddleBags)
+        }
+
+        HideDefaultInventories(name);
+    }
+
+    private unsafe void HideDefaultInventories(string name)
+    {
+        if (System.AetherBagsAPI?.API.IsVanillaInventoryBypassActive ?? false) return;
+
+        var manager = RaptureAtkUnitManager.Instance();
+        if (manager == null) return;
+
+        GeneralSettings config = System.Config.General;
+        if (name.Contains("Retainer") && config.OpenRetainerWithGameInventory && config.HideGameRetainer)
+        {
+            foreach (var addonName in RetainerAddonNames)
             {
-                var addon = RaptureAtkUnitManager.Instance()->GetAddonByName("InventoryBuddy");
-                if (addon != null)
-                {
-                    addon->IsVisible = false;
-                }
+                var addon = manager->GetAddonByName(addonName);
+                if (addon != null) addon->IsVisible = false;
             }
+        }
+
+        if (name.Contains("InventoryBuddy") && config.OpenSaddleBagsWithGameInventory && config.HideGameSaddleBags)
+        {
+            var addon = manager->GetAddonByName("InventoryBuddy");
+            if (addon != null) addon->IsVisible = false;
         }
     }
 
@@ -301,6 +308,6 @@ public class InventoryMonitor : IDisposable
     {
         _isDisposed = true;
         IGameInventory.Get().InventoryChangedRaw -= OnInventoryChangedRaw;
-        IAddonLifecycle.Get().UnregisterListener(OnPostSetup, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
+        IAddonLifecycle.Get().UnregisterListener(OnPostSetup, OnPostUpdate, OnPreFinalize, OnInventoryUpdate, OnSaddleBagUpdate, OnRetainerInventoryUpdate, OnInventoryPreFinalize, InventoryPreRefreshHandler);
     }
 }
