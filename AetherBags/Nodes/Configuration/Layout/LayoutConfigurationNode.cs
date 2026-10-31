@@ -4,6 +4,7 @@ using AetherBags.Configuration;
 using AetherBags.Inventory;
 using KamiToolKit.Nodes;
 using AetherBags.Nodes.Color;
+using AetherBags.Nodes.Layout;
 
 namespace AetherBags.Nodes.Configuration.Layout;
 
@@ -14,25 +15,29 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
     private readonly CheckboxNode _useStableInsertCheckboxNode = null!;
 
     private readonly Action? _onLayoutChanged;
+    private readonly InventoryLayoutConfigurationNode _stability;
+    private readonly WindowSizingConfigurationNode _windowSizing;
+    private readonly TabbedVerticalListNode _sharedSettings;
 
     public LayoutConfigurationNode(Action? onLayoutChanged = null)
     {
         _onLayoutChanged = onLayoutChanged;
+        Width = 560;
+        FitWidth = true;
 
         GeneralSettings config = System.Config.General;
 
-        var titleNode = new CategoryTextNode
-        {
-            Height = 18,
-            String = "Layout Configuration",
-        };
-        AddNode(titleNode);
+        _stability = new InventoryLayoutConfigurationNode(RefreshLayout);
+        AddNode(_stability);
 
-        AddTab(1);
+        AddNode(new ResNode { Height = 6 });
 
-        AddNode(new WindowSizingConfigurationNode(RefreshLayout));
+        _windowSizing = new WindowSizingConfigurationNode(RefreshLayout);
+        AddNode(_windowSizing);
 
-        AddNode(new ResNode
+        _sharedSettings = new TabbedVerticalListNode { FitWidth = true };
+        AddNode(_sharedSettings);
+        _sharedSettings.AddNode(new ResNode
         {
             Height = 6
         });
@@ -49,7 +54,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(showRecentlyLootedCheckboxNode);
+        _sharedSettings.AddNode(showRecentlyLootedCheckboxNode);
 
         var recentlyLootedColorHandler = new Action<Vector4>(newColor =>
         {
@@ -83,11 +88,11 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(highlightRecentlyLootedCheckboxNode);
+        _sharedSettings.AddNode(highlightRecentlyLootedCheckboxNode);
 
-        AddTab(1);
-        AddNode(recentlyLootedColorNode);
-        SubtractTab(1);
+        _sharedSettings.AddTab(1);
+        _sharedSettings.AddNode(recentlyLootedColorNode);
+        _sharedSettings.SubtractTab(1);
 
         var showCategoryItemAmountCheckboxNode = new CheckboxNode
         {
@@ -101,7 +106,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(showCategoryItemAmountCheckboxNode);
+        _sharedSettings.AddNode(showCategoryItemAmountCheckboxNode);
 
         var compactPackingCheckboxNode = new CheckboxNode
         {
@@ -119,9 +124,9 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(compactPackingCheckboxNode);
+        _sharedSettings.AddNode(compactPackingCheckboxNode);
 
-        AddTab(1);
+        _sharedSettings.AddTab(1);
         _preferLargestFitCheckboxNode = new CheckboxNode
         {
             Height = 18,
@@ -136,7 +141,7 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(_preferLargestFitCheckboxNode);
+        _sharedSettings.AddNode(_preferLargestFitCheckboxNode);
 
         _useStableInsertCheckboxNode = new CheckboxNode
         {
@@ -152,17 +157,26 @@ internal class LayoutConfigurationNode : TabbedVerticalListNode
                 InventoryOrchestrator.RefreshAll(updateMaps: true);
             }
         };
-        AddNode(_useStableInsertCheckboxNode);
+        _sharedSettings.AddNode(_useStableInsertCheckboxNode);
 
         _compactLookaheadNode = new CompactLookaheadNode
         {
-            Size = new Vector2(320, 20)
+            Size = new Vector2(320, 28)
         };
-        AddNode(_compactLookaheadNode);
+        _sharedSettings.AddNode(_compactLookaheadNode);
+    }
+
+    internal void SelectSource(int source)
+    {
+        _stability.SelectSource(source);
+        _windowSizing.SelectSource(source);
+        _sharedSettings.IsVisible = source == 0;
+        RefreshLayout();
     }
 
     private void RefreshLayout()
     {
+        using var visibility = new LayoutVisibilityScope(this);
         RecalculateLayout();
         _onLayoutChanged?.Invoke();
     }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using AetherBags.Configuration;
 using AetherBags.Inventory;
+using AetherBags.Nodes.Layout;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Simplified;
 
@@ -18,6 +19,7 @@ internal sealed class WindowSizingConfigurationNode : TabbedVerticalListNode
     ];
 
     private readonly Action? _onLayoutChanged;
+    private readonly WindowSizingRowNode[] _rows;
 
     public WindowSizingConfigurationNode(Action? onLayoutChanged = null)
     {
@@ -33,16 +35,22 @@ internal sealed class WindowSizingConfigurationNode : TabbedVerticalListNode
         AddNode(titleNode);
 
         AddTab(1);
-        foreach (var definition in Definitions)
+        _rows = Definitions.Select(definition => new WindowSizingRowNode(definition, config)
         {
-            AddNode(new WindowSizingRowNode(definition, config)
-            {
-                Width = WindowSizingRowNode.RowWidth,
-                OnLayoutChanged = RefreshLayout,
-            });
-        }
+            Width = WindowSizingRowNode.RowWidth,
+            OnLayoutChanged = RefreshLayout,
+        }).ToArray();
+        foreach (var row in _rows) AddNode(row);
 
         SubtractTab(1);
+    }
+
+    internal void SelectSource(int source)
+    {
+        for (int index = 0; index < _rows.Length; index++)
+            _rows[index].IsVisible = source == 0 || source == index + 1;
+        using var visibility = new LayoutVisibilityScope(this);
+        RecalculateLayout();
     }
 
     private void RefreshLayout()

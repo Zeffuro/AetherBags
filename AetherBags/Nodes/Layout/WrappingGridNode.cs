@@ -110,6 +110,13 @@ public sealed partial class WrappingGridNode<T> : DeferrableLayoutListNode where
 
     protected override void InternalRecalculateLayout()
     {
+        if (TryRecalculateHeldLayout()) return;
+        RecalculateLiveLayout();
+        CaptureHeldLayout();
+    }
+
+    private void RecalculateLiveLayout()
+    {
         int layoutCount = BuildLayoutOrder(out int hoistedCount, out int pinnedCount);
 
         if (layoutCount == 0)
@@ -120,6 +127,12 @@ public sealed partial class WrappingGridNode<T> : DeferrableLayoutListNode where
             _requiredHeightDirty = false;
             _forceFullReflow = false;
             RememberLayoutParams();
+            return;
+        }
+
+        if (SeparateRows)
+        {
+            RecalculateSeparateRows(layoutCount);
             return;
         }
 

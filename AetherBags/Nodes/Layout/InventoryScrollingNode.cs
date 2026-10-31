@@ -10,6 +10,9 @@ namespace AetherBags.Nodes.Layout;
 // Changing this hierarchy breaks dragging items to hotbars.
 public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeBase, new()
 {
+    public const float MaxContentHeight = short.MaxValue;
+    public bool IsContentLimited { get; private set; }
+
     public CollisionNode ScrollingCollisionNode { get; }
     public ResNode ClippingContentNode { get; }
     public T ContentNode { get; }
@@ -18,7 +21,10 @@ public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeB
     public unsafe InventoryScrollingAreaNode()
     {
         CollisionNode.RemoveNodeFlags(NodeFlags.Focusable);
-        ScrollingCollisionNode = new CollisionNode();
+        ScrollingCollisionNode = new CollisionNode
+        {
+            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.EmitsEvents,
+        };
         ScrollingCollisionNode.AttachNode(this);
 
         ClippingContentNode = new ResNode
@@ -30,16 +36,13 @@ public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeB
         ContentNode = new T();
         ContentNode.AttachNode(ClippingContentNode);
 
-        ScrollBarNode = new ScrollBarNode { HideWhenDisabled = true };
+        ScrollBarNode = new ScrollBarNode { HideWhenDisabled = true, IsAcceptingMouseWheelEvents = true };
         ScrollBarNode.AttachNode(this);
         ScrollBarNode.SetContentNodes(ContentNode, ScrollingCollisionNode);
 
-        AtkResNode* clipNode = ClippingContentNode;
-        AtkResNode* collisionNode = ScrollingCollisionNode;
-        AtkResNode* contentNode = ContentNode;
-        clipNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
-        collisionNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
-        contentNode->AtkEventManager.RegisterEvent(AtkEventType.MouseWheel, 5, null, ScrollingCollisionNode, ScrollBarNode, false);
+        ClippingContentNode.AddLinkedEvent(ScrollBarNode, 5, AtkEventType.MouseWheel);
+        ScrollingCollisionNode.AddLinkedEvent(ScrollBarNode, 5, AtkEventType.MouseWheel);
+        ContentNode.AddLinkedEvent(ScrollBarNode, 5, AtkEventType.MouseWheel);
     }
 
     public bool AutoHideScrollBar
@@ -53,7 +56,8 @@ public class InventoryScrollingAreaNode<T> : SimpleComponentNode where T : NodeB
         get => ContentNode.Height;
         set
         {
-            ContentNode.Height = value;
+            IsContentLimited = !float.IsFinite(value) || value > MaxContentHeight;
+            ContentNode.Height = float.IsFinite(value) ? Math.Clamp(value, 0, MaxContentHeight) : 0;
             ScrollBarNode.UpdateScrollParams();
         }
     }

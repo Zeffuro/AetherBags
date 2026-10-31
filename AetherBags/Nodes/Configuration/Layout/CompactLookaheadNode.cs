@@ -33,7 +33,7 @@ internal sealed class CompactLookaheadNode : SimpleComponentNode
         CompactLookahead = new NumericInputNode
         {
             Position = Position with { X = 240 },
-            Size = Size with { X = 88 },
+            Size = new Vector2(88, 28),
             IsVisible = true,
             IsEnabled = config.CompactPackingEnabled,
             Value = config.CompactLookahead,

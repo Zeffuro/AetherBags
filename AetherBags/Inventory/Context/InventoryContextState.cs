@@ -27,6 +27,7 @@ public static unsafe class InventoryContextState
         EligibleSlots.Clear();
         VisualLocationMap.Clear();
         GroupedLocationMaps.Clear();
+        _lastContextId = 0;
 
         var itemOrderModule = ItemOrderModule.Instance();
         if (itemOrderModule == null) return;

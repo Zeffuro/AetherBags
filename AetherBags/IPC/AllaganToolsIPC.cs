@@ -208,6 +208,7 @@ public class AllaganToolsIPC : IDisposable
         if (_source == null) return;
 
         ExternalCategoryManager.UnregisterSource(_source.SourceName);
+        _source.Dispose();
         _source = null;
     }
 
@@ -217,7 +218,7 @@ public class AllaganToolsIPC : IDisposable
         _initialized?.Unsubscribe(OnAllaganInitialized);
     }
 
-    private sealed class AllaganToolsSource : IExternalItemSource
+    private sealed class AllaganToolsSource : IExternalItemSource, IDisposable
     {
         private readonly AllaganToolsIPC _ipc;
         private int _version;
@@ -246,6 +247,8 @@ public class AllaganToolsIPC : IDisposable
             _version++;
             OnDataChanged?.Invoke();
         }
+
+        public void Dispose() => _ipc.OnFiltersRefreshed -= OnIpcRefreshed;
 
         public IReadOnlyDictionary<uint, ExternalCategoryAssignment>? GetCategoryAssignments()
         {

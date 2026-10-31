@@ -72,7 +72,7 @@ public sealed class CategoryScrollingAreaNode : ConfigurationScrollingNode
             CheckAndCloseCategoryAddon();
 
             CategoryImportExport.ResetAllCategories(System.Config);
-            InventoryOrchestrator.RefreshAll(updateMaps: true);
+            InventoryOrchestrator.RearrangeAll();
             resetButton.Reset();
         };
 
@@ -93,7 +93,7 @@ public sealed class CategoryScrollingAreaNode : ConfigurationScrollingNode
 
         if (!IKeyState.Get()[VirtualKey.SHIFT]) return;
         CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, true);
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
     }
 
     private static void CheckAndCloseCategoryAddon() => System.CategoryConfigurationWindow.Close();

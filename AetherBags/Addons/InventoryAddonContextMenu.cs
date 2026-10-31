@@ -61,6 +61,7 @@ public static class InventoryAddonContextMenu
         menu.AddItem(CreateUtilitiesSubMenu(parent));
         menu.AddItem(CreateVisibilitySubMenu());
         menu.AddItem(CreateStackingSubMenu());
+        menu.AddItem(CreateLayoutSubMenu(parent));
 
         var allaganToolsSubMenu = CreateAllaganToolsFilterSubMenu();
         if (allaganToolsSubMenu != null)
@@ -69,6 +70,17 @@ public static class InventoryAddonContextMenu
         }
 
         menu.Open();
+    }
+
+    private static ContextMenuSubItem CreateLayoutSubMenu(InventoryAddonBase parent)
+    {
+        var menu = new ContextMenuSubItem { Name = "Layout", OnClick = () => { } };
+        menu.AddItem("Rearrange now", parent.RearrangeLayout);
+        menu.AddItem("Use global settings", () => parent.SetLayoutUpdates(null));
+        menu.AddItem("Live updates", () => parent.SetLayoutUpdates(InventoryLayoutUpdates.Live));
+        menu.AddItem("Rearrange after idle", () => parent.SetLayoutUpdates(InventoryLayoutUpdates.AfterIdle));
+        menu.AddItem("Keep until reopened", () => parent.SetLayoutUpdates(InventoryLayoutUpdates.WhenReopened));
+        return menu;
     }
 
     private static ContextMenuSubItem CreateUtilitiesSubMenu(InventoryAddonBase parent)
@@ -285,7 +297,7 @@ public static class InventoryAddonContextMenu
 
     private static void SaveConfig() => Util.SaveConfig(System.Config);
 
-    private static void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+    private static void RefreshInventory() => InventoryOrchestrator.RearrangeAll();
 
     public static unsafe void Close()
     {

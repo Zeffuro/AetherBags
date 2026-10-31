@@ -167,7 +167,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         OnLayoutChanged?.Invoke();
     }
 
-    private static void NotifyChanged() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+    private static void NotifyChanged() => InventoryOrchestrator.RearrangeAll();
 
     private void HandleExportCategory()
     {
@@ -197,7 +197,7 @@ public sealed class CategoryDefinitionConfigurationNode : SimpleComponentNode
         foreach (var section in _sections) section.Refresh();
         HandleLayoutChange();
         OnCategoryPropertyChanged?.Invoke();
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
     }
 
     public static string ResolveItemName(uint itemId) => ItemSheet?.GetRow(itemId).Name.ToString() ?? "Unknown";

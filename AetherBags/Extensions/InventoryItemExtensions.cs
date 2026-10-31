@@ -69,7 +69,7 @@ public static unsafe class InventoryItemExtensions {
                 ? InventoryType.KeyItems
                 : InventoryType.Invalid;
 
-            if (InventoryManager.Instance()->GetInventoryItemCount(itemId, true) > 0)
+            if (item.IsHighQuality())
                 itemId += 1_000_000;
 
             if (!item.Container.IsMainInventory)

@@ -21,7 +21,7 @@ using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Inventory;
 
-public class InventoryCategoryNode : InventoryCategoryNodeBase
+public partial class InventoryCategoryNode : InventoryCategoryNodeBase
 {
     private const uint CategoryNodeKeyBase = 0x10000000;
     private const float ExpectedItemWidth = 44;
@@ -33,7 +33,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     private readonly CollisionNode _hoverCollisionNode;
     private readonly TextNode _categoryNameTextNode;
-    private readonly HybridDirectionalFlexNode<DragDropNode> _itemGridNode;
+    private readonly InventoryItemGridNode _itemGridNode;
 
     private float? _fixedWidth;
     private float? _maxWidth;
@@ -113,7 +113,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _categoryNameTextNode.AddNodeFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision);
         _categoryNameTextNode.AttachNode(this);
 
-        _itemGridNode = new HybridDirectionalFlexNode<DragDropNode>
+        _itemGridNode = new InventoryItemGridNode
         {
             Position = new Vector2(0, HeaderHeight),
             Size = new Vector2(240, 92),
@@ -151,19 +151,16 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
         _categoryNameTextNode.TextColor = data.Category.Color;
         _categoryNameTextNode.TextTooltip = data.Category.Description;
 
-        if (itemsChanged || categoryChanged)
+        _itemGridNode.ItemsPerLine = itemsPerLine;
+        if (deferItemCreation && (itemsChanged || categoryChanged || _itemsNeedPopulation))
         {
-            _itemGridNode.ItemsPerLine = itemsPerLine;
-            if (deferItemCreation)
-                _itemsNeedPopulation = true;
-            else
-            {
-                using (_itemGridNode.DeferRecalculateLayout()) UpdateItemGrid();
-                _itemsNeedPopulation = false;
-            }
+            _itemsNeedPopulation = true;
         }
-        else if (itemsPerLineChanged)
-            _itemGridNode.ItemsPerLine = itemsPerLine;
+        else
+        {
+            using (_itemGridNode.DeferRecalculateLayout()) UpdateItemGrid();
+            _itemsNeedPopulation = false;
+        }
 
         if (categoryChanged || itemsChanged || itemsPerLineChanged)
             RecalculateSize();
@@ -282,49 +279,6 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     #region Layout
 
-    public override void RecalculateSize()
-    {
-        int itemCount = CategorizedInventory.Items.Count;
-        float cellW = ExpectedItemWidth, cellH = ExpectedItemHeight;
-        float hPad = _itemGridNode.HorizontalPadding, vPad = _itemGridNode.VerticalPadding;
-
-        if (itemCount == 0)
-        {
-            float width = _fixedWidth ?? MinWidth;
-            if (_maxWidth.HasValue) width = Math.Min(width, _maxWidth.Value);
-            Size = new Vector2(width, HeaderHeight);
-            _hoverCollisionNode.Size = Size;
-            _baseHeaderWidth = width;
-            _itemGridNode.Position = new Vector2(0, HeaderHeight);
-            _itemGridNode.Size = new Vector2(width, 0);
-            ApplyHeaderVisualState();
-            return;
-        }
-
-        int itemsPerLine = Math.Max(1, _itemGridNode.ItemsPerLine);
-        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= cellW)
-        {
-            int maxColumns = Math.Max(1, (int)MathF.Floor((_maxWidth.Value + hPad) / (cellW + hPad)));
-            if (maxColumns * cellW + (maxColumns - 1) * hPad > _maxWidth.Value && maxColumns > 1) maxColumns--;
-            itemsPerLine = Math.Min(itemsPerLine, maxColumns);
-        }
-
-        int rows = (itemCount + itemsPerLine - 1) / itemsPerLine;
-        int actualColumns = Math.Min(itemCount, itemsPerLine);
-        float calculatedWidth = _fixedWidth ?? Math.Max(MinWidth, actualColumns * cellW + (actualColumns - 1) * hPad);
-        if (_maxWidth.HasValue && _fixedWidth is null && _maxWidth.Value >= cellW)
-            calculatedWidth = Math.Min(calculatedWidth, _maxWidth.Value);
-
-        float height = HeaderHeight + rows * cellH + (rows - 1) * vPad;
-        Size = new Vector2(calculatedWidth, height);
-        _hoverCollisionNode.Size = Size;
-        _itemGridNode.Position = new Vector2(0, HeaderHeight);
-        _itemGridNode.Size = new Vector2(calculatedWidth, height - HeaderHeight);
-        if (_itemGridNode.ItemsPerLine != itemsPerLine) _itemGridNode.ItemsPerLine = itemsPerLine;
-        _baseHeaderWidth = calculatedWidth;
-        ApplyHeaderVisualState();
-    }
-
     #endregion
 
     #region Items
@@ -349,6 +303,7 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
             createNodeMethod: CreateInventoryDragDropNode,
             resetNodeForReuse: static node => node.ResetForReuse(),
             externalPool: SharedItemPool);
+        _itemGridNode.UpdateEmptySlots(_layoutSlotCount);
     }
 
     private unsafe InventoryDragDropNode CreateInventoryDragDropNode(ItemInfo data)
@@ -533,6 +488,11 @@ public class InventoryCategoryNode : InventoryCategoryNodeBase
 
     public void ResetForReuse()
     {
+        LayoutKey = 0;
+        _layoutSlotCount = 0;
+        _itemGridNode.ItemSlots = null;
+        _itemGridNode.ShowEmptySlots = false;
+        _itemGridNode.UpdateEmptySlots(0);
         _lastCategoryKey = 0;
         _lastItemCount = 0;
         _lastItemsHash = 0;

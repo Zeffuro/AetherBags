@@ -15,7 +15,11 @@ public static unsafe class InventoryOrchestrator
     public static void Enable() => _isEnabled = true;
     public static void Disable() => _isEnabled = false;
 
-    public static void RefreshAll(bool updateMaps = true)
+    public static void RearrangeAll() => RefreshAll(updateMaps: true, rearrange: true);
+
+    public static void RefreshAll(bool updateMaps = true) => RefreshAll(updateMaps, rearrange: false);
+
+    private static void RefreshAll(bool updateMaps, bool rearrange)
     {
         if (!_isEnabled || _isRefreshing)
             return;
@@ -45,6 +49,7 @@ public static unsafe class InventoryOrchestrator
 
                 foreach (var window in GetAllWindows())
                 {
+                    if (rearrange && window is InventoryAddonBase addon) addon.ResetLayoutForConfig();
                     window.ManualRefresh();
                 }
             });

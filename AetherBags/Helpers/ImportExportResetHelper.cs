@@ -97,7 +97,7 @@ public abstract class ImportExportResetHelper {
     {
         if (CategoryImportExport.ImportAllCategoriesFromClipboard(System.Config, replaceExisting))
         {
-            Inventory.InventoryOrchestrator.RefreshAll(updateMaps: true);
+            Inventory.InventoryOrchestrator.RearrangeAll();
         }
     }
 }

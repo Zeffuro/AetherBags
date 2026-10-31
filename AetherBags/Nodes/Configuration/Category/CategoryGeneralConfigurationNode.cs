@@ -279,7 +279,7 @@ public sealed class CategoryGeneralConfigurationNode : VerticalListNode
         OnLayoutChanged?.Invoke();
     }
 
-    private void RefreshInventory() => InventoryOrchestrator.RefreshAll(updateMaps: true);
+    private void RefreshInventory() => InventoryOrchestrator.RearrangeAll();
 }
 
 public sealed class IndentedConfigurationRowNode : SimpleComponentNode

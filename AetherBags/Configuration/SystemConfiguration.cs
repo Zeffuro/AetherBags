@@ -55,6 +55,14 @@ public class SystemConfiguration
         Version = ConfigMigrator.CurrentVersion;
         _categories.UserCategories ??= new();
         _categories.NormalizeItemSortSettings();
+        _general.Layout ??= new() { UseGlobal = false };
+        _general.InventoryLayout ??= new();
+        _general.SaddleBagLayout ??= new();
+        _general.RetainerLayout ??= new();
+        _general.Layout.Normalize();
+        _general.InventoryLayout.Normalize();
+        _general.SaddleBagLayout.Normalize();
+        _general.RetainerLayout.Normalize();
         _general.InventoryWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Inventory);
         _general.SaddleBagWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.SaddleBag);
         _general.RetainerWindowSizing ??= InventoryWindowSizingDefaults.Create(InventoryWindowSizingLimits.Retainer);

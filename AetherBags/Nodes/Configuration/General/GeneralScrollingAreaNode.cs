@@ -1,6 +1,5 @@
 using System.Numerics;
 using AetherBags.Configuration;
-using AetherBags.Nodes.Configuration.Layout;
 using KamiToolKit.Nodes;
 
 namespace AetherBags.Nodes.Configuration.General;
@@ -16,8 +15,6 @@ public sealed class GeneralScrollingAreaNode : ConfigurationScrollingNode
         ContentNode.ItemSpacing = 10;
 
         ContentNode.AddNode(new FunctionalConfigurationNode());
-
-        ContentNode.AddNode(new LayoutConfigurationNode(RefreshLayout));
 
         ContentNode.AddNode(new DtrConfigurationNode());
 

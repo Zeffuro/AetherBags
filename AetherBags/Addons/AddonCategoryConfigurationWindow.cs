@@ -195,7 +195,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         _categoryWrappers.Add(newWrapper);
 
         RefreshSelectionList();
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
     }
 
     private void OverrideGameCategory(uint gameCategoryId)
@@ -229,7 +229,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
 
         Util.SaveConfig(System.Config);
         RefreshSelectionList();
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
 
         OnOptionChanged(newWrapper);
     }
@@ -287,7 +287,7 @@ public class AddonCategoryConfigurationWindow : NativeAddon
         {
             OnOptionChanged(null);
         }
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
     }
 
     private void RefreshSelectionList()

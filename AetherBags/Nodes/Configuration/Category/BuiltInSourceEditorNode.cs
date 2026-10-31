@@ -269,7 +269,7 @@ public sealed class BuiltInSourceEditorNode : SimpleComponentNode
     private static void NotifyChanged()
     {
         Util.SaveConfig(System.Config);
-        InventoryOrchestrator.RefreshAll(updateMaps: true);
+        InventoryOrchestrator.RearrangeAll();
     }
     protected override void Dispose(bool isNativeDestructor)
     {
