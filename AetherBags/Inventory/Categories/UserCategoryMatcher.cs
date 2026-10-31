@@ -35,13 +35,14 @@ internal static class UserCategoryMatcher
         if (rules.AllowedRarities.Count > 0 && !rules.AllowedRarities.Contains(item.Rarity))
             return false;
 
-        if (rules.AllowedUiCategoryIds.Count > 0 && !rules.AllowedUiCategoryIds.Contains(item.UiCategory.RowId))
-            return false;
-
-        bool hasIdentificationFilters = rules.AllowedItemIds.Count > 0 || rules.AllowedItemNamePatterns.Count > 0;
+        bool hasIdentificationFilters = rules.AllowedUiCategoryIds.Count > 0
+            || rules.AllowedItemIds.Count > 0 || rules.AllowedItemNamePatterns.Count > 0;
 
         if (hasIdentificationFilters)
         {
+            if (rules.AllowedUiCategoryIds.Contains(item.UiCategory.RowId))
+                return true;
+
             if (rules.AllowedItemIds.Count > 0 && rules.AllowedItemIds.Contains(item.Item.ItemId))
                 return true;
 
@@ -98,6 +99,14 @@ internal static class UserCategoryMatcher
         if (rules.Dyeable.ToggleState != ToggleFilterState.Ignored)
             return false;
         if (rules.Repairable.ToggleState != ToggleFilterState.Ignored)
+            return false;
+        if (rules.HighQuality.ToggleState != ToggleFilterState.Ignored)
+            return false;
+        if (rules.Desynthesizable.ToggleState != ToggleFilterState.Ignored)
+            return false;
+        if (rules.Glamourable.ToggleState != ToggleFilterState.Ignored)
+            return false;
+        if (rules.FullySpiritbonded.ToggleState != ToggleFilterState.Ignored)
             return false;
 
         return true;
