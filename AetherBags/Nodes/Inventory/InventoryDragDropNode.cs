@@ -2,6 +2,7 @@ using Dalamud.Plugin.Services;
 using System.Numerics;
 using AetherBags.Addons;
 using AetherBags.Configuration;
+using AetherBags.Helpers;
 using AetherBags.Inventory;
 using AetherBags.Inventory.Context;
 using AetherBags.Inventory.Items;
@@ -62,7 +63,7 @@ public class InventoryDragDropNode : DragDropNode
             bool isCollectable = value.Item.Flags.HasFlag(InventoryItem.ItemFlags.Collectable);
             bool aggregatingUnstackable = general.StackMode == InventoryStackMode.AggregateByItemId && general.AggregateUnstackableItems;
             bool showCount = !isCollectable && (value.StackSize > 1 || (aggregatingUnstackable && value.ItemCount > 1));
-            _quantityTextNode.String = showCount ? value.ItemCount.ToString() : string.Empty;
+            InventoryQuantityLabel.Update(_quantityTextNode, value.ItemCount, showCount);
 
             bool blockUnmarketable = InventoryContextState.IsMarketSellFlow && !value.IsMarketable;
             IconNode.IsIconDisabled = blockUnmarketable;
